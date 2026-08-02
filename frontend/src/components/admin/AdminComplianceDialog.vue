@@ -138,12 +138,12 @@ const currentDocument = computed(() => {
 const documentUrl = computed(() => {
   const locale = getLocale()
   if (locale === 'zh') {
-    return complianceStore.status?.document_url_zh || 'https://github.com/YLeon2007/sub2api/blob/v0.1.169-ru.1/docs/legal/admin-compliance.zh.md'
+    return complianceStore.status?.document_url_zh || 'https://github.com/YLeon2007/sub2api/blob/v0.1.169-ru.2/docs/legal/admin-compliance.zh.md'
   }
   if (locale === 'ru') {
-    return complianceStore.status?.document_url_ru || 'https://github.com/YLeon2007/sub2api/blob/v0.1.169-ru.1/docs/legal/admin-compliance.ru.md'
+    return complianceStore.status?.document_url_ru || 'https://github.com/YLeon2007/sub2api/blob/v0.1.169-ru.2/docs/legal/admin-compliance.ru.md'
   }
-  return complianceStore.status?.document_url_en || 'https://github.com/YLeon2007/sub2api/blob/v0.1.169-ru.1/docs/legal/admin-compliance.en.md'
+  return complianceStore.status?.document_url_en || 'https://github.com/YLeon2007/sub2api/blob/v0.1.169-ru.2/docs/legal/admin-compliance.en.md'
 })
 const inputError = computed(() => {
   if (!attemptedSubmit.value || canSubmit.value) {
