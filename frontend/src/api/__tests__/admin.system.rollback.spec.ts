@@ -25,7 +25,7 @@ describe('admin system rollback API', () => {
       {
         version: '0.1.146',
         published_at: '2026-07-07T00:00:00Z',
-        html_url: 'https://github.com/Wei-Shaw/sub2api/releases/tag/v0.1.146'
+        html_url: 'https://github.com/YLeon2007/sub2api/releases/tag/v0.1.146-ru.1'
       }
     ]
     get.mockResolvedValue({ data: { versions } })
@@ -41,7 +41,11 @@ describe('admin system rollback API', () => {
 
     const result = await rollback('0.1.146')
 
-    expect(post).toHaveBeenCalledWith('/admin/system/rollback', { version: '0.1.146' })
+    expect(post).toHaveBeenCalledWith(
+      '/admin/system/rollback',
+      { version: '0.1.146' },
+      { timeout: 900_000 }
+    )
     expect(result.need_restart).toBe(true)
   })
 
@@ -50,6 +54,6 @@ describe('admin system rollback API', () => {
 
     await rollback()
 
-    expect(post).toHaveBeenCalledWith('/admin/system/rollback', undefined)
+    expect(post).toHaveBeenCalledWith('/admin/system/rollback', undefined, { timeout: 900_000 })
   })
 })
