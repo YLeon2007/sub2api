@@ -4,7 +4,8 @@
 This script is intentionally dependency-free.  It checks the security properties
 that are easy to regress in workflow edits: least-privilege permissions,
 release-only-by-RU-tag, no production secrets, no auto-merge/deploy in the
-upstream watcher, and no mutable-only release image config.
+upstream watcher, no mutable-only release image config, and fork-owned
+README/deployment paths with release-identity parity.
 """
 
 from __future__ import annotations
@@ -722,6 +723,314 @@ def validate_release_identity_texts(
         )
 
 
+def validate_fork_documentation_texts(
+    version_text: str,
+    texts: dict[str, str],
+    errors: list[str],
+) -> None:
+    """Keep fork-owned installation paths and language navigation fail-closed."""
+    version = version_text.strip()
+    if RU_VERSION_RE.fullmatch(version) is None:
+        return
+
+    language_markers = {
+        "README.md": "English | [中文](README_CN.md) | [日本語](README_JA.md) | [Русский](README_RU.md)",
+        "README_CN.md": "[English](README.md) | 中文 | [日本語](README_JA.md) | [Русский](README_RU.md)",
+        "README_JA.md": "[English](README.md) | [中文](README_CN.md) | 日本語 | [Русский](README_RU.md)",
+        "README_RU.md": "[English](README.md) | [中文](README_CN.md) | [日本語](README_JA.md) | Русский",
+    }
+    for name, marker in language_markers.items():
+        require(
+            marker in texts.get(name, ""),
+            f"{name}: missing complete English/Chinese/Japanese/Russian language switch",
+            errors,
+        )
+
+    forbidden_operational_patterns = {
+        "remote script pipe-to-shell": (
+            r"(?i)\b(?:curl|wget)\b[^\r\n|]*"
+            r"\|\s*(?:sudo(?:\s+-[^\s]+)*\s+)?(?:env\s+)?"
+            r"(?:(?:/usr)?/bin/)?(?:ba|z)?sh\b"
+        ),
+        "upstream container image": (
+            r"(?<![\w.-])(?:docker\.io/)?weishaw/sub2api:[A-Za-z0-9_.-]+"
+        ),
+        "unrelated historical fork": r"bayma888/sub2api-bmai",
+    }
+    raw_deploy_url_res = (
+        re.compile(
+            r"https://raw\.githubusercontent\.com/([^/\s`'\"<>]+)/sub2api/"
+            r"(?:[^/\s`'\"<>]+/)*deploy(?:/[^\s`'\"<>)]*)?",
+            re.I,
+        ),
+        re.compile(
+            r"https://github\.com/([^/\s`'\"<>]+)/sub2api/raw/"
+            r"(?:[^/\s`'\"<>]+/)*deploy(?:/[^\s`'\"<>)]*)?",
+            re.I,
+        ),
+    )
+    clone_url_re = re.compile(
+        r"(?i)\bgit\b[^\r\n]*?\bclone\b[^\r\n]*?"
+        r"(?:https?://github\.com/|git@github\.com:|ssh://git@github\.com/)"
+        r"([^/\s`'\"<>]+)/sub2api(?:\.git)?"
+        r"(?=[\s`'\"/#?)]|$)"
+    )
+    release_url_res = (
+        re.compile(
+            r"https://github\.com/([^/\s`'\"<>]+)/sub2api/releases"
+            r"(?:[/?#][^\s`'\"<>)]*)?",
+            re.I,
+        ),
+        re.compile(
+            r"https://api\.github\.com/repos/([^/\s`'\"<>]+)/sub2api/releases"
+            r"(?:[/?#][^\s`'\"<>)]*)?",
+            re.I,
+        ),
+    )
+    ghcr_image_re = re.compile(
+        r"(?<![A-Za-z0-9._-])ghcr\.io/([^/\s`'\"<>]+)/sub2api"
+        r"((?::(?:<[^>\s]+>|[A-Za-z0-9_.-]+))?"
+        r"(?:@sha256:[A-Za-z0-9]+)?)"
+        r"(?=$|[\s`'\"<>\)\],;#])",
+        re.I,
+    )
+    placeholder_image_docs = {"deploy/README.md", "deploy/README_RU.md"}
+
+    for name, text in texts.items():
+        logical_text = re.sub(r"\\[ \t]*\r?\n[ \t]*", " ", text)
+        for description, pattern in forbidden_operational_patterns.items():
+            require(
+                re.search(pattern, logical_text, re.I) is None,
+                f"{name}: forbidden {description}",
+                errors,
+            )
+
+        raw_owners = [
+            owner
+            for pattern in raw_deploy_url_res
+            for owner in pattern.findall(logical_text)
+        ]
+        require(
+            all(owner.lower() == "yleon2007" for owner in raw_owners),
+            f"{name}: every raw deployment URL owner must be YLeon2007",
+            errors,
+        )
+
+        clone_owners = clone_url_re.findall(logical_text)
+        require(
+            all(owner.lower() == "yleon2007" for owner in clone_owners),
+            f"{name}: every operational clone URL owner must be YLeon2007",
+            errors,
+        )
+
+        release_owners = [
+            owner
+            for pattern in release_url_res
+            for owner in pattern.findall(logical_text)
+        ]
+        require(
+            all(owner.lower() == "yleon2007" for owner in release_owners),
+            f"{name}: every release URL owner must be YLeon2007",
+            errors,
+        )
+
+        for owner, reference in ghcr_image_re.findall(logical_text):
+            tag = ""
+            digest = ""
+            if reference.startswith(":"):
+                tag, separator, digest = reference[1:].partition("@sha256:")
+                if not separator:
+                    digest = ""
+            elif reference.startswith("@sha256:"):
+                digest = reference.removeprefix("@sha256:")
+
+            valid_placeholder = tag == "<NEW_RU_VERSION>" and name in placeholder_image_docs
+            valid_tag = tag == version or valid_placeholder
+            valid_digest = bool(re.fullmatch(r"[0-9a-f]{64}", digest, re.I))
+            valid_reference = (valid_tag and (not digest or valid_digest)) or (
+                not tag and valid_digest
+            )
+            require(
+                owner.lower() == "yleon2007" and valid_reference,
+                f"{name}: every complete GHCR image token must use YLeon2007 and an immutable VERSION tag or digest",
+                errors,
+            )
+
+    expected_image = f"ghcr.io/yleon2007/sub2api:{version}"
+
+    for name in ("deploy/docker-compose.local.yml", "deploy/docker-compose.standalone.yml"):
+        service_count, images = compose_service_images(texts.get(name, ""), "sub2api")
+        require(
+            service_count == 1 and images == [expected_image],
+            f"{name}: exactly one active fork image must match VERSION {version}",
+            errors,
+        )
+
+    apple_script = texts.get("deploy/apple-container.sh", "")
+    apple_fallbacks = re.findall(
+        r'read_env_value\s+APPLE_CONTAINER_SUB2API_IMAGE\s+([^\s\)\"]+)',
+        apple_script,
+    )
+    require(
+        apple_fallbacks == [expected_image],
+        f"deploy/apple-container.sh: Apple fallback image must match VERSION {version}",
+        errors,
+    )
+
+    for name in ("README_RU.md", "deploy/DOCKER.md", "deploy/APPLE_CONTAINER.md"):
+        require(
+            expected_image in texts.get(name, ""),
+            f"{name}: documented immutable image must match VERSION {version}",
+            errors,
+        )
+
+    raw_url_assignments = re.findall(
+        r'(?m)^[ \t]*GITHUB_RAW_URL=["\']([^"\']+)["\'][ \t]*(?:#.*)?$',
+        texts.get("deploy/docker-deploy.sh", ""),
+    )
+    require(
+        raw_url_assignments
+        == ["https://raw.githubusercontent.com/YLeon2007/sub2api/main/deploy"],
+        "deploy/docker-deploy.sh: exactly one active GITHUB_RAW_URL assignment must be fork-owned",
+        errors,
+    )
+    require(
+        f"Текущий русифицированный релиз: `v{version}`." in texts.get("README_RU.md", ""),
+        f"README_RU.md: current release text must match VERSION {version}",
+        errors,
+    )
+
+    for name in (
+        "docs/ADMIN_PAYMENT_INTEGRATION_API.md",
+        "docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md",
+    ):
+        payment_text = texts.get(name, "")
+        require(
+            "`x-api-key: <ADMIN_API_KEY>`" in payment_text
+            and payment_text.count('-H "x-api-key: <ADMIN_API_KEY>"') >= 3,
+            f"{name}: Admin API header examples must have closed Markdown/shell delimiters",
+            errors,
+        )
+        require(
+            "doc_url" in payment_text
+            and "docs/ADMIN_PAYMENT_INTEGRATION_API.md" in payment_text
+            and "docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md" in payment_text,
+            f"{name}: missing complete documentation URL section",
+            errors,
+        )
+
+    for name in ("README_RU.md", "deploy/README.md", "deploy/README_RU.md"):
+        backup_text = texts.get(name, "")
+        require(
+            "umask 077" in backup_text
+            and "tar --exclude='.env' -czf sub2api-data.tar.gz" in backup_text
+            and "chmod 600" in backup_text
+            and "sub2api-data.tar.gz" in backup_text,
+            f"{name}: backup example must exclude .env and enforce private archive permissions",
+            errors,
+        )
+
+
+def validate_fork_documentation(repo_root: Path, errors: list[str]) -> None:
+    relative_paths = (
+        "README.md",
+        "README_CN.md",
+        "README_JA.md",
+        "README_RU.md",
+        "DEV_GUIDE.md",
+        "deploy/README.md",
+        "deploy/DOCKER.md",
+        "deploy/APPLE_CONTAINER.md",
+        "deploy/docker-deploy.sh",
+        "deploy/apple-container.sh",
+        "deploy/docker-compose.local.yml",
+        "deploy/docker-compose.standalone.yml",
+        "deploy/tests/install-github-token-test.sh",
+        "docs/ADMIN_PAYMENT_INTEGRATION_API.md",
+    )
+    dynamic_document_paths = {
+        str(path.relative_to(repo_root))
+        for path in (
+            list(repo_root.rglob("README*.md"))
+            + list((repo_root / "docs").rglob("*.md"))
+        )
+        if ".git" not in path.parts
+    }
+    all_document_paths = sorted(set(relative_paths) | dynamic_document_paths)
+    validate_fork_documentation_texts(
+        read_text(repo_root / "backend/cmd/server/VERSION"),
+        {name: read_text(repo_root / name) for name in all_document_paths},
+        errors,
+    )
+    validate_russian_document_pairs(repo_root, errors)
+
+
+def russian_docs_counterpart(path: Path) -> Path:
+    """Return the repository convention for a Russian Markdown counterpart."""
+    name = path.name
+    if name.endswith("_RU.md") or name.endswith(".ru.md"):
+        return path
+    if name.endswith("_CN.md"):
+        return path.with_name(f"{name[:-6]}_RU.md")
+    for locale_suffix in (".en.md", ".zh.md"):
+        if name.endswith(locale_suffix):
+            return path.with_name(f"{name[:-len(locale_suffix)]}.ru.md")
+    return path.with_name(f"{path.stem}_RU.md")
+
+
+def validate_russian_document_pairs(repo_root: Path, errors: list[str]) -> None:
+    """Require Russian pairs for every README and human-readable docs Markdown file."""
+    readmes = sorted(repo_root.rglob("README.md"))
+    for source in readmes:
+        if ".git" in source.parts:
+            continue
+        russian = source.with_name("README_RU.md")
+        relative_source = source.relative_to(repo_root)
+        relative_russian = russian.relative_to(repo_root)
+        require(
+            russian.is_file(),
+            f"{relative_source}: missing adjacent Russian copy {relative_russian}",
+            errors,
+        )
+        if not russian.is_file():
+            continue
+        require(
+            "README_RU.md" in read_text(source),
+            f"{relative_source}: missing link to README_RU.md",
+            errors,
+        )
+        require(
+            "README.md" in read_text(russian),
+            f"{relative_russian}: missing link back to README.md",
+            errors,
+        )
+
+    docs_root = repo_root / "docs"
+    for source in sorted(docs_root.rglob("*.md")):
+        if source.name.endswith("_RU.md") or source.name.endswith(".ru.md"):
+            continue
+        russian = russian_docs_counterpart(source)
+        relative_source = source.relative_to(repo_root)
+        relative_russian = russian.relative_to(repo_root)
+        require(
+            russian.is_file(),
+            f"{relative_source}: missing Russian docs counterpart {relative_russian}",
+            errors,
+        )
+        if not russian.is_file() or source.parent.name == "legal":
+            continue
+        require(
+            russian.name in read_text(source),
+            f"{relative_source}: missing link to {relative_russian.name}",
+            errors,
+        )
+        require(
+            source.name in read_text(russian),
+            f"{relative_russian}: missing link back to {relative_source.name}",
+            errors,
+        )
+
+
 def validate_release_identity(
     repo_root: Path,
     errors: list[str],
@@ -764,6 +1073,7 @@ def validate_repo(
         approved_dockerfile_sha256,
     )
     validate_release_identity(repo_root, errors, approved_compose_sha256)
+    validate_fork_documentation(repo_root, errors)
 
     all_workflows = (repo_root / ".github" / "workflows").glob("*.yml")
     for workflow in all_workflows:
@@ -792,6 +1102,211 @@ def self_test() -> None:
     assert disallowed_secret_refs("${{ secrets.PRODUCTION_SSH_KEY }}") == {"PRODUCTION_SSH_KEY"}
     assert write_permissions("permissions:\n  contents: read\n") == set()
     assert write_permissions("permissions:\n  contents: write\n  packages: write\n") == {"contents", "packages"}
+
+    docs_version = "0.1.170-ru.1"
+    docs_image = f"ghcr.io/yleon2007/sub2api:{docs_version}"
+    admin_payment_fixture = (
+        "`x-api-key: <ADMIN_API_KEY>`\n"
+        + '-H "x-api-key: <ADMIN_API_KEY>"\n' * 3
+        + "doc_url\n"
+        + "docs/ADMIN_PAYMENT_INTEGRATION_API.md\n"
+        + "docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md\n"
+    )
+    secure_backup_fixture = (
+        "umask 077\n"
+        "tar --exclude='.env' -czf sub2api-data.tar.gz deployment/\n"
+        "chmod 600 sub2api-data.tar.gz\n"
+    )
+    valid_docs = {
+        "README.md": "English | [中文](README_CN.md) | [日本語](README_JA.md) | [Русский](README_RU.md)",
+        "README_CN.md": "[English](README.md) | 中文 | [日本語](README_JA.md) | [Русский](README_RU.md)",
+        "README_JA.md": "[English](README.md) | [中文](README_CN.md) | 日本語 | [Русский](README_RU.md)",
+        "README_RU.md": (
+            "[English](README.md) | [中文](README_CN.md) | [日本語](README_JA.md) | Русский\n"
+            f"Текущий русифицированный релиз: `v{docs_version}`.\n{docs_image}\n"
+            + secure_backup_fixture
+        ),
+        "deploy/README.md": secure_backup_fixture,
+        "deploy/README_RU.md": secure_backup_fixture,
+        "deploy/docker-compose.local.yml": test_compose(docs_version),
+        "deploy/docker-compose.standalone.yml": test_compose(docs_version),
+        "deploy/apple-container.sh": (
+            f"read_env_value APPLE_CONTAINER_SUB2API_IMAGE {docs_image})\n"
+        ),
+        "deploy/DOCKER.md": docs_image,
+        "deploy/APPLE_CONTAINER.md": docs_image,
+        "deploy/docker-deploy.sh": (
+            'GITHUB_RAW_URL="https://raw.githubusercontent.com/YLeon2007/sub2api/main/deploy"\n'
+        ),
+        "docs/ADMIN_PAYMENT_INTEGRATION_API.md": admin_payment_fixture,
+        "docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md": admin_payment_fixture,
+    }
+    valid_docs_errors: list[str] = []
+    validate_fork_documentation_texts(docs_version, valid_docs, valid_docs_errors)
+    assert not valid_docs_errors
+
+    insecure_backup_docs = dict(valid_docs)
+    insecure_backup_docs["deploy/README.md"] = secure_backup_fixture.replace(
+        "umask 077\n", ""
+    )
+    insecure_backup_errors: list[str] = []
+    validate_fork_documentation_texts(
+        docs_version, insecure_backup_docs, insecure_backup_errors
+    )
+    assert any("backup example" in error for error in insecure_backup_errors)
+
+    stale_url_docs = dict(valid_docs)
+    stale_url_docs["README.md"] += (
+        "\nhttps://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh"
+    )
+    stale_url_errors: list[str] = []
+    validate_fork_documentation_texts(docs_version, stale_url_docs, stale_url_errors)
+    assert any("raw deployment URL owner" in error for error in stale_url_errors)
+
+    for bad_raw_url in (
+        "https://raw.githubusercontent.com/BadActor/sub2api/main/deploy/docker-deploy.sh",
+        "https://raw.githubusercontent.com/BadActor/sub2api/refs/heads/main/deploy/install.sh",
+        "https://raw.githubusercontent.com/BadActor/sub2api/feature/foo/deploy/install.sh",
+        "https://github.com/BadActor/sub2api/raw/main/deploy/install.sh",
+        "https://github.com/BadActor/sub2api/raw/refs/heads/main/deploy/install.sh",
+    ):
+        bad_actor_raw_docs = dict(valid_docs)
+        bad_actor_raw_docs["README.md"] += f"\n{bad_raw_url}\n"
+        bad_actor_raw_errors: list[str] = []
+        validate_fork_documentation_texts(
+            docs_version, bad_actor_raw_docs, bad_actor_raw_errors
+        )
+        assert any("raw deployment URL owner" in error for error in bad_actor_raw_errors)
+
+    no_dot_git_clone_docs = dict(valid_docs)
+    no_dot_git_clone_docs["README.md"] += (
+        "\ngit clone https://github.com/Wei-Shaw/sub2api\n"
+    )
+    no_dot_git_clone_errors: list[str] = []
+    validate_fork_documentation_texts(
+        docs_version, no_dot_git_clone_docs, no_dot_git_clone_errors
+    )
+    assert any("operational clone URL owner" in error for error in no_dot_git_clone_errors)
+
+    bad_actor_clone_docs = dict(valid_docs)
+    bad_actor_clone_docs["README.md"] += (
+        "\ngit clone --depth 1 --branch main \\\n"
+        "  git@github.com:BadActor/sub2api.git\n"
+    )
+    bad_actor_clone_errors: list[str] = []
+    validate_fork_documentation_texts(
+        docs_version, bad_actor_clone_docs, bad_actor_clone_errors
+    )
+    assert any("operational clone URL owner" in error for error in bad_actor_clone_errors)
+
+    global_option_clone_docs = dict(valid_docs)
+    global_option_clone_docs["README.md"] += (
+        "\ngit -c protocol.version=2 clone https://github.com/BadActor/sub2api.git\n"
+    )
+    global_option_clone_errors: list[str] = []
+    validate_fork_documentation_texts(
+        docs_version, global_option_clone_docs, global_option_clone_errors
+    )
+    assert any(
+        "operational clone URL owner" in error for error in global_option_clone_errors
+    )
+
+    for bad_release_url in (
+        "https://github.com/BadActor/sub2api/releases/latest",
+        "https://api.github.com/repos/BadActor/sub2api/releases/latest",
+    ):
+        bad_actor_release_docs = dict(valid_docs)
+        bad_actor_release_docs["README.md"] += f"\n{bad_release_url}\n"
+        bad_actor_release_errors: list[str] = []
+        validate_fork_documentation_texts(
+            docs_version, bad_actor_release_docs, bad_actor_release_errors
+        )
+        assert any("release URL owner" in error for error in bad_actor_release_errors)
+
+    for pipe_command in (
+        "curl -fsSL https://raw.githubusercontent.com/YLeon2007/sub2api/main/deploy/install.sh | sudo bash",
+        "curl -fsSL https://raw.githubusercontent.com/YLeon2007/sub2api/main/deploy/install.sh | sudo -E /bin/bash",
+        "curl -fsSL \\\n  https://raw.githubusercontent.com/YLeon2007/sub2api/main/deploy/install.sh \\\n  | bash",
+        "wget -qO- \\\n  https://raw.githubusercontent.com/YLeon2007/sub2api/main/deploy/install.sh \\\n  | sh",
+    ):
+        pipe_to_shell_docs = dict(valid_docs)
+        pipe_to_shell_docs["README.md"] += f"\n{pipe_command}\n"
+        pipe_to_shell_errors: list[str] = []
+        validate_fork_documentation_texts(
+            docs_version, pipe_to_shell_docs, pipe_to_shell_errors
+        )
+        assert any(
+            "remote script pipe-to-shell" in error for error in pipe_to_shell_errors
+        )
+
+    stale_image_docs = dict(valid_docs)
+    stale_image_docs["deploy/docker-compose.local.yml"] = test_compose("0.1.169-ru.2")
+    stale_image_errors: list[str] = []
+    validate_fork_documentation_texts(docs_version, stale_image_docs, stale_image_errors)
+    assert any("docker-compose.local.yml" in error for error in stale_image_errors)
+
+    false_positive_domain_docs = dict(valid_docs)
+    false_positive_domain_docs["README.md"] += (
+        f"\nhttps://not-ghcr.io/BadActor/sub2api:{docs_version}\n"
+        f"xghcr.io/BadActor/sub2api:{docs_version}\n"
+    )
+    false_positive_domain_errors: list[str] = []
+    validate_fork_documentation_texts(
+        docs_version, false_positive_domain_docs, false_positive_domain_errors
+    )
+    assert not false_positive_domain_errors
+
+    for invalid_image in (
+        "ghcr.io/yleon2007/sub2api:0.1.169-ru.2",
+        "ghcr.io/yleon2007/sub2api:main",
+        "ghcr.io/yleon2007/sub2api:dev",
+        f"ghcr.io/yleon2007/sub2api:{docs_version}-debug",
+        f"ghcr.io/BadActor/sub2api:{docs_version}",
+        "ghcr.io/yleon2007/sub2api",
+        "ghcr.io/BadActor/sub2api",
+        f"ghcr.io/BadActor/sub2api@sha256:{'0' * 64}",
+        "ghcr.io/yleon2007/sub2api@sha256:abcd",
+        "ghcr.io/yleon2007/sub2api:<NEW_RU_VERSION>",
+    ):
+        invalid_image_docs = dict(valid_docs)
+        invalid_image_docs["README_RU.md"] += f"\n{invalid_image}\n"
+        invalid_image_errors: list[str] = []
+        validate_fork_documentation_texts(
+            docs_version, invalid_image_docs, invalid_image_errors
+        )
+        assert any("complete GHCR image token" in error for error in invalid_image_errors)
+
+    placeholder_image_docs = dict(valid_docs)
+    placeholder_image_docs["deploy/README.md"] += (
+        "ghcr.io/yleon2007/sub2api:<NEW_RU_VERSION>\n"
+    )
+    placeholder_image_errors: list[str] = []
+    validate_fork_documentation_texts(
+        docs_version, placeholder_image_docs, placeholder_image_errors
+    )
+    assert not placeholder_image_errors
+
+    digest_image_docs = dict(valid_docs)
+    digest_image_docs["README.md"] += (
+        f"\nghcr.io/yleon2007/sub2api@sha256:{'0' * 64}\n"
+    )
+    digest_image_errors: list[str] = []
+    validate_fork_documentation_texts(
+        docs_version, digest_image_docs, digest_image_errors
+    )
+    assert not digest_image_errors
+
+    comment_only_raw_docs = dict(valid_docs)
+    comment_only_raw_docs["deploy/docker-deploy.sh"] = (
+        '# GITHUB_RAW_URL="https://raw.githubusercontent.com/YLeon2007/sub2api/main/deploy"\n'
+        'GITHUB_RAW_URL="https://example.invalid/deploy"\n'
+    )
+    comment_only_raw_errors: list[str] = []
+    validate_fork_documentation_texts(
+        docs_version, comment_only_raw_docs, comment_only_raw_errors
+    )
+    assert any("active GITHUB_RAW_URL" in error for error in comment_only_raw_errors)
+
     pin_errors: list[str] = []
     assert_actions_pinned("test.yml", "- uses: actions/checkout@v6\n", pin_errors)
     assert pin_errors
@@ -1348,14 +1863,52 @@ jobs:
         )
         (root / "Dockerfile.goreleaser").write_text(fixture_dockerfile, encoding="utf-8")
         fixture_compose = test_compose("0.1.169-ru.2")
-        fixture_legal_urls = test_legal_urls("0.1.169-ru.2")
+        fixture_version = "0.1.169-ru.2"
+        fixture_image = f"ghcr.io/yleon2007/sub2api:{fixture_version}"
+        fixture_legal_urls = test_legal_urls(fixture_version)
         identity_files = {
-            "backend/cmd/server/VERSION": "0.1.169-ru.2\n",
+            "backend/cmd/server/VERSION": f"{fixture_version}\n",
             "deploy/docker-compose.yml": fixture_compose,
-            "deploy/.env.example": "APPLE_CONTAINER_SUB2API_IMAGE=ghcr.io/yleon2007/sub2api:0.1.169-ru.2\n",
+            "deploy/.env.example": f"APPLE_CONTAINER_SUB2API_IMAGE={fixture_image}\n",
             "backend/internal/service/admin_compliance.go": fixture_legal_urls,
             "frontend/src/stores/adminCompliance.ts": fixture_legal_urls,
             "frontend/src/components/admin/AdminComplianceDialog.vue": fixture_legal_urls,
+            "README.md": "English | [中文](README_CN.md) | [日本語](README_JA.md) | [Русский](README_RU.md)\n",
+            "README_CN.md": "[English](README.md) | 中文 | [日本語](README_JA.md) | [Русский](README_RU.md)\n",
+            "README_JA.md": "[English](README.md) | [中文](README_CN.md) | 日本語 | [Русский](README_RU.md)\n",
+            "README_RU.md": (
+                "[English](README.md) | [中文](README_CN.md) | [日本語](README_JA.md) | Русский\n"
+                f"Текущий русифицированный релиз: `v{fixture_version}`.\n{fixture_image}\n"
+                + secure_backup_fixture
+            ),
+            "DEV_GUIDE.md": "Fork repository: YLeon2007/sub2api\n",
+            "deploy/README.md": (
+                "English | [Русский](README_RU.md)\nFork deployment guide\n"
+                + secure_backup_fixture
+            ),
+            "deploy/README_RU.md": (
+                "[English](README.md) | Русский\nРуководство форка\n"
+                + secure_backup_fixture
+            ),
+            "deploy/DOCKER.md": f"{fixture_image}\n",
+            "deploy/APPLE_CONTAINER.md": f"{fixture_image}\n",
+            "deploy/docker-deploy.sh": (
+                'GITHUB_RAW_URL="https://raw.githubusercontent.com/YLeon2007/sub2api/main/deploy"\n'
+            ),
+            "deploy/apple-container.sh": (
+                f"read_env_value APPLE_CONTAINER_SUB2API_IMAGE {fixture_image})\n"
+            ),
+            "deploy/docker-compose.local.yml": fixture_compose,
+            "deploy/docker-compose.standalone.yml": fixture_compose,
+            "deploy/tests/install-github-token-test.sh": "YLeon2007/sub2api\n",
+            "docs/ADMIN_PAYMENT_INTEGRATION_API.md": (
+                "English | [Русский](ADMIN_PAYMENT_INTEGRATION_API_RU.md)\nYLeon2007/sub2api\n"
+                + admin_payment_fixture
+            ),
+            "docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md": (
+                "[English](ADMIN_PAYMENT_INTEGRATION_API.md) | Русский\nYLeon2007/sub2api\n"
+                + admin_payment_fixture
+            ),
         }
         for relative, contents in identity_files.items():
             path = root / relative
