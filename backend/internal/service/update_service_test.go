@@ -69,6 +69,27 @@ func TestUpdateServicePerformUpdateNoUpdateReturnsSentinel(t *testing.T) {
 	require.ErrorIs(t, err, ErrNoUpdateAvailable)
 }
 
+func TestUpdateServiceCheckUpdateOffersFirstRURevisionToOfficialBaseline(t *testing.T) {
+	svc := NewUpdateService(
+		&updateServiceCacheStub{},
+		&updateServiceGitHubClientStub{
+			release: &GitHubRelease{
+				TagName: "v0.1.169-ru.1",
+				Name:    "Sub2API RU 0.1.169-ru.1",
+			},
+		},
+		"0.1.169",
+		"release",
+	)
+
+	info, err := svc.CheckUpdate(context.Background(), true)
+
+	require.NoError(t, err)
+	require.True(t, info.HasUpdate)
+	require.Equal(t, "0.1.169", info.CurrentVersion)
+	require.Equal(t, "0.1.169-ru.1", info.LatestVersion)
+}
+
 func newRollbackTestService(current string, releases []*GitHubRelease) *UpdateService {
 	return NewUpdateService(
 		&updateServiceCacheStub{},
