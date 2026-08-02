@@ -379,6 +379,9 @@ func (s *UpdateService) fetchRollbackCandidates(ctx context.Context) ([]*GitHubR
 		if v == "" || seen[v] {
 			continue
 		}
+		if _, valid := parseVersion(v); !valid {
+			continue
+		}
 		// Only versions strictly older than current (also excludes current itself)
 		if compareVersions(v, s.currentVersion) >= 0 {
 			continue

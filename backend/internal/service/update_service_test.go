@@ -139,6 +139,22 @@ func TestUpdateServiceListRollbackVersionsSortsUnorderedInput(t *testing.T) {
 	require.Equal(t, "0.1.144", versions[2].Version)
 }
 
+func TestUpdateServiceListRollbackVersionsSkipsMalformedTags(t *testing.T) {
+	releases := []*GitHubRelease{
+		{TagName: "not-a-version"},
+		{TagName: "v0.1.168-rc.1"},
+		{TagName: "v0.1.168-ru.0"},
+		{TagName: "v0.1.168-ru.2"},
+	}
+	svc := newRollbackTestService("0.1.169-ru.1", releases)
+
+	versions, err := svc.ListRollbackVersions(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, versions, 1)
+	require.Equal(t, "0.1.168-ru.2", versions[0].Version)
+}
+
 func TestUpdateServiceListRollbackVersionsEmptyWhenNoneOlder(t *testing.T) {
 	releases := []*GitHubRelease{
 		{TagName: "v0.1.147"},
