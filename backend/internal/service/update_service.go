@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -30,7 +31,7 @@ var (
 const (
 	updateCacheKey = "update_check_cache"
 	updateCacheTTL = 1200 // 20 minutes
-	githubRepo     = "Wei-Shaw/sub2api"
+	githubRepo     = "YLeon2007/sub2api"
 
 	// Security: allowed download domains for updates
 	allowedDownloadHost = "github.com"
@@ -378,6 +379,9 @@ func (s *UpdateService) fetchRollbackCandidates(ctx context.Context) ([]*GitHubR
 		if v == "" || seen[v] {
 			continue
 		}
+		if _, valid := parseVersion(v); !valid {
+			continue
+		}
 		// Only versions strictly older than current (also excludes current itself)
 		if compareVersions(v, s.currentVersion) >= 0 {
 			continue
@@ -637,12 +641,26 @@ func (s *UpdateService) saveToCache(ctx context.Context, info *UpdateInfo) {
 	_ = s.cache.SetUpdateInfo(ctx, string(data), time.Duration(updateCacheTTL)*time.Second)
 }
 
-// compareVersions compares two semantic versions
-func compareVersions(current, latest string) int {
-	currentParts := parseVersion(current)
-	latestParts := parseVersion(latest)
+var ruReleaseVersionPattern = regexp.MustCompile(`^v?([0-9]+)\.([0-9]+)\.([0-9]+)(?:-ru\.([0-9]+))?$`)
 
-	for i := 0; i < 3; i++ {
+// compareVersions compares official upstream versions and RU fork revisions.
+// A plain upstream version is treated as RU revision zero, so an installed
+// official 0.1.169 binary can upgrade to 0.1.169-ru.1 through the panel.
+// Malformed release tags are never considered newer than a valid install.
+func compareVersions(current, latest string) int {
+	currentParts, currentValid := parseVersion(current)
+	latestParts, latestValid := parseVersion(latest)
+
+	switch {
+	case currentValid && !latestValid:
+		return 1
+	case !currentValid && latestValid:
+		return -1
+	case !currentValid && !latestValid:
+		return 0
+	}
+
+	for i := 0; i < len(currentParts); i++ {
 		if currentParts[i] < latestParts[i] {
 			return -1
 		}
@@ -653,14 +671,28 @@ func compareVersions(current, latest string) int {
 	return 0
 }
 
-func parseVersion(v string) [3]int {
-	v = strings.TrimPrefix(v, "v")
-	parts := strings.Split(v, ".")
-	result := [3]int{0, 0, 0}
-	for i := 0; i < len(parts) && i < 3; i++ {
-		if parsed, err := strconv.Atoi(parts[i]); err == nil {
-			result[i] = parsed
-		}
+func parseVersion(v string) ([4]int, bool) {
+	matches := ruReleaseVersionPattern.FindStringSubmatch(strings.TrimSpace(v))
+	if matches == nil {
+		return [4]int{}, false
 	}
-	return result
+
+	result := [4]int{}
+	for i := 1; i <= 3; i++ {
+		parsed, err := strconv.Atoi(matches[i])
+		if err != nil {
+			return [4]int{}, false
+		}
+		result[i-1] = parsed
+	}
+
+	if matches[4] != "" {
+		revision, err := strconv.Atoi(matches[4])
+		if err != nil || revision < 1 {
+			return [4]int{}, false
+		}
+		result[3] = revision
+	}
+
+	return result, true
 }

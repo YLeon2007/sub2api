@@ -69,6 +69,27 @@ func TestUpdateServicePerformUpdateNoUpdateReturnsSentinel(t *testing.T) {
 	require.ErrorIs(t, err, ErrNoUpdateAvailable)
 }
 
+func TestUpdateServiceCheckUpdateOffersFirstRURevisionToOfficialBaseline(t *testing.T) {
+	svc := NewUpdateService(
+		&updateServiceCacheStub{},
+		&updateServiceGitHubClientStub{
+			release: &GitHubRelease{
+				TagName: "v0.1.169-ru.1",
+				Name:    "Sub2API RU 0.1.169-ru.1",
+			},
+		},
+		"0.1.169",
+		"release",
+	)
+
+	info, err := svc.CheckUpdate(context.Background(), true)
+
+	require.NoError(t, err)
+	require.True(t, info.HasUpdate)
+	require.Equal(t, "0.1.169", info.CurrentVersion)
+	require.Equal(t, "0.1.169-ru.1", info.LatestVersion)
+}
+
 func newRollbackTestService(current string, releases []*GitHubRelease) *UpdateService {
 	return NewUpdateService(
 		&updateServiceCacheStub{},
@@ -116,6 +137,22 @@ func TestUpdateServiceListRollbackVersionsSortsUnorderedInput(t *testing.T) {
 	require.Equal(t, "0.1.146", versions[0].Version)
 	require.Equal(t, "0.1.145", versions[1].Version)
 	require.Equal(t, "0.1.144", versions[2].Version)
+}
+
+func TestUpdateServiceListRollbackVersionsSkipsMalformedTags(t *testing.T) {
+	releases := []*GitHubRelease{
+		{TagName: "not-a-version"},
+		{TagName: "v0.1.168-rc.1"},
+		{TagName: "v0.1.168-ru.0"},
+		{TagName: "v0.1.168-ru.2"},
+	}
+	svc := newRollbackTestService("0.1.169-ru.1", releases)
+
+	versions, err := svc.ListRollbackVersions(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, versions, 1)
+	require.Equal(t, "0.1.168-ru.2", versions[0].Version)
 }
 
 func TestUpdateServiceListRollbackVersionsEmptyWhenNoneOlder(t *testing.T) {

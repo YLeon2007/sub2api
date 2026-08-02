@@ -108,6 +108,7 @@ import { useAdminComplianceStore, useAppStore, useAuthStore } from '@/stores'
 import { getLocale } from '@/i18n'
 import zhDocument from '../../../../docs/legal/admin-compliance.zh.md?raw'
 import enDocument from '../../../../docs/legal/admin-compliance.en.md?raw'
+import ruDocument from '../../../../docs/legal/admin-compliance.ru.md?raw'
 
 const { t } = useI18n()
 const complianceStore = useAdminComplianceStore()
@@ -124,12 +125,25 @@ marked.setOptions({
 const visible = computed(() => authStore.isAuthenticated && authStore.isAdmin && complianceStore.shouldShow)
 const expectedPhrase = computed(() => complianceStore.expectedPhrase)
 const canSubmit = computed(() => typedPhrase.value.trim() === expectedPhrase.value)
-const currentDocument = computed(() => getLocale() === 'zh' ? zhDocument : enDocument)
-const documentUrl = computed(() => {
-  if (getLocale() === 'zh') {
-    return complianceStore.status?.document_url_zh || 'https://github.com/Wei-Shaw/sub2api/blob/main/docs/legal/admin-compliance.zh.md'
+const currentDocument = computed(() => {
+  const locale = getLocale()
+  if (locale === 'zh') {
+    return zhDocument
   }
-  return complianceStore.status?.document_url_en || 'https://github.com/Wei-Shaw/sub2api/blob/main/docs/legal/admin-compliance.en.md'
+  if (locale === 'ru') {
+    return ruDocument
+  }
+  return enDocument
+})
+const documentUrl = computed(() => {
+  const locale = getLocale()
+  if (locale === 'zh') {
+    return complianceStore.status?.document_url_zh || 'https://github.com/YLeon2007/sub2api/blob/v0.1.170-ru.1/docs/legal/admin-compliance.zh.md'
+  }
+  if (locale === 'ru') {
+    return complianceStore.status?.document_url_ru || 'https://github.com/YLeon2007/sub2api/blob/v0.1.170-ru.1/docs/legal/admin-compliance.ru.md'
+  }
+  return complianceStore.status?.document_url_en || 'https://github.com/YLeon2007/sub2api/blob/v0.1.170-ru.1/docs/legal/admin-compliance.en.md'
 })
 const inputError = computed(() => {
   if (!attemptedSubmit.value || canSubmit.value) {

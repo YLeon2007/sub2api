@@ -651,9 +651,9 @@ import {
 import { useClipboard } from '@/composables/useClipboard'
 import Icon from '@/components/icons/Icon.vue'
 
-const GITHUB_REPO = 'Wei-Shaw/sub2api'
-// Docker Hub image published by CI (tags carry no "v" prefix, e.g. weishaw/sub2api:0.1.146)
-const DOCKER_IMAGE = 'weishaw/sub2api'
+const GITHUB_REPO = 'YLeon2007/sub2api'
+// Versioned GHCR images are published by the RU fork release workflow.
+const DOCKER_IMAGE = 'ghcr.io/yleon2007/sub2api'
 
 const { t } = useI18n()
 
@@ -715,12 +715,14 @@ const scriptRollbackCommand = computed(() => {
 
 const dockerRollbackCommand = computed(() => {
   if (!selectedRollbackVersion.value) return ''
+  const tag = `v${selectedRollbackVersion.value}`
+  const image = `${DOCKER_IMAGE}:${selectedRollbackVersion.value}`
   return [
     `# ${t('version.dockerEditCompose')}`,
-    `image: ${DOCKER_IMAGE}:${selectedRollbackVersion.value}`,
+    `image: ${image}`,
     '',
     `# ${t('version.dockerRecreate')}`,
-    'docker compose up -d'
+    `curl -sSL https://raw.githubusercontent.com/${GITHUB_REPO}/${tag}/deploy/sync-runtime-from-image.sh | sudo bash -s -- ${image} "$(pwd)"`
   ].join('\n')
 })
 

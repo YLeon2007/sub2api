@@ -1,81 +1,188 @@
-name: CI
+name: RU CI
 
 on:
   push:
+    branches:
+      - 'ru/**'
+      - main
   pull_request:
+    branches:
+      - 'ru/**'
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-jobs:
-  shell:
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v6
-      - name: Check deployment scripts
-        run: |
-          /bin/bash -n deploy/apple-container.sh
-          /bin/bash deploy/tests/apple-container-test.sh
-          /bin/sh deploy/tests/docker-compose-security-test.sh
-          /bin/sh deploy/tests/docker-runtime-resources-test.sh
-          /bin/sh deploy/test-caddyfile-cache.sh
+concurrency:
+  group: ru-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-  test:
+jobs:
+  automation-guards:
+    name: Automation guards
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          go-version-file: backend/go.mod
-          check-latest: false
-          cache: true
-          cache-dependency-path: backend/go.sum
-      - name: Verify Go version
+          fetch-depth: 0
+
+      - name: Compile guard scripts
         run: |
-          go version | grep -q 'go1.26.5'
-      - name: Unit tests
-        working-directory: backend
-        run: make test-unit
-      - name: Integration tests
-        working-directory: backend
-        run: make test-integration
+          python -m py_compile \
+            tools/ru_release_guard.py \
+            tools/ru_upstream_sync_report.py \
+            tools/validate_ru_automation.py \
+            tools/check_pnpm_audit_exceptions.py
+
+      - name: Run guard self-tests
+        run: |
+          python tools/ru_release_guard.py --self-test
+          python tools/ru_upstream_sync_report.py --self-test
+          python tools/validate_ru_automation.py --self-test
+
+      - name: Validate RU automation policy
+        run: |
+          python tools/validate_ru_automation.py --repo-root .
+          version="$(tr -d '\r\n' < backend/cmd/server/VERSION)"
+          test -n "$version"
+          python tools/ru_release_guard.py --tag "v${version}" --skip-git
 
   frontend:
+    name: Frontend test, typecheck, build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
-          version: 9
+          version: 10.15.0
+
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '20'
-          cache: 'pnpm'
+          cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile
-      - name: Frontend typecheck and critical vitest
-        run: make test-frontend
 
-  golangci-lint:
+      - name: Lint frontend
+        working-directory: frontend
+        run: pnpm run lint:check
+
+      - name: Typecheck frontend
+        working-directory: frontend
+        run: pnpm run typecheck
+
+      - name: Test frontend
+        working-directory: frontend
+        run: pnpm run test:run
+
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm run build
+
+  backend-unit:
+    name: Backend unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: backend/go.mod
           check-latest: false
           cache: true
           cache-dependency-path: backend/go.sum
-      - name: Verify Go version
+
+      - name: Verify Go version from go.mod
         run: |
-          go version | grep -q 'go1.26.5'
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
+          expected="go$(awk '/^go / {print $2; exit}' backend/go.mod)"
+          actual="$(go env GOVERSION)"
+          test "$actual" = "$expected"
+
+      - name: Run backend unit tests
+        working-directory: backend
+        run: make test-unit
+
+  security:
+    name: Security validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          version: v2.9
-          args: --timeout=30m
-          working-directory: backend
+          go-version-file: backend/go.mod
+          check-latest: false
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Run govulncheck
+        working-directory: backend
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+          govulncheck ./...
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: 10.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Run pnpm audit
+        working-directory: frontend
+        run: |
+          pnpm audit --prod --audit-level=high --json > audit.json || true
+
+      - name: Check audit exceptions
+        run: |
+          python tools/check_pnpm_audit_exceptions.py \
+            --audit frontend/audit.json \
+            --exceptions .github/audit-exceptions.yml
+
+  release-validation:
+    name: Release validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate release guard and workflow policy
+        run: |
+          python tools/ru_release_guard.py --self-test
+          version="$(tr -d '\r\n' < backend/cmd/server/VERSION)"
+          test -n "$version"
+          python tools/ru_release_guard.py --tag "v${version}" --skip-git
+          python tools/validate_ru_automation.py --repo-root .
