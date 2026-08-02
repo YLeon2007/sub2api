@@ -46,7 +46,9 @@ jobs:
       - name: Validate RU automation policy
         run: |
           python tools/validate_ru_automation.py --repo-root .
-          python tools/ru_release_guard.py --tag v0.1.169-ru.1 --skip-git
+          version="$(tr -d '\r\n' < backend/cmd/server/VERSION)"
+          test -n "$version"
+          python tools/ru_release_guard.py --tag "v${version}" --skip-git
 
   frontend:
     name: Frontend test, typecheck, build
@@ -180,5 +182,7 @@ jobs:
       - name: Validate release guard and workflow policy
         run: |
           python tools/ru_release_guard.py --self-test
-          python tools/ru_release_guard.py --tag v0.1.169-ru.1 --skip-git
+          version="$(tr -d '\r\n' < backend/cmd/server/VERSION)"
+          test -n "$version"
+          python tools/ru_release_guard.py --tag "v${version}" --skip-git
           python tools/validate_ru_automation.py --repo-root .

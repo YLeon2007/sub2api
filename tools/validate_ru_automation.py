@@ -78,6 +78,39 @@ def assert_actions_pinned(name: str, text: str, errors: list[str]) -> None:
     require(not unpinned, f"{name}: actions must use full commit SHAs, found {unpinned}", errors)
 
 
+def ci_release_guard_tag_values(text: str) -> list[str]:
+    active_text = "\n".join(
+        line for line in text.splitlines() if not line.lstrip().startswith("#")
+    )
+    logical_text = re.sub(r"\\\s*\n\s*", " ", active_text)
+    values: list[str] = []
+    for line in logical_text.splitlines():
+        if "ru_release_guard" not in line:
+            continue
+        try:
+            tokens = shlex.split(line, comments=True, posix=True)
+        except ValueError:
+            values.append("")
+            continue
+        script_indexes = [
+            index
+            for index, token in enumerate(tokens)
+            if token in {"tools/ru_release_guard.py", "tools.ru_release_guard"}
+        ]
+        for script_index in script_indexes:
+            command_tokens: list[str] = []
+            for token in tokens[script_index + 1 :]:
+                if token in {";", "&&", "||", "|"}:
+                    break
+                command_tokens.append(token)
+            for index, token in enumerate(command_tokens):
+                if token == "--tag":
+                    values.append(command_tokens[index + 1] if index + 1 < len(command_tokens) else "")
+                elif token.startswith("--tag="):
+                    values.append(token.split("=", 1)[1])
+    return values
+
+
 def validate_ci(text: str, errors: list[str]) -> None:
     assert_no_production_secrets("backend-ci.yml", text, errors)
     writes = write_permissions(text)
@@ -91,6 +124,48 @@ def validate_ci(text: str, errors: list[str]) -> None:
     require("check_pnpm_audit_exceptions.py" in text, "backend-ci.yml: missing pnpm audit exception gate", errors)
     require("ru_release_guard.py --self-test" in text, "backend-ci.yml: missing release guard self-test", errors)
     require("validate_ru_automation.py" in text, "backend-ci.yml: missing workflow automation guard", errors)
+    active_text = "\n".join(
+        line for line in text.splitlines() if not line.lstrip().startswith("#")
+    )
+    version_assignment = re.compile(
+        r'''^\s*version="\$\(tr -d '\\r\\n' < backend/cmd/server/VERSION\)"\s*$''',
+        re.M,
+    )
+    derived_invocation = re.compile(
+        r'''^\s*python\s+tools/ru_release_guard\.py\s+--tag\s+"v\$\{version\}"\s+--skip-git\s*$''',
+        re.M,
+    )
+
+    job_blocks: dict[str, str] = {}
+    for job_name in ("automation-guards", "release-validation"):
+        start = re.search(rf"^  {re.escape(job_name)}:\s*$", text, re.M)
+        if start is None:
+            job_blocks[job_name] = ""
+            continue
+        next_job = re.search(r"^  [A-Za-z0-9_-]+:\s*$", text[start.end() :], re.M)
+        end = start.end() + next_job.start() if next_job else len(text)
+        job_blocks[job_name] = text[start.end() : end]
+    for job_name, block in job_blocks.items():
+        active_block = "\n".join(
+            line for line in block.splitlines() if not line.lstrip().startswith("#")
+        )
+        require(
+            len(version_assignment.findall(active_block)) == 1
+            and len(derived_invocation.findall(active_block)) == 1,
+            f"backend-ci.yml: {job_name} must derive exactly one release guard tag from VERSION",
+            errors,
+        )
+    tag_values = ci_release_guard_tag_values(active_text)
+    require(
+        len(tag_values) == 2,
+        "backend-ci.yml: expected exactly two active release guard tag invocations",
+        errors,
+    )
+    require(
+        not any(value.startswith("v") and RU_VERSION_RE.fullmatch(value[1:]) for value in tag_values),
+        "backend-ci.yml: hardcoded RU release guard tag is forbidden",
+        errors,
+    )
 
 
 def validate_release_workflow(text: str, errors: list[str]) -> None:
@@ -1067,6 +1142,77 @@ jobs:
     assert any("read-only Go module graph" in error for error in unsafe_release_errors)
     assert any("binary identity" in error for error in unsafe_release_errors)
 
+    def ci_policy_fixture(
+        automation_command: str,
+        release_command: str,
+        automation_assignment: str = "version=\"$(tr -d '\\r\\n' < backend/cmd/server/VERSION)\"",
+        release_assignment: str = "version=\"$(tr -d '\\r\\n' < backend/cmd/server/VERSION)\"",
+    ) -> str:
+        return f"""permissions:
+  contents: read
+jobs:
+  automation-guards:
+    steps:
+      - run: python tools/ru_release_guard.py --self-test
+      - run: python tools/validate_ru_automation.py --repo-root .
+      - run: |
+          {automation_assignment}
+          {automation_command}
+  release-validation:
+    steps:
+      - run: |
+          {release_assignment}
+          {release_command}
+  frontend:
+    steps:
+      - run: pnpm run typecheck && pnpm run test:run && pnpm run build
+  backend:
+    steps:
+      - run: make test-unit && govulncheck ./...
+      - run: python tools/check_pnpm_audit_exceptions.py
+"""
+
+    derived_ci_command = 'python tools/ru_release_guard.py --tag "v${version}" --skip-git'
+    for stale_command in (
+        'python tools/ru_release_guard.py --tag "v0.1.169-ru.1" --skip-git',
+        "python tools/ru_release_guard.py --tag 'v0.1.169-ru.1' --skip-git",
+        "python tools/ru_release_guard.py --tag=v0.1.169-ru.1 --skip-git",
+    ):
+        hardcoded_ci_tag_errors: list[str] = []
+        validate_ci(
+            ci_policy_fixture(stale_command, derived_ci_command),
+            hardcoded_ci_tag_errors,
+        )
+        assert any("automation-guards" in error for error in hardcoded_ci_tag_errors)
+        assert any("hardcoded RU release guard tag is forbidden" in error for error in hardcoded_ci_tag_errors)
+    for extra_stale_command in (
+        'python tools/ru_release_guard.py --skip-git --tag "v0.1.169-ru.1"',
+        "python tools/ru_release_guard.py --skip-git \\\n            --tag 'v0.1.169-ru.1'",
+    ):
+        reordered_ci_tag_errors: list[str] = []
+        validate_ci(
+            ci_policy_fixture(
+                derived_ci_command + "\n          " + extra_stale_command,
+                derived_ci_command,
+            ),
+            reordered_ci_tag_errors,
+        )
+        assert any("exactly two active" in error for error in reordered_ci_tag_errors)
+        assert any("hardcoded RU release guard tag is forbidden" in error for error in reordered_ci_tag_errors)
+    comment_only_ci_errors: list[str] = []
+    validate_ci(
+        ci_policy_fixture(
+            'python tools/ru_release_guard.py --tag "v0.1.169-ru.1" --skip-git',
+            derived_ci_command,
+            automation_assignment="# version=\"$(tr -d '\\r\\n' < backend/cmd/server/VERSION)\"",
+        ),
+        comment_only_ci_errors,
+    )
+    assert any("automation-guards" in error for error in comment_only_ci_errors)
+    missing_job_ci_errors: list[str] = []
+    validate_ci(ci_policy_fixture(derived_ci_command, ""), missing_job_ci_errors)
+    assert any("release-validation" in error for error in missing_job_ci_errors)
+
     with tempfile.TemporaryDirectory(prefix="ru-automation-guard-") as tmp:
         root = Path(tmp)
         workflow_dir = root / ".github" / "workflows"
@@ -1076,10 +1222,18 @@ jobs:
 permissions:
   contents: read
 jobs:
-  guard:
+  automation-guards:
     steps:
       - run: python tools/ru_release_guard.py --self-test
       - run: python tools/validate_ru_automation.py --repo-root .
+      - run: |
+          version="$(tr -d '\\r\\n' < backend/cmd/server/VERSION)"
+          python tools/ru_release_guard.py --tag "v${version}" --skip-git
+  release-validation:
+    steps:
+      - run: |
+          version="$(tr -d '\\r\\n' < backend/cmd/server/VERSION)"
+          python tools/ru_release_guard.py --tag "v${version}" --skip-git
   frontend:
     steps:
       - run: pnpm run typecheck
