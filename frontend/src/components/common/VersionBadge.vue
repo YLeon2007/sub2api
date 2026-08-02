@@ -715,12 +715,14 @@ const scriptRollbackCommand = computed(() => {
 
 const dockerRollbackCommand = computed(() => {
   if (!selectedRollbackVersion.value) return ''
+  const tag = `v${selectedRollbackVersion.value}`
+  const image = `${DOCKER_IMAGE}:${selectedRollbackVersion.value}`
   return [
     `# ${t('version.dockerEditCompose')}`,
-    `image: ${DOCKER_IMAGE}:${selectedRollbackVersion.value}`,
+    `image: ${image}`,
     '',
     `# ${t('version.dockerRecreate')}`,
-    'docker compose up -d'
+    `curl -sSL https://raw.githubusercontent.com/${GITHUB_REPO}/${tag}/deploy/sync-runtime-from-image.sh | sudo bash -s -- ${image} "$(pwd)"`
   ].join('\n')
 })
 

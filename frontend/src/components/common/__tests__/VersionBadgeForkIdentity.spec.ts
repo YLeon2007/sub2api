@@ -14,4 +14,8 @@ describe('RU fork update and rollback identity', () => {
     expect(source).toContain("const DOCKER_IMAGE = 'ghcr.io/yleon2007/sub2api'")
     expect(source).not.toContain("const DOCKER_IMAGE = 'weishaw/sub2api'")
   })
+
+  it('syncs the selected image into the persistent runtime volume', () => {
+    expect(source).toContain('sync-runtime-from-image.sh')
+  })
 })
