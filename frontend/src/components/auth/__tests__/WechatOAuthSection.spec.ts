@@ -12,6 +12,7 @@ const routeState = vi.hoisted(() => ({
 const locationState = vi.hoisted(() => ({
   current: { href: 'http://localhost/login' } as { href: string },
 }))
+const localeRef = vi.hoisted(() => ({ value: 'en' }))
 
 let pinia: ReturnType<typeof createPinia>
 
@@ -24,7 +25,7 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
-      locale: { value: 'en' },
+      locale: localeRef,
       t: (key: string, params?: Record<string, string>) => {
         if (key === 'auth.wechatProviderName') {
           return 'Mock WeChat'
@@ -105,6 +106,7 @@ describe('WechatOAuthSection', () => {
     setActivePinia(pinia)
     routeState.query = { redirect: '/billing?plan=pro' }
     locationState.current = { href: 'http://localhost/login' }
+    localeRef.value = 'en'
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: locationState.current,
@@ -234,5 +236,23 @@ describe('WechatOAuthSection', () => {
     })
 
     expect(wrapper.text()).toContain('MOCK-NOT-CONFIGURED')
+  })
+
+  it('shows the native-app-only hint in Russian for the Russian locale', () => {
+    localeRef.value = 'ru'
+    seedPublicSettings({
+      wechat_oauth_open_enabled: false,
+      wechat_oauth_mp_enabled: false,
+      wechat_oauth_mobile_enabled: true,
+    })
+
+    const wrapper = mount(WechatOAuthSection, {
+      global: { plugins: [pinia] },
+    })
+
+    expect(wrapper.get('[data-testid="wechat-oauth-hint"]').text()).toContain(
+      'Продолжите в нативном приложении через WeChat SDK',
+    )
+    expect(wrapper.text()).not.toContain('This site only has WeChat mobile app login configured')
   })
 })
