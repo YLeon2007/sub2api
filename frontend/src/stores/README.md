@@ -1,197 +1,84 @@
-# Pinia Stores Documentation
+# Pinia stores
 
-This directory contains all Pinia stores for the Sub2API frontend application.
+English | [Русский](README_RU.md)
 
-## Stores Overview
+The public store exports are defined in [`index.ts`](index.ts).
 
-### 1. Auth Store (`auth.ts`)
+## Stores
 
-Manages user authentication state, login/logout, and token persistence.
+| Export | Responsibility |
+|---|---|
+| `useAuthStore` | Access/refresh tokens, user, run mode, login/register/passkey/TOTP, OAuth token adoption, logout and pending auth sessions |
+| `useAppStore` | Desktop/mobile navigation, loading counter, toasts, public settings/branding and version/update cache |
+| `useAdminSettingsStore` | Cached admin settings and custom menu items |
+| `useSubscriptionStore` | User subscription state with request caching/deduplication |
+| `useOnboardingStore` | Onboarding tour callbacks and state |
+| `useAnnouncementStore` | User announcements and throttled refresh |
+| `usePaymentStore` | Payment configuration, orders and subscription plans |
+| `useAdminComplianceStore` | Admin compliance status and acknowledgment gate |
 
-**State:**
+Types such as `User`, `LoginRequest`, `Toast` and `ToastType` are re-exported for convenience.
 
-- `user: User | null` - Current authenticated user
-- `token: string | null` - JWT authentication token
+## Auth store
 
-**Computed:**
+Public state/computed values:
 
-- `isAuthenticated: boolean` - Whether user is currently authenticated
+- `user`, `token`, read-only `runMode`, read-only `pendingAuthSession`;
+- `isAuthenticated`, `isAdmin`, `isSimpleMode`, `hasPendingAuthSession`.
 
-**Actions:**
+Public actions:
 
-- `login(credentials)` - Authenticate user with username/password
-- `register(userData)` - Register new user account
-- `logout()` - Clear authentication and logout
-- `checkAuth()` - Restore session from localStorage
-- `refreshUser()` - Fetch latest user data from server
+- `login`, `login2FA`, `loginWithPasskey`, `register`;
+- `setToken` for callback flows;
+- `logout`, `checkAuth`, `refreshUser`;
+- `setPendingAuthSession`, `clearPendingAuthSession`.
 
-### 2. App Store (`app.ts`)
+`login()` may return a TOTP-required response without establishing the authenticated state. `logout()` attempts server-side refresh-token revocation but always clears the local session in `finally`.
 
-Manages global UI state including sidebar, loading indicators, and toast notifications.
-
-**State:**
-
-- `sidebarCollapsed: boolean` - Sidebar collapsed state
-- `loading: boolean` - Global loading state
-- `toasts: Toast[]` - Active toast notifications
-
-**Computed:**
-
-- `hasActiveToasts: boolean` - Whether any toasts are active
-
-**Actions:**
-
-- `toggleSidebar()` - Toggle sidebar state
-- `setSidebarCollapsed(collapsed)` - Set sidebar state explicitly
-- `setLoading(isLoading)` - Set loading state
-- `showToast(type, message, duration?)` - Show toast notification
-- `showSuccess(message, duration?)` - Show success toast
-- `showError(message, duration?)` - Show error toast
-- `showInfo(message, duration?)` - Show info toast
-- `showWarning(message, duration?)` - Show warning toast
-- `hideToast(id)` - Hide specific toast
-- `clearAllToasts()` - Clear all toasts
-- `withLoading(operation)` - Execute async operation with loading state
-- `withLoadingAndError(operation, errorMessage?)` - Execute with loading and error handling
-- `reset()` - Reset store to defaults
-
-## Usage Examples
-
-### Auth Store
-
-```typescript
-import { useAuthStore } from '@/stores'
-
-// In component setup
+```ts
 const authStore = useAuthStore()
-
-// Initialize on app startup
 authStore.checkAuth()
 
-// Login
-try {
-  await authStore.login({ username: 'user', password: 'pass' })
-  console.log('Logged in:', authStore.user)
-} catch (error) {
-  console.error('Login failed:', error)
-}
-
-// Check authentication
+const result = await authStore.login({ email, password })
 if (authStore.isAuthenticated) {
-  console.log('User is logged in:', authStore.user?.username)
+  await router.push('/dashboard')
 }
-
-// Logout
-authStore.logout()
 ```
 
-### App Store
+## App store
 
-```typescript
-import { useAppStore } from '@/stores'
+The app store includes:
 
-// In component setup
+- desktop/mobile sidebar state and scroll position;
+- reference-counted global loading;
+- `showToast`, `showSuccess`, `showError`, `showInfo`, `showWarning`;
+- `withLoading` and `withLoadingAndError`;
+- version/update cache via `fetchVersion`;
+- public settings, branding, backend-mode state and injected-config initialization.
+
+```ts
 const appStore = useAppStore()
-
-// Sidebar control
-appStore.toggleSidebar()
-appStore.setSidebarCollapsed(true)
-
-// Loading state
-appStore.setLoading(true)
-// ... do work
-appStore.setLoading(false)
-
-// Or use helper
-await appStore.withLoading(async () => {
-  const data = await fetchData()
-  return data
-})
-
-// Toast notifications
-appStore.showSuccess('Operation completed!')
-appStore.showError('Something went wrong!', 5000)
-appStore.showInfo('FYI: This is informational')
-appStore.showWarning('Be careful!')
-
-// Custom toast
-const toastId = appStore.showToast('info', 'Custom message', undefined) // No auto-dismiss
-// Later...
-appStore.hideToast(toastId)
+await appStore.withLoading(async () => saveForm())
+appStore.showSuccess('Saved')
 ```
 
-### Combined Usage in Vue Component
+## Persistence and security
 
-```vue
-<script setup lang="ts">
-import { useAuthStore, useAppStore } from '@/stores'
-import { onMounted } from 'vue'
+The auth store persists these keys in `localStorage`:
 
-const authStore = useAuthStore()
-const appStore = useAppStore()
+- `auth_token`, `auth_user`, `refresh_token`, `token_expires_at`;
+- `pending_auth_session` for incomplete third-party flows.
 
-onMounted(() => {
-  // Check for existing session
-  authStore.checkAuth()
-})
+It refreshes user data periodically and schedules token refresh before expiry. `localStorage` is readable by JavaScript running in the origin, so XSS prevention and strict control of third-party scripts are security requirements; do not describe this storage as inherently secure.
 
-async function handleLogin(username: string, password: string) {
-  try {
-    await appStore.withLoading(async () => {
-      await authStore.login({ username, password })
-    })
-    appStore.showSuccess('Welcome back!')
-  } catch (error) {
-    appStore.showError('Login failed. Please check your credentials.')
-  }
-}
-
-async function handleLogout() {
-  authStore.logout()
-  appStore.showInfo('You have been logged out.')
-}
-</script>
-
-<template>
-  <div>
-    <button @click="appStore.toggleSidebar">Toggle Sidebar</button>
-
-    <div v-if="appStore.loading">Loading...</div>
-
-    <div v-if="authStore.isAuthenticated">
-      Welcome, {{ authStore.user?.username }}!
-      <button @click="handleLogout">Logout</button>
-    </div>
-    <div v-else>
-      <button @click="handleLogin('user', 'pass')">Login</button>
-    </div>
-  </div>
-</template>
-```
-
-## Persistence
-
-- **Auth Store**: Token and user data are automatically persisted to `localStorage`
-  - Keys: `auth_token`, `auth_user`
-  - Restored on `checkAuth()` call
-- **App Store**: No persistence (UI state resets on page reload)
-
-## TypeScript Support
-
-All stores are fully typed with TypeScript. Import types from `@/types`:
-
-```typescript
-import type { User, Toast, ToastType } from '@/types'
-```
+Most app UI state is not persisted. Public settings/version data are runtime caches and may be initialized from `window.__APP_CONFIG__`.
 
 ## Testing
 
-Stores can be reset to initial state:
-
-```typescript
-// Auth store
-authStore.logout() // Clears all auth state
-
-// App store
-appStore.reset() // Resets to defaults
+```bash
+cd frontend
+pnpm test -- src/stores/__tests__/
+pnpm typecheck
 ```
+
+Use a fresh Pinia in tests. When the public return API or barrel exports change, update tests and both README languages together.

@@ -17,10 +17,13 @@ const (
 	AdminComplianceVersion        = "v2026.06.10"
 	AdminComplianceDocumentPathZH = "docs/legal/admin-compliance.zh.md"
 	AdminComplianceDocumentPathEN = "docs/legal/admin-compliance.en.md"
-	AdminComplianceDocumentURLZH  = "https://github.com/Wei-Shaw/sub2api/blob/main/docs/legal/admin-compliance.zh.md"
-	AdminComplianceDocumentURLEN  = "https://github.com/Wei-Shaw/sub2api/blob/main/docs/legal/admin-compliance.en.md"
+	AdminComplianceDocumentPathRU = "docs/legal/admin-compliance.ru.md"
+	AdminComplianceDocumentURLZH  = "https://github.com/YLeon2007/sub2api/blob/v0.1.171-ru.1/docs/legal/admin-compliance.zh.md"
+	AdminComplianceDocumentURLEN  = "https://github.com/YLeon2007/sub2api/blob/v0.1.171-ru.1/docs/legal/admin-compliance.en.md"
+	AdminComplianceDocumentURLRU  = "https://github.com/YLeon2007/sub2api/blob/v0.1.171-ru.1/docs/legal/admin-compliance.ru.md"
 	AdminComplianceAckPhraseZH    = "我已阅读、理解并同意 Sub2API 部署与运营合规承诺"
 	AdminComplianceAckPhraseEN    = "I have read, understood, and agree to the Sub2API Deployment and Operation Compliance Commitment"
+	AdminComplianceAckPhraseRU    = "Я прочитал, понял и принимаю обязательство по соблюдению требований при развёртывании и эксплуатации Sub2API"
 
 	settingKeyAdminComplianceAcknowledgement = "admin_compliance_acknowledgement"
 )
@@ -41,6 +44,7 @@ type AdminComplianceAcknowledgement struct {
 	Version     string    `json:"version"`
 	DocumentZH  string    `json:"document_zh"`
 	DocumentEN  string    `json:"document_en"`
+	DocumentRU  string    `json:"document_ru,omitempty"`
 	AdminUserID int64     `json:"admin_user_id"`
 	IPAddress   string    `json:"ip_address,omitempty"`
 	UserAgent   string    `json:"user_agent,omitempty"`
@@ -52,10 +56,13 @@ type AdminComplianceStatus struct {
 	Version         string                          `json:"version"`
 	DocumentPathZH  string                          `json:"document_path_zh"`
 	DocumentPathEN  string                          `json:"document_path_en"`
+	DocumentPathRU  string                          `json:"document_path_ru"`
 	DocumentURLZH   string                          `json:"document_url_zh"`
 	DocumentURLEN   string                          `json:"document_url_en"`
+	DocumentURLRU   string                          `json:"document_url_ru"`
 	AckPhraseZH     string                          `json:"ack_phrase_zh"`
 	AckPhraseEN     string                          `json:"ack_phrase_en"`
+	AckPhraseRU     string                          `json:"ack_phrase_ru"`
 	Acknowledgement *AdminComplianceAcknowledgement `json:"acknowledgement,omitempty"`
 }
 
@@ -72,12 +79,18 @@ func normalizeAdminComplianceLanguage(raw string) string {
 	if strings.HasPrefix(raw, "zh") {
 		return "zh"
 	}
+	if strings.HasPrefix(raw, "ru") {
+		return "ru"
+	}
 	return "en"
 }
 
 func expectedAdminCompliancePhrase(language string) string {
-	if normalizeAdminComplianceLanguage(language) == "zh" {
+	switch normalizeAdminComplianceLanguage(language) {
+	case "zh":
 		return AdminComplianceAckPhraseZH
+	case "ru":
+		return AdminComplianceAckPhraseRU
 	}
 	return AdminComplianceAckPhraseEN
 }
@@ -95,10 +108,13 @@ func (s *SettingService) GetAdminComplianceStatus(ctx context.Context, adminUser
 		Version:        AdminComplianceVersion,
 		DocumentPathZH: AdminComplianceDocumentPathZH,
 		DocumentPathEN: AdminComplianceDocumentPathEN,
+		DocumentPathRU: AdminComplianceDocumentPathRU,
 		DocumentURLZH:  AdminComplianceDocumentURLZH,
 		DocumentURLEN:  AdminComplianceDocumentURLEN,
+		DocumentURLRU:  AdminComplianceDocumentURLRU,
 		AckPhraseZH:    AdminComplianceAckPhraseZH,
 		AckPhraseEN:    AdminComplianceAckPhraseEN,
+		AckPhraseRU:    AdminComplianceAckPhraseRU,
 	}
 	if s == nil || s.settingRepo == nil {
 		return status, nil
@@ -144,6 +160,7 @@ func (s *SettingService) AcceptAdminCompliance(ctx context.Context, input AdminC
 		Version:     AdminComplianceVersion,
 		DocumentZH:  AdminComplianceDocumentPathZH,
 		DocumentEN:  AdminComplianceDocumentPathEN,
+		DocumentRU:  AdminComplianceDocumentPathRU,
 		AdminUserID: input.AdminUserID,
 		IPAddress:   strings.TrimSpace(input.IPAddress),
 		UserAgent:   strings.TrimSpace(input.UserAgent),
