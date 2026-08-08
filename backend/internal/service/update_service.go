@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -30,7 +31,7 @@ var (
 const (
 	updateCacheKey = "update_check_cache"
 	updateCacheTTL = 1200 // 20 minutes
-	githubRepo     = "Wei-Shaw/sub2api"
+	githubRepo     = "YLeon2007/sub2api"
 
 	// Security: allowed download domains for updates
 	allowedDownloadHost = "github.com"
@@ -172,39 +173,26 @@ func (s *UpdateService) PerformUpdate(ctx context.Context) error {
 		return ErrNoUpdateAvailable
 	}
 
-	return s.applyReleaseAssets(ctx, info.ReleaseInfo.Assets)
+	return s.applyReleaseAssets(ctx, info.LatestVersion, info.ReleaseInfo.Assets)
 }
 
 // applyReleaseAssets downloads the platform archive from the given release assets,
 // verifies its checksum, and atomically swaps the running binary.
 // Shared by PerformUpdate (latest) and RollbackToVersion (specific older version).
-func (s *UpdateService) applyReleaseAssets(ctx context.Context, releaseAssets []Asset) error {
-	// Find matching archive and checksum for current platform
-	archiveName := s.getArchiveName()
-	var downloadURL string
-	var checksumURL string
-
-	for _, asset := range releaseAssets {
-		if strings.Contains(asset.Name, archiveName) && !strings.HasSuffix(asset.Name, ".txt") {
-			downloadURL = asset.DownloadURL
-		}
-		if asset.Name == "checksums.txt" {
-			checksumURL = asset.DownloadURL
-		}
+func (s *UpdateService) applyReleaseAssets(ctx context.Context, version string, releaseAssets []Asset) error {
+	archive, checksum, err := selectReleaseAssets(version, runtime.GOOS, runtime.GOARCH, releaseAssets)
+	if err != nil {
+		return err
 	}
-
-	if downloadURL == "" {
-		return fmt.Errorf("no compatible release found for %s/%s", runtime.GOOS, runtime.GOARCH)
-	}
+	downloadURL := archive.DownloadURL
+	checksumURL := checksum.DownloadURL
 
 	// SECURITY: Validate download URL is from trusted domain
 	if err := validateDownloadURL(downloadURL); err != nil {
 		return fmt.Errorf("invalid download URL: %w", err)
 	}
-	if checksumURL != "" {
-		if err := validateDownloadURL(checksumURL); err != nil {
-			return fmt.Errorf("invalid checksum URL: %w", err)
-		}
+	if err := validateDownloadURL(checksumURL); err != nil {
+		return fmt.Errorf("invalid checksum URL: %w", err)
 	}
 
 	// Get current executable path
@@ -228,16 +216,14 @@ func (s *UpdateService) applyReleaseAssets(ctx context.Context, releaseAssets []
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Download archive
-	archivePath := filepath.Join(tempDir, filepath.Base(downloadURL))
+	archivePath := filepath.Join(tempDir, archive.Name)
 	if err := s.downloadFile(ctx, downloadURL, archivePath); err != nil {
 		return fmt.Errorf("download failed: %w", err)
 	}
 
-	// Verify checksum if available
-	if checksumURL != "" {
-		if err := s.verifyChecksum(ctx, archivePath, checksumURL); err != nil {
-			return fmt.Errorf("checksum verification failed: %w", err)
-		}
+	// A release checksum is mandatory: never install an unverified archive.
+	if err := s.verifyChecksum(ctx, archivePath, checksumURL); err != nil {
+		return fmt.Errorf("checksum verification failed: %w", err)
 	}
 
 	// Extract binary from archive
@@ -357,7 +343,7 @@ func (s *UpdateService) RollbackToVersion(ctx context.Context, version string) e
 		}
 	}
 
-	return s.applyReleaseAssets(ctx, assets)
+	return s.applyReleaseAssets(ctx, target, assets)
 }
 
 // fetchRollbackCandidates fetches recent releases and keeps the newest
@@ -376,6 +362,9 @@ func (s *UpdateService) fetchRollbackCandidates(ctx context.Context) ([]*GitHubR
 		}
 		v := strings.TrimPrefix(r.TagName, "v")
 		if v == "" || seen[v] {
+			continue
+		}
+		if _, valid := parseVersion(v); !valid {
 			continue
 		}
 		// Only versions strictly older than current (also excludes current itself)
@@ -436,10 +425,40 @@ func (s *UpdateService) downloadFile(ctx context.Context, downloadURL, dest stri
 	return s.githubClient.DownloadFile(ctx, downloadURL, dest, maxDownloadSize)
 }
 
-func (s *UpdateService) getArchiveName() string {
-	osName := runtime.GOOS
-	arch := runtime.GOARCH
-	return fmt.Sprintf("%s_%s", osName, arch)
+func expectedReleaseArchiveName(version, goos, goarch string) (string, error) {
+	if _, valid := parseVersion(version); !valid {
+		return "", fmt.Errorf("invalid release version %q", version)
+	}
+	extension := ".tar.gz"
+	if goos == "windows" {
+		extension = ".zip"
+	}
+	return fmt.Sprintf("sub2api_%s_%s_%s%s", version, goos, goarch, extension), nil
+}
+
+func selectReleaseAssets(version, goos, goarch string, assets []Asset) (Asset, Asset, error) {
+	expectedArchive, err := expectedReleaseArchiveName(version, goos, goarch)
+	if err != nil {
+		return Asset{}, Asset{}, err
+	}
+
+	archives := make([]Asset, 0, 1)
+	checksums := make([]Asset, 0, 1)
+	for _, asset := range assets {
+		switch asset.Name {
+		case expectedArchive:
+			archives = append(archives, asset)
+		case "checksums.txt":
+			checksums = append(checksums, asset)
+		}
+	}
+	if len(archives) != 1 {
+		return Asset{}, Asset{}, fmt.Errorf("expected exactly one archive %q, found %d", expectedArchive, len(archives))
+	}
+	if len(checksums) != 1 {
+		return Asset{}, Asset{}, fmt.Errorf("expected exactly one checksums.txt, found %d", len(checksums))
+	}
+	return archives[0], checksums[0], nil
 }
 
 // validateDownloadURL checks if the URL is from an allowed domain
@@ -488,21 +507,38 @@ func (s *UpdateService) verifyChecksum(ctx context.Context, filePath, checksumUR
 	}
 	actualHash := hex.EncodeToString(h.Sum(nil))
 
-	// Find expected hash in checksums file
 	fileName := filepath.Base(filePath)
+	expectedHash, err := expectedChecksumForFile(checksumData, fileName)
+	if err != nil {
+		return err
+	}
+	if expectedHash != actualHash {
+		return fmt.Errorf("checksum mismatch: expected %s, got %s", expectedHash, actualHash)
+	}
+	return nil
+}
+
+func expectedChecksumForFile(checksumData []byte, fileName string) (string, error) {
+	matches := make([]string, 0, 1)
 	scanner := bufio.NewScanner(strings.NewReader(string(checksumData)))
 	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.Fields(line)
-		if len(parts) == 2 && parts[1] == fileName {
-			if parts[0] == actualHash {
-				return nil
-			}
-			return fmt.Errorf("checksum mismatch: expected %s, got %s", parts[0], actualHash)
+		parts := strings.Fields(scanner.Text())
+		if len(parts) == 2 && strings.TrimPrefix(parts[1], "*") == fileName {
+			matches = append(matches, parts[0])
 		}
 	}
-
-	return fmt.Errorf("checksum not found for %s", fileName)
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("read checksum manifest: %w", err)
+	}
+	if len(matches) != 1 {
+		return "", fmt.Errorf("expected exactly one checksum for %s, found %d", fileName, len(matches))
+	}
+	digest := strings.ToLower(matches[0])
+	decoded, err := hex.DecodeString(digest)
+	if err != nil || len(decoded) != sha256.Size || len(digest) != sha256.Size*2 {
+		return "", fmt.Errorf("invalid SHA-256 checksum for %s", fileName)
+	}
+	return digest, nil
 }
 
 func (s *UpdateService) extractBinary(archivePath, destPath string) error {
@@ -637,12 +673,26 @@ func (s *UpdateService) saveToCache(ctx context.Context, info *UpdateInfo) {
 	_ = s.cache.SetUpdateInfo(ctx, string(data), time.Duration(updateCacheTTL)*time.Second)
 }
 
-// compareVersions compares two semantic versions
-func compareVersions(current, latest string) int {
-	currentParts := parseVersion(current)
-	latestParts := parseVersion(latest)
+var ruReleaseVersionPattern = regexp.MustCompile(`^v?([0-9]+)\.([0-9]+)\.([0-9]+)(?:-ru\.([0-9]+))?$`)
 
-	for i := 0; i < 3; i++ {
+// compareVersions compares official upstream versions and RU fork revisions.
+// A plain upstream version is treated as RU revision zero, so an installed
+// official 0.1.169 binary can upgrade to 0.1.169-ru.1 through the panel.
+// Malformed release tags are never considered newer than a valid install.
+func compareVersions(current, latest string) int {
+	currentParts, currentValid := parseVersion(current)
+	latestParts, latestValid := parseVersion(latest)
+
+	switch {
+	case currentValid && !latestValid:
+		return 1
+	case !currentValid && latestValid:
+		return -1
+	case !currentValid && !latestValid:
+		return 0
+	}
+
+	for i := 0; i < len(currentParts); i++ {
 		if currentParts[i] < latestParts[i] {
 			return -1
 		}
@@ -653,14 +703,28 @@ func compareVersions(current, latest string) int {
 	return 0
 }
 
-func parseVersion(v string) [3]int {
-	v = strings.TrimPrefix(v, "v")
-	parts := strings.Split(v, ".")
-	result := [3]int{0, 0, 0}
-	for i := 0; i < len(parts) && i < 3; i++ {
-		if parsed, err := strconv.Atoi(parts[i]); err == nil {
-			result[i] = parsed
-		}
+func parseVersion(v string) ([4]int, bool) {
+	matches := ruReleaseVersionPattern.FindStringSubmatch(strings.TrimSpace(v))
+	if matches == nil {
+		return [4]int{}, false
 	}
-	return result
+
+	result := [4]int{}
+	for i := 1; i <= 3; i++ {
+		parsed, err := strconv.Atoi(matches[i])
+		if err != nil {
+			return [4]int{}, false
+		}
+		result[i-1] = parsed
+	}
+
+	if matches[4] != "" {
+		revision, err := strconv.Atoi(matches[4])
+		if err != nil || revision < 1 {
+			return [4]int{}, false
+		}
+		result[3] = revision
+	}
+
+	return result, true
 }

@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -69,6 +70,27 @@ func TestUpdateServicePerformUpdateNoUpdateReturnsSentinel(t *testing.T) {
 	require.ErrorIs(t, err, ErrNoUpdateAvailable)
 }
 
+func TestUpdateServiceCheckUpdateOffersFirstRURevisionToOfficialBaseline(t *testing.T) {
+	svc := NewUpdateService(
+		&updateServiceCacheStub{},
+		&updateServiceGitHubClientStub{
+			release: &GitHubRelease{
+				TagName: "v0.1.169-ru.1",
+				Name:    "Sub2API RU 0.1.169-ru.1",
+			},
+		},
+		"0.1.169",
+		"release",
+	)
+
+	info, err := svc.CheckUpdate(context.Background(), true)
+
+	require.NoError(t, err)
+	require.True(t, info.HasUpdate)
+	require.Equal(t, "0.1.169", info.CurrentVersion)
+	require.Equal(t, "0.1.169-ru.1", info.LatestVersion)
+}
+
 func newRollbackTestService(current string, releases []*GitHubRelease) *UpdateService {
 	return NewUpdateService(
 		&updateServiceCacheStub{},
@@ -116,6 +138,22 @@ func TestUpdateServiceListRollbackVersionsSortsUnorderedInput(t *testing.T) {
 	require.Equal(t, "0.1.146", versions[0].Version)
 	require.Equal(t, "0.1.145", versions[1].Version)
 	require.Equal(t, "0.1.144", versions[2].Version)
+}
+
+func TestUpdateServiceListRollbackVersionsSkipsMalformedTags(t *testing.T) {
+	releases := []*GitHubRelease{
+		{TagName: "not-a-version"},
+		{TagName: "v0.1.168-rc.1"},
+		{TagName: "v0.1.168-ru.0"},
+		{TagName: "v0.1.168-ru.2"},
+	}
+	svc := newRollbackTestService("0.1.169-ru.1", releases)
+
+	versions, err := svc.ListRollbackVersions(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, versions, 1)
+	require.Equal(t, "0.1.168-ru.2", versions[0].Version)
 }
 
 func TestUpdateServiceListRollbackVersionsEmptyWhenNoneOlder(t *testing.T) {
@@ -183,5 +221,48 @@ func TestUpdateServiceRollbackToVersionAcceptsVPrefix(t *testing.T) {
 
 	require.Error(t, err)
 	require.NotErrorIs(t, err, ErrRollbackVersionNotAllowed)
-	require.Contains(t, err.Error(), "no compatible release found")
+	require.Contains(t, err.Error(), "expected exactly one archive")
+}
+
+func TestSelectReleaseAssetsRequiresExactVersionedArchiveAndChecksum(t *testing.T) {
+	version := "0.1.172-ru.1"
+	exactArchive := "sub2api_0.1.172-ru.1_linux_amd64.tar.gz"
+	assets := []Asset{
+		{Name: exactArchive + ".evil", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.172-ru.1/confusable"},
+		{Name: exactArchive, DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.172-ru.1/" + exactArchive},
+		{Name: "checksums.txt", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.172-ru.1/checksums.txt"},
+	}
+
+	archive, checksum, err := selectReleaseAssets(version, "linux", "amd64", assets)
+
+	require.NoError(t, err)
+	require.Equal(t, exactArchive, archive.Name)
+	require.Equal(t, "checksums.txt", checksum.Name)
+
+	_, _, err = selectReleaseAssets(version, "linux", "amd64", assets[:2])
+	require.ErrorContains(t, err, "checksums.txt")
+
+	_, _, err = selectReleaseAssets(version, "linux", "amd64", append(assets, assets[1]))
+	require.ErrorContains(t, err, "exactly one archive")
+
+	_, _, err = selectReleaseAssets(version, "linux", "amd64", append(assets, assets[2]))
+	require.ErrorContains(t, err, "exactly one checksums.txt")
+}
+
+func TestExpectedChecksumForFileRequiresOneExactBasename(t *testing.T) {
+	name := "sub2api_0.1.172-ru.1_linux_amd64.tar.gz"
+	digest := strings.Repeat("a", 64)
+
+	got, err := expectedChecksumForFile([]byte(digest+"  "+name+"\n"), name)
+	require.NoError(t, err)
+	require.Equal(t, digest, got)
+
+	_, err = expectedChecksumForFile([]byte(digest+"  "+name+".evil\n"), name)
+	require.ErrorContains(t, err, "exactly one checksum")
+
+	_, err = expectedChecksumForFile([]byte(digest+"  "+name+"\n"+digest+"  "+name+"\n"), name)
+	require.ErrorContains(t, err, "exactly one checksum")
+
+	_, err = expectedChecksumForFile([]byte("not-a-sha256  "+name+"\n"), name)
+	require.ErrorContains(t, err, "invalid SHA-256")
 }

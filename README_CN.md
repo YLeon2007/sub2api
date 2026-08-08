@@ -10,13 +10,15 @@
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fsub2api | Trendshift" width="250" height="55"/></a>
-
 **AI API 网关平台 - 订阅配额分发管理**
 
-[English](README.md) | 中文 | [日本語](README_JA.md)
+[English](README.md) | 中文 | [日本語](README_JA.md) | [Русский](README_RU.md)
 
 </div>
+
+> [!NOTE]
+> 本仓库是 [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) 的俄语本地化维护分支。
+> 俄语构建和网页在线更新请使用本分支的 [Releases](https://github.com/YLeon2007/sub2api/releases) 与 [GHCR 镜像](https://github.com/YLeon2007/sub2api/pkgs/container/sub2api)。
 
 
 ## ⚠️ 重要提醒
@@ -233,7 +235,16 @@ Nginx 默认会丢弃名称中含下划线的请求头（如 `session_id`），�
 #### 安装步骤
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash
+umask 077
+tmpdir="$(mktemp -d)"
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.172-ru.1/deploy/install.sh
+less "$tmpdir/install.sh"
+read -r -p "Run the inspected installer? [y/N] " confirm
+case "$confirm" in
+  [yY]) sudo bash "$tmpdir/install.sh" ;;
+  *) echo "Cancelled"; rm -rf "$tmpdir"; exit 1 ;;
+esac
+rm -rf "$tmpdir"
 ```
 
 脚本会自动：
@@ -283,7 +294,16 @@ sudo journalctl -u sub2api -f
 sudo systemctl restart sub2api
 
 # 卸载
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash -s -- uninstall -y
+umask 077
+tmpdir="$(mktemp -d)"
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.172-ru.1/deploy/install.sh
+less "$tmpdir/install.sh"
+read -r -p "Run the inspected uninstaller? [y/N] " confirm
+case "$confirm" in
+  [yY]) sudo bash "$tmpdir/install.sh" uninstall -y ;;
+  *) echo "Cancelled"; rm -rf "$tmpdir"; exit 1 ;;
+esac
+rm -rf "$tmpdir"
 ```
 
 ---
@@ -305,8 +325,17 @@ curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install
 # 创建部署目录
 mkdir -p sub2api-deploy && cd sub2api-deploy
 
-# 下载并运行部署准备脚本
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/docker-deploy.sh | bash
+# 下载、检查并运行部署准备脚本
+umask 077
+tmpdir="$(mktemp -d)"
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.172-ru.1/deploy/docker-deploy.sh
+less "$tmpdir/docker-deploy.sh"
+read -r -p "Run the inspected deployment script? [y/N] " confirm
+case "$confirm" in
+  [yY]) chmod +x "$tmpdir/docker-deploy.sh"; "$tmpdir/docker-deploy.sh" ;;
+  *) echo "Cancelled"; rm -rf "$tmpdir"; exit 1 ;;
+esac
+rm -rf "$tmpdir"
 
 # 启动服务
 docker compose up -d
@@ -328,7 +357,7 @@ docker compose logs -f sub2api
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/Wei-Shaw/sub2api.git
+git clone https://github.com/YLeon2007/sub2api.git
 cd sub2api/deploy
 
 # 2. 复制环境配置文件
@@ -470,7 +499,7 @@ rm -rf data/ postgres_data/ redis_data/
 Apple 芯片 Mac 在 macOS 26 上可使用 Apple `container` 1.1.0 或更高版本运行完整的 Sub2API、PostgreSQL 和 Redis：
 
 ```bash
-git clone https://github.com/Wei-Shaw/sub2api.git
+git clone https://github.com/YLeon2007/sub2api.git
 cd sub2api/deploy
 ./apple-container.sh init
 ./apple-container.sh up
@@ -496,7 +525,7 @@ cd sub2api/deploy
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/Wei-Shaw/sub2api.git
+git clone https://github.com/YLeon2007/sub2api.git
 cd sub2api
 
 # 2. 安装 pnpm（如果还没有安装）
@@ -787,11 +816,11 @@ sub2api/
 
 ## Star History
 
-<a href="https://star-history.com/#Wei-Shaw/sub2api&Date">
+<a href="https://star-history.com/#YLeon2007/sub2api&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/sub2api&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/sub2api&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Wei-Shaw/sub2api&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=YLeon2007/sub2api&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=YLeon2007/sub2api&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=YLeon2007/sub2api&type=Date" />
  </picture>
 </a>
 

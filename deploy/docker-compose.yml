@@ -16,7 +16,7 @@ services:
   # Sub2API Application
   # ===========================================================================
   sub2api:
-    image: weishaw/sub2api:latest
+    image: ghcr.io/yleon2007/sub2api:0.1.172-ru.1
     container_name: sub2api
     restart: unless-stopped
     security_opt:
@@ -28,6 +28,10 @@ services:
     ports:
       - "${BIND_HOST:-0.0.0.0}:${SERVER_PORT:-8080}:8080"
     volumes:
+      # Persist the executable and entrypoint so an in-panel atomic binary
+      # update survives a normal container recreate. An empty volume is
+      # initialized from the image's /app directory by Docker.
+      - sub2api_runtime:/app
       # Data persistence (config.yaml will be auto-generated here)
       - sub2api_data:/app/data
       # Optional: Mount custom config.yaml (uncomment and create the file first)
@@ -287,6 +291,8 @@ services:
 # Volumes
 # =============================================================================
 volumes:
+  sub2api_runtime:
+    driver: local
   sub2api_data:
     driver: local
   postgres_data:

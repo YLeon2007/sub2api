@@ -12,9 +12,12 @@ FROM ${POSTGRES_IMAGE} AS pg-client
 
 FROM ${ALPINE_IMAGE}
 
+ARG TARGETOS
+ARG TARGETARCH
+
 LABEL maintainer="Wei-Shaw <github.com/Wei-Shaw>"
 LABEL description="Sub2API - AI API Gateway Platform"
-LABEL org.opencontainers.image.source="https://github.com/Wei-Shaw/sub2api"
+LABEL org.opencontainers.image.source="https://github.com/YLeon2007/sub2api"
 
 # Install runtime dependencies
 RUN apk add --no-cache \
@@ -42,8 +45,9 @@ RUN addgroup -g 1000 sub2api && \
 
 WORKDIR /app
 
-# Copy the pre-built binary and runtime fallback resources from GoReleaser
-COPY sub2api /app/sub2api
+# GoReleaser dockers_v2 places artifacts under <goos>/<goarch>/ in the
+# multi-platform build context. BuildKit provides these automatic platform args.
+COPY ${TARGETOS}/${TARGETARCH}/sub2api /app/sub2api
 COPY --chown=sub2api:sub2api backend/resources /app/resources
 
 # Create data directory

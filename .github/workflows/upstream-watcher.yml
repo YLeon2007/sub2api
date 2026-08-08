@@ -1,0 +1,148 @@
+name: RU Upstream Watcher
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ru-upstream-watcher-main
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Detect upstream tag and open review PR
+    if: github.repository == 'YLeon2007/sub2api'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE_BRANCH: main
+      UPSTREAM_REPO: Wei-Shaw/sub2api
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout RU base branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Fetch origin base and upstream tags
+        run: |
+          git fetch --prune origin "+refs/heads/${BASE_BRANCH}:refs/remotes/origin/${BASE_BRANCH}"
+          git remote add upstream-watch "https://github.com/${UPSTREAM_REPO}.git" 2>/dev/null || \
+            git remote set-url upstream-watch "https://github.com/${UPSTREAM_REPO}.git"
+          git for-each-ref --format='delete %(refname)' refs/upstream-tags/ | git update-ref --stdin
+          git fetch --force --no-tags upstream-watch '+refs/tags/v*:refs/upstream-tags/v*'
+
+      - name: Detect latest stable upstream tag
+        id: detect
+        run: |
+          latest_tag="$(python tools/ru_upstream_sync_report.py \
+            --upstream-ref-prefix refs/upstream-tags/ \
+            latest-stable-tag)"
+          sync_branch="ru/upstream-sync/${latest_tag}"
+          git rev-parse --verify "refs/upstream-tags/${latest_tag}^{commit}"
+          git rev-parse --verify "origin/${BASE_BRANCH}^{commit}"
+          {
+            echo "latest_tag=${latest_tag}"
+            echo "sync_branch=${sync_branch}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Latest stable upstream tag: ${latest_tag}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Generate migration and i18n report
+        id: report
+        run: |
+          python tools/ru_upstream_sync_report.py \
+            --upstream-ref-prefix refs/upstream-tags/ \
+            report \
+            --base-ref "origin/${BASE_BRANCH}" \
+            --target-tag '${{ steps.detect.outputs.latest_tag }}' \
+            --sync-branch '${{ steps.detect.outputs.sync_branch }}' \
+            --out upstream-sync-report.md \
+            --json-out upstream-sync-report.json
+          cat upstream-sync-report.md >> "$GITHUB_STEP_SUMMARY"
+          up_to_date="$(python - <<'PY'
+          import json
+          with open('upstream-sync-report.json', 'r', encoding='utf-8') as handle:
+              data = json.load(handle)
+          print('true' if data.get('already_contains_target') else 'false')
+          PY
+          )"
+          echo "up_to_date=${up_to_date}" >> "$GITHUB_OUTPUT"
+
+      - name: Stop when RU base already contains latest upstream tag
+        if: steps.report.outputs.up_to_date == 'true'
+        run: |
+          echo "RU base ${BASE_BRANCH} already contains ${{ steps.detect.outputs.latest_tag }}; no PR needed."
+
+      - name: Update sync branch to upstream tag
+        if: steps.report.outputs.up_to_date != 'true'
+        run: |
+          sync_branch='${{ steps.detect.outputs.sync_branch }}'
+          latest_tag='${{ steps.detect.outputs.latest_tag }}'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git branch -f "$sync_branch" "refs/upstream-tags/${latest_tag}"
+          git fetch origin "+refs/heads/${sync_branch}:refs/remotes/origin/${sync_branch}" || true
+          if remote_sha="$(git rev-parse --verify "refs/remotes/origin/${sync_branch}" 2>/dev/null)"; then
+            git push origin "refs/heads/${sync_branch}:refs/heads/${sync_branch}" \
+              --force-with-lease="refs/heads/${sync_branch}:${remote_sha}"
+          else
+            git push origin "refs/heads/${sync_branch}:refs/heads/${sync_branch}"
+          fi
+
+      - name: Create or update sync PR
+        if: steps.report.outputs.up_to_date != 'true'
+        run: |
+          latest_tag='${{ steps.detect.outputs.latest_tag }}'
+          sync_branch='${{ steps.detect.outputs.sync_branch }}'
+          title="chore(ru): review upstream ${latest_tag} sync"
+          cat > pr-body.md <<'EOF'
+          <!-- ru-upstream-sync: managed by RU Upstream Watcher -->
+
+          This PR was created by the RU fork upstream watcher for human review.
+
+          Safety gates:
+          - Auto-merge is not enabled by this workflow.
+          - No deployment workflow is triggered by this workflow.
+          - The sync branch is updated to the upstream tag only; maintainers must review conflicts and CI.
+
+          EOF
+          cat upstream-sync-report.md >> pr-body.md
+
+          pr_number="$(gh pr list -R YLeon2007/sub2api \
+            --state open \
+            --head "$sync_branch" \
+            --base "$BASE_BRANCH" \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          if [ -z "$pr_number" ]; then
+            gh pr create -R YLeon2007/sub2api \
+              --draft \
+              --base "$BASE_BRANCH" \
+              --head "$sync_branch" \
+              --title "$title" \
+              --body-file pr-body.md
+          else
+            gh pr edit -R YLeon2007/sub2api "$pr_number" \
+              --title "$title" \
+              --body-file pr-body.md
+          fi
+
+          gh pr view -R YLeon2007/sub2api "$sync_branch" --json url --jq '.url' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload upstream sync report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ru-upstream-sync-report
+          path: |
+            upstream-sync-report.md
+            upstream-sync-report.json
+          if-no-files-found: ignore
+          retention-days: 14
