@@ -2,7 +2,7 @@
 #
 # Sub2API Installation Script
 # Sub2API 安装脚本
-# Usage: curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | bash
+# Usage: download an immutable-tagged script, inspect it, then run it with Bash.
 #
 
 set -e
@@ -31,7 +31,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="Wei-Shaw/sub2api"
+GITHUB_REPO="YLeon2007/sub2api"
 INSTALL_DIR="/opt/sub2api"
 SERVICE_NAME="sub2api"
 SERVICE_USER="sub2api"
@@ -325,16 +325,14 @@ print_error() {
     echo -e "${RED}[$(msg 'error')]${NC} $1"
 }
 
-# Check if running interactively (can access terminal)
-# When piped (curl | bash), stdin is not a terminal, but /dev/tty may still be available
+# Check if a controlling terminal is available.
 is_interactive() {
-    # Check if /dev/tty is available (works even when piped)
     [ -e /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]
 }
 
 # Select language
 select_language() {
-    # If not interactive (piped), use default language
+    # Use the default language when no controlling terminal is available.
     if ! is_interactive; then
         LANG_CHOICE="zh"
         return
@@ -627,27 +625,49 @@ download_and_extract() {
     trap "rm -rf $TEMP_DIR" EXIT
 
     # Download archive
-    if ! curl -sL "$download_url" -o "$TEMP_DIR/$archive_name"; then
+    if ! curl -fsSL --proto '=https' --tlsv1.2 "$download_url" -o "$TEMP_DIR/$archive_name"; then
         print_error "$(msg 'download_failed')"
         exit 1
     fi
 
-    # Download and verify checksum
+    # Download and verify the mandatory checksum manifest.
     print_info "$(msg 'verifying_checksum')"
-    if curl -sL "$checksum_url" -o "$TEMP_DIR/checksums.txt" 2>/dev/null; then
-        local expected_checksum=$(grep "$archive_name" "$TEMP_DIR/checksums.txt" | awk '{print $1}')
-        local actual_checksum=$(sha256sum "$TEMP_DIR/$archive_name" | awk '{print $1}')
-
-        if [ "$expected_checksum" != "$actual_checksum" ]; then
-            print_error "$(msg 'checksum_failed')"
-            print_error "Expected: $expected_checksum"
-            print_error "Actual: $actual_checksum"
-            exit 1
-        fi
-        print_success "$(msg 'checksum_verified')"
-    else
-        print_warning "$(msg 'checksum_not_found')"
+    if ! curl -fsSL --proto '=https' --tlsv1.2 "$checksum_url" -o "$TEMP_DIR/checksums.txt"; then
+        print_error "$(msg 'checksum_not_found')"
+        exit 1
     fi
+
+    local checksum_matches
+    checksum_matches=$(awk -v target="$archive_name" '
+        NF == 2 {
+            name = $2
+            sub(/^\*/, "", name)
+            if (name == target) print tolower($1)
+        }
+    ' "$TEMP_DIR/checksums.txt")
+    local checksum_match_count
+    checksum_match_count=$(printf '%s\n' "$checksum_matches" | awk 'NF { count++ } END { print count + 0 }')
+    if [ "$checksum_match_count" -ne 1 ]; then
+        print_error "Expected exactly one checksum for $archive_name, found $checksum_match_count"
+        exit 1
+    fi
+
+    local expected_checksum
+    expected_checksum=$(printf '%s\n' "$checksum_matches" | awk 'NF { print; exit }')
+    if ! printf '%s\n' "$expected_checksum" | grep -Eq '^[0-9a-f]{64}$'; then
+        print_error "Invalid SHA-256 checksum for $archive_name"
+        exit 1
+    fi
+
+    local actual_checksum
+    actual_checksum=$(sha256sum "$TEMP_DIR/$archive_name" | awk '{print $1}')
+    if [ "$expected_checksum" != "$actual_checksum" ]; then
+        print_error "$(msg 'checksum_failed')"
+        print_error "Expected: $expected_checksum"
+        print_error "Actual: $actual_checksum"
+        exit 1
+    fi
+    print_success "$(msg 'checksum_verified')"
 
     # Extract
     print_info "$(msg 'extracting')"
@@ -718,7 +738,7 @@ install_service() {
     cat > /etc/systemd/system/sub2api.service << EOF
 [Unit]
 Description=Sub2API - AI API Gateway Platform
-Documentation=https://github.com/Wei-Shaw/sub2api
+Documentation=https://github.com/YLeon2007/sub2api
 After=network.target postgresql.service redis.service
 Wants=postgresql.service redis.service
 
@@ -970,10 +990,10 @@ install_version() {
 uninstall() {
     print_warning "$(msg 'uninstall_confirm')"
 
-    # If not interactive (piped), require -y flag or skip confirmation
+    # If not interactive, require -y explicitly.
     if ! is_interactive; then
         if [ "${FORCE_YES:-}" != "true" ]; then
-            print_error "Non-interactive mode detected. Use 'curl ... | bash -s -- uninstall -y' to confirm."
+            print_error "Non-interactive mode detected. Run an already downloaded and inspected script as 'bash install.sh uninstall -y'."
             exit 1
         fi
     else

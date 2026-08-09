@@ -1,5 +1,7 @@
 # Composite Groups
 
+English | [Русский](COMPOSITE_GROUPS_RU.md)
+
 Composite groups are an admin routing layer for API keys that should choose a
 concrete provider from the requested model instead of binding the key to a
 single provider group. They support both built-in model detection and an
@@ -57,11 +59,16 @@ the handler forwards the resolved upstream model.
 
 Composite routing detects common public model IDs and provider-prefixed IDs:
 
-- `claude-*` and `anthropic/claude-*` route to Anthropic.
-- `gemini-*` and `google/gemini-*` route to Gemini.
-- `gpt-*`, `o*`, `codex-*`, `text-embedding-*`, `dall-e-*`, and
-  `openai/*` route to OpenAI.
-- `grok-*` and `xai/grok-*` route to Grok.
+- Anthropic: `claude-*`, `anthropic.claude-*`, and the `anthropic/` or `claude/` prefixes.
+- Gemini: `gemini-*`, `learnlm-*`, and the `google/`, `google-ai-studio/`, or `gemini/` prefixes.
+- OpenAI: `gpt-*`, `chatgpt-*`, `codex-*`, `text-embedding-*`,
+  `text-moderation-*`, `omni-moderation-*`, `dall-e-*`, `gpt-image-*`,
+  `tts-*`, `whisper-*`, the `o1`/`o3`/`o4`/`o5` series, and the `openai/` or
+  `chatgpt/` prefixes.
+- Grok: `grok`, `grok-*`, and the `xai/`, `x-ai/`, or `grok/` prefixes.
+
+Antigravity is a valid explicit target platform, but the built-in detector does
+not guess Antigravity from a model name; configure an explicit route.
 
 Unknown or ambiguous model names fail closed with a client error instead of
 guessing a provider.
@@ -118,7 +125,7 @@ create synthetic model metadata, pricing, or upstream capability records by
 themselves. Keep channel pricing/model mapping configured for the concrete
 provider platforms that the routes target.
 
-This PR intentionally does not implement:
+The current implementation does not provide:
 
 - AUTO smart-routing among multiple providers for the same abstract task.
 - Direct API-key binding to several existing groups without a composite group.

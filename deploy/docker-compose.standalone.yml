@@ -5,14 +5,15 @@
 # PostgreSQL and Redis must be provided externally.
 #
 # Usage:
-#   1. Copy .env.example to .env and configure database/redis connection
-#   2. docker-compose -f docker-compose.standalone.yml up -d
+#   1. Copy .env.example to .env, then add/configure DATABASE_HOST,
+#      DATABASE_PASSWORD, REDIS_HOST, and the related split connection variables.
+#   2. docker compose -f docker-compose.standalone.yml up -d
 #   3. Access: http://localhost:8080
 # =============================================================================
 
 services:
   sub2api:
-    image: weishaw/sub2api:latest
+    image: ghcr.io/yleon2007/sub2api:0.1.173-ru.1
     container_name: sub2api
     restart: unless-stopped
     security_opt:
