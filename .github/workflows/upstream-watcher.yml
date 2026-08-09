@@ -87,13 +87,39 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git branch -f "$sync_branch" "refs/upstream-tags/${latest_tag}"
-          git fetch origin "+refs/heads/${sync_branch}:refs/remotes/origin/${sync_branch}" || true
-          if remote_sha="$(git rev-parse --verify "refs/remotes/origin/${sync_branch}" 2>/dev/null)"; then
-            git push origin "refs/heads/${sync_branch}:refs/heads/${sync_branch}" \
-              --force-with-lease="refs/heads/${sync_branch}:${remote_sha}"
-          else
-            git push origin "refs/heads/${sync_branch}:refs/heads/${sync_branch}"
-          fi
+          remote_ref="refs/heads/${sync_branch}"
+          set +e
+          remote_line="$(git ls-remote --exit-code --heads origin "${remote_ref}")"
+          ls_remote_status=$?
+          set -e
+          case "${ls_remote_status}" in
+            0)
+              remote_sha="${remote_line%%[[:space:]]*}"
+              if [[ ! "${remote_sha}" =~ ^[0-9a-f]{40}$ ]]; then
+                echo "Invalid remote sync-branch SHA: ${remote_line}" >&2
+                exit 1
+              fi
+              git fetch --no-tags origin "+${remote_ref}:refs/remotes/origin/${sync_branch}"
+              fetched_sha="$(git rev-parse --verify "refs/remotes/origin/${sync_branch}")"
+              if [ "${fetched_sha}" != "${remote_sha}" ]; then
+                echo "Remote sync-branch SHA changed during fetch; refusing stale lease" >&2
+                exit 1
+              fi
+              git push origin "refs/heads/${sync_branch}:${remote_ref}" \
+                --force-with-lease="${remote_ref}:${remote_sha}"
+              ;;
+            2)
+              if [ -n "${remote_line}" ]; then
+                echo "Unexpected output while proving remote sync branch absent" >&2
+                exit 1
+              fi
+              git push origin "refs/heads/${sync_branch}:${remote_ref}"
+              ;;
+            *)
+              echo "Failed to query remote sync branch (git ls-remote exit ${ls_remote_status})" >&2
+              exit "${ls_remote_status}"
+              ;;
+          esac
 
       - name: Create or update sync PR
         if: steps.report.outputs.up_to_date != 'true'
