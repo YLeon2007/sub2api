@@ -241,6 +241,9 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.settings.scheduling.accountSchedulingThresholdsDescription).toBe(
       'Когда текущее нативное окно учёта использования аккаунта (сессия OpenAI Codex/Anthropic или использование запросов/токенов Grok) достигает этого процента, Sub2API временно исключает его из маршрутизации до сброса окна. Используйте 100, чтобы отключить.'
     )
+    expect(ru.admin.settings.scheduling.accountSchedulingThresholdsGlobalHint).toBe(
+      'Системный порог по умолчанию для каждого аккаунта этой платформы. Для отдельного аккаунта его можно переопределить в редакторе аккаунта.'
+    )
     expect(ru.admin.groups.videoPricing.modelOverridesDescription).toBe(
       'Каждая заполненная ячейка переопределяет базовую цену разрешения для этого семейства моделей. Алиасы Preview и legacy для video-1.5 используют то же семейство; для пустых ячеек применяется базовая цена разрешения.'
     )

@@ -235,12 +235,34 @@ def validate_release_workflow(text: str, errors: list[str]) -> None:
     )
     immutable_target_gate = "- name: Require unused immutable publication targets"
     goreleaser_step = "- name: Run GoReleaser"
+    immutable_gate_index = text.find(immutable_target_gate)
+    goreleaser_index = text.find(goreleaser_step)
+    immutable_target_block = (
+        text[immutable_gate_index:goreleaser_index]
+        if 0 <= immutable_gate_index < goreleaser_index
+        else ""
+    )
     require(
         immutable_target_gate in text
-        and 'gh release view -R YLeon2007/sub2api "${RELEASE_TAG}"' in text
-        and 'docker buildx imagetools inspect "${image}"' in text
-        and text.find(immutable_target_gate) < text.find(goreleaser_step),
+        and immutable_gate_index < goreleaser_index,
         "release.yml: immutable GitHub Release/GHCR targets must be proven unused before GoReleaser",
+        errors,
+    )
+    require(
+        "release_status == 200" in text
+        and "release_status != 404" in text
+        and "GitHub Release absence probe returned HTTP" in text
+        and "gh release view" not in immutable_target_block,
+        "release.yml: GitHub Release absence probe must distinguish exact 404 from auth/network/API failures",
+        errors,
+    )
+    require(
+        "manifest_status == 200" in text
+        and "manifest_status != 404" in text
+        and "GHCR manifest absence probe returned HTTP" in text
+        and "GHCR token probe returned HTTP" in text
+        and "docker buildx imagetools inspect" not in immutable_target_block,
+        "release.yml: GHCR manifest absence probe must distinguish exact 404 from auth/network/registry failures",
         errors,
     )
     require("--clobber" not in text, "release.yml: immutable release assets must never use --clobber", errors)
@@ -408,10 +430,16 @@ def validate_upstream_workflow(text: str, errors: list[str]) -> None:
         errors,
     )
     require(
-        "git fetch origin \"+refs/heads/${sync_branch}:refs/remotes/origin/${sync_branch}\"" in text
-        and "git rev-parse --verify \"refs/remotes/origin/${sync_branch}\"" in text
-        and "--force-with-lease=\"refs/heads/${sync_branch}:${remote_sha}\"" in text,
-        "upstream-watcher.yml: sync branch update must use an explicit fetched remote SHA lease",
+        'git ls-remote --exit-code --heads origin "${remote_ref}"' in text
+        and "set +e" in text
+        and "set -e" in text
+        and 'case "${ls_remote_status}" in' in text
+        and "git fetch --no-tags origin" in text
+        and 'fetched_sha="$(git rev-parse --verify "refs/remotes/origin/${sync_branch}")"' in text
+        and '[ "${fetched_sha}" != "${remote_sha}" ]' in text
+        and '--force-with-lease="${remote_ref}:${remote_sha}"' in text
+        and "|| true" not in text,
+        "upstream-watcher.yml: sync branch update must distinguish exact remote absence from fetch failure and lease the fetched SHA",
         errors,
     )
     forbidden = ["gh pr merge", "gh pr ready", "--auto", "enablePullRequestAutoMerge", "/merge", "deployments: write", "packages: write"]
@@ -2047,8 +2075,21 @@ jobs:
       - run: bash deploy/tests/install-checksum-integrity-test.sh
       - name: Require unused immutable publication targets
         run: |
-          gh release view -R YLeon2007/sub2api "${RELEASE_TAG}"
-          docker buildx imagetools inspect "${image}"
+          python - <<'PY'
+          release_status = 404
+          token_status = 200
+          manifest_status = 404
+          if release_status == 200:
+              raise SystemExit("release exists")
+          if release_status != 404:
+              raise SystemExit(f"GitHub Release absence probe returned HTTP {release_status}")
+          if token_status != 200:
+              raise SystemExit(f"GHCR token probe returned HTTP {token_status}")
+          if manifest_status == 200:
+              raise SystemExit("manifest exists")
+          if manifest_status != 404:
+              raise SystemExit(f"GHCR manifest absence probe returned HTTP {manifest_status}")
+          PY
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v7
       - name: Verify Linux release binary identity
@@ -2100,6 +2141,16 @@ jobs:
             missing_immutable_gate_errors,
         )
         assert any("proven unused before GoReleaser" in error for error in missing_immutable_gate_errors)
+        fail_open_target_errors: list[str] = []
+        fail_open_target_fixture = valid_release_fixture.replace(
+            "          release_status = 404\n",
+            "          if gh release view -R YLeon2007/sub2api \\\"${RELEASE_TAG}\\\"; then exit 1; fi\n"
+            "          if docker buildx imagetools inspect \\\"${image}\\\"; then exit 1; fi\n"
+            "          release_status = 404\n",
+        )
+        validate_release_workflow(fail_open_target_fixture, fail_open_target_errors)
+        assert any("GitHub Release absence probe must distinguish exact 404" in error for error in fail_open_target_errors)
+        assert any("GHCR manifest absence probe must distinguish exact 404" in error for error in fail_open_target_errors)
         unscoped_gh_errors: list[str] = []
         validate_release_workflow(
             valid_release_fixture.replace(
@@ -2131,13 +2182,33 @@ jobs:
       - run: python tools/ru_upstream_sync_report.py --upstream-ref-prefix refs/upstream-tags/ report
       - run: |
           git branch -f "$sync_branch" "refs/upstream-tags/${latest_tag}"
-          git fetch origin "+refs/heads/${sync_branch}:refs/remotes/origin/${sync_branch}"
-          remote_sha="$(git rev-parse --verify "refs/remotes/origin/${sync_branch}")"
-          git push --force-with-lease="refs/heads/${sync_branch}:${remote_sha}"
+          remote_ref="refs/heads/${sync_branch}"
+          set +e
+          remote_line="$(git ls-remote --exit-code --heads origin "${remote_ref}")"
+          ls_remote_status=$?
+          set -e
+          case "${ls_remote_status}" in
+            0)
+              remote_sha="${remote_line%%[[:space:]]*}"
+              git fetch --no-tags origin "+${remote_ref}:refs/remotes/origin/${sync_branch}"
+              fetched_sha="$(git rev-parse --verify "refs/remotes/origin/${sync_branch}")"
+              if [ "${fetched_sha}" != "${remote_sha}" ]; then exit 1; fi
+              git push --force-with-lease="${remote_ref}:${remote_sha}"
+              ;;
+            2) git push origin "refs/heads/${sync_branch}:${remote_ref}" ;;
+            *) exit "${ls_remote_status}" ;;
+          esac
       - run: gh pr create -R YLeon2007/sub2api --draft --base "$BASE_BRANCH"
 """,
             encoding="utf-8",
         )
+        watcher_fixture = (workflow_dir / "upstream-watcher.yml").read_text(encoding="utf-8")
+        fail_open_watcher = watcher_fixture + (
+            '\ngit fetch origin "+refs/heads/${sync_branch}:refs/remotes/origin/${sync_branch}" || true\n'
+        )
+        fail_open_watcher_errors: list[str] = []
+        validate_upstream_workflow(fail_open_watcher, fail_open_watcher_errors)
+        assert any("must distinguish exact remote absence from fetch failure" in error for error in fail_open_watcher_errors)
         (workflow_dir / "security-scan.yml").write_text(
             """name: Security Scan
 permissions:
