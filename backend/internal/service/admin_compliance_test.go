@@ -100,6 +100,32 @@ func TestAcceptAdminCompliancePersistsCurrentVersion(t *testing.T) {
 	require.Equal(t, AdminComplianceDocumentPathZH, stored.DocumentZH)
 }
 
+func TestAcceptAdminComplianceAcceptsRussianPhrase(t *testing.T) {
+	repo := &adminComplianceRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+	require.Equal(t,
+		"Я прочитал, понял и принимаю обязательство по соблюдению требований при развёртывании и эксплуатации Sub2API",
+		AdminComplianceAckPhraseRU,
+	)
+	require.Equal(t,
+		"https://github.com/YLeon2007/sub2api/blob/v0.1.173-ru.1/docs/legal/admin-compliance.ru.md",
+		AdminComplianceDocumentURLRU,
+	)
+
+	status, err := svc.AcceptAdminCompliance(context.Background(), AdminComplianceAcceptInput{
+		AdminUserID: 7,
+		Language:    "ru-RU",
+		Phrase:      AdminComplianceAckPhraseRU,
+	})
+	require.NoError(t, err)
+	require.False(t, status.Required)
+	require.Equal(t, AdminComplianceDocumentURLRU, status.DocumentURLRU)
+
+	var stored AdminComplianceAcknowledgement
+	require.NoError(t, json.Unmarshal([]byte(repo.values[adminComplianceAcknowledgementKey(7)]), &stored))
+	require.Equal(t, AdminComplianceDocumentPathRU, stored.DocumentRU)
+}
+
 func TestAdminComplianceStatusRequiresAckOnOldVersion(t *testing.T) {
 	old, err := json.Marshal(AdminComplianceAcknowledgement{Version: "v2026.01.01"})
 	require.NoError(t, err)

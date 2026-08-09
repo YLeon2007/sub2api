@@ -1,306 +1,373 @@
-name: Release
+name: RU Release
 
 on:
   push:
     tags:
-      - 'v*'
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to release (e.g., v1.0.0)'
-        required: true
-        type: string
-      simple_release:
-        description: 'Simple release: only x86_64 GHCR image, skip other artifacts'
-        required: false
-        type: boolean
-        default: false
-
-# 环境变量：合并 workflow_dispatch 输入和 repository variable
-# tag push 触发时读取 vars.SIMPLE_RELEASE，workflow_dispatch 时使用输入参数
-env:
-  SIMPLE_RELEASE: ${{ github.event.inputs.simple_release == 'true' || vars.SIMPLE_RELEASE == 'true' }}
+      - 'v*.*.*-ru.*'
 
 permissions:
   contents: write
   packages: write
 
+concurrency:
+  group: ru-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPO: Wei-Shaw/sub2api
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
 jobs:
-  # Update VERSION file with tag version
-  update-version:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Update VERSION file
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION=${{ github.event.inputs.tag }}
-            VERSION=${VERSION#v}
-          else
-            VERSION=${GITHUB_REF#refs/tags/v}
-          fi
-          echo "$VERSION" > backend/cmd/server/VERSION
-          echo "Updated VERSION file to: $VERSION"
-
-      - name: Upload VERSION artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: version-file
-          path: backend/cmd/server/VERSION
-          retention-days: 1
-
-  build-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-
-      - name: Build frontend
-        run: pnpm run build
-        working-directory: frontend
-
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: frontend-dist
-          path: backend/internal/web/dist/
-          retention-days: 1
-
   release:
-    needs: [update-version, build-frontend]
+    name: Build checksum-backed assets and GHCR image
+    if: github.repository == 'YLeon2007/sub2api' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Checkout release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ github.ref }}
 
-      - name: Download VERSION artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: version-file
-          path: backend/cmd/server/
-
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: frontend-dist
-          path: backend/internal/web/dist/
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: backend/go.mod
-          check-latest: false
-          cache-dependency-path: backend/go.sum
-
-      - name: Verify Go version
+      - name: Fetch upstream stable tags
         run: |
-          go version | grep -q 'go1.26.5'
+          git remote add upstream-release "https://github.com/${UPSTREAM_REPO}.git" 2>/dev/null || \
+            git remote set-url upstream-release "https://github.com/${UPSTREAM_REPO}.git"
+          git for-each-ref --format='delete %(refname)' refs/upstream-tags/ | git update-ref --stdin
+          git fetch --force --no-tags upstream-release '+refs/tags/v*:refs/upstream-tags/v*'
 
-      # Docker setup for GoReleaser
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Validate RU release tag and base tag
+        id: guard
+        run: >-
+          python tools/ru_release_guard.py
+          --repo-root .
+          --upstream-ref-prefix refs/upstream-tags/
+          --emit-github-output
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to DockerHub
-        if: ${{ env.DOCKERHUB_USERNAME != '' }}
-        uses: docker/login-action@v3
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Fetch tags with annotations
-        run: |
-          # 确保获取完整的 annotated tag 信息
-          git fetch --tags --force
-
-      - name: Get tag message
+      - name: Read tag message
         id: tag_message
+        env:
+          RELEASE_TAG: ${{ steps.guard.outputs.tag }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_NAME=${{ github.event.inputs.tag }}
-          else
-            TAG_NAME=${GITHUB_REF#refs/tags/}
-          fi
-          echo "Processing tag: $TAG_NAME"
+          python - <<'PY'
+          import os
+          import subprocess
+          import uuid
 
-          # 获取完整的 tag message（跳过第一行标题）
-          TAG_MESSAGE=$(git tag -l --format='%(contents:body)' "$TAG_NAME")
+          message = subprocess.run(
+              ["git", "tag", "-l", "--format=%(contents:body)", os.environ["RELEASE_TAG"]],
+              check=True,
+              stdout=subprocess.PIPE,
+              text=True,
+          ).stdout
+          message_lines = set(message.splitlines())
+          delimiter = f"TAG_MESSAGE_{uuid.uuid4().hex}"
+          while delimiter in message_lines:
+              delimiter = f"TAG_MESSAGE_{uuid.uuid4().hex}"
 
-          # 调试输出
-          echo "Tag message length: ${#TAG_MESSAGE}"
-          echo "Tag message preview:"
-          echo "$TAG_MESSAGE" | head -10
-
-          # 使用 EOF 分隔符处理多行内容
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"message<<{delimiter}\n")
+              handle.write(message)
+              if not message.endswith("\n"):
+                  handle.write("\n")
+              handle.write(f"{delimiter}\n")
+          PY
 
       - name: Set lowercase owner for GHCR
         id: lowercase
-        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: |
+          owner="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: 10.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Run exact-tag frontend dependency audit
+        working-directory: frontend
+        run: |
+          pnpm audit --prod --audit-level=high --json > "${RUNNER_TEMP}/pnpm-audit.json" || true
+          python ../tools/check_pnpm_audit_exceptions.py \
+            --audit "${RUNNER_TEMP}/pnpm-audit.json" \
+            --exceptions ../.github/audit-exceptions.yml
+
+      - name: Run exact-tag frontend gate and build embedded assets
+        working-directory: frontend
+        run: |
+          pnpm run lint:check
+          pnpm run test:run
+          pnpm run typecheck
+          pnpm run build
+
+      - name: Setup Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: backend/go.mod
+          check-latest: false
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Verify Go version from go.mod
+        run: |
+          expected="go$(awk '/^go / {print $2; exit}' backend/go.mod)"
+          actual="$(go env GOVERSION)"
+          test "$actual" = "$expected"
+
+      - name: Run exact-tag Go vulnerability scan
+        working-directory: backend
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+          govulncheck ./...
+
+      - name: Run exact-tag backend unit tests
+        working-directory: backend
+        run: make test-unit
+
+      - name: Run exact-tag installer integrity tests
+        run: |
+          bash deploy/tests/install-github-token-test.sh
+          bash deploy/tests/install-checksum-integrity-test.sh
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Require unused immutable publication targets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.guard.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.guard.outputs.version }}
+        run: |
+          if gh release view -R YLeon2007/sub2api "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "GitHub Release ${RELEASE_TAG} already exists; refusing to overwrite immutable artifacts" >&2
+            exit 1
+          fi
+          image="ghcr.io/${{ steps.lowercase.outputs.owner }}/sub2api:${RELEASE_VERSION}"
+          if docker buildx imagetools inspect "${image}" >/dev/null 2>&1; then
+            echo "GHCR image ${image} already exists; refusing to overwrite immutable tag" >&2
+            exit 1
+          fi
+
+      - name: Create RU-only GoReleaser config
+        run: |
+          cat > "${RUNNER_TEMP}/goreleaser.ru.yaml" <<'YAML'
+          version: 2
+
+          project_name: sub2api
+
+          builds:
+            - id: sub2api
+              dir: backend
+              main: ./cmd/server
+              binary: sub2api
+              flags:
+                - -tags=embed
+              env:
+                - CGO_ENABLED=0
+                - GOFLAGS=-mod=readonly
+              goos:
+                - linux
+                - windows
+                - darwin
+              goarch:
+                - amd64
+                - arm64
+              ignore:
+                - goos: windows
+                  goarch: arm64
+              ldflags:
+                - -s -w
+                - -X main.Version={{ .Env.RELEASE_VERSION }}
+                - -X main.Commit={{ .Commit }}
+                - -X main.Date={{ .Date }}
+                - -X main.BuildType=release
+
+          archives:
+            - id: default
+              formats:
+                - tar.gz
+              name_template: >-
+                {{ .ProjectName }}_{{ .Env.RELEASE_VERSION }}_{{ .Os }}_{{ .Arch }}
+              format_overrides:
+                - goos: windows
+                  formats:
+                    - zip
+              files:
+                - LICENSE*
+                - README*
+                - deploy/*
+
+          checksum:
+            name_template: checksums.txt
+            algorithm: sha256
+
+          changelog:
+            disable: true
+
+          dockers_v2:
+            - id: ghcr
+              ids:
+                - sub2api
+              dockerfile: Dockerfile.goreleaser
+              images:
+                - ghcr.io/{{ .Env.GITHUB_REPO_OWNER_LOWER }}/sub2api
+              tags:
+                - '{{ .Env.RELEASE_VERSION }}'
+              platforms:
+                - linux/amd64
+                - linux/arm64
+              extra_files:
+                - deploy/docker-entrypoint.sh
+                - backend/resources
+              labels:
+                org.opencontainers.image.version: '{{ .Env.RELEASE_VERSION }}'
+                org.opencontainers.image.revision: '{{ .FullCommit }}'
+                org.opencontainers.image.source: 'https://github.com/{{ .Env.GITHUB_REPO_OWNER }}/{{ .Env.GITHUB_REPO_NAME }}'
+
+          release:
+            github:
+              owner: '{{ .Env.GITHUB_REPO_OWNER }}'
+              name: '{{ .Env.GITHUB_REPO_NAME }}'
+            draft: true
+            prerelease: false
+            name_template: Sub2API RU {{ .Env.RELEASE_TAG }}
+            header: |
+              > RU fork release based on upstream {{ .Env.RELEASE_BASE_TAG }}.
+
+              {{ .Env.TAG_MESSAGE }}
+            footer: |
+              ---
+
+              ## Integrity
+
+              Download `checksums.txt` from this release and verify assets with:
+
+              ```bash
+              sha256sum -c checksums.txt
+              ```
+
+              ## GHCR image
+
+              ```bash
+              docker pull ghcr.io/{{ .Env.GITHUB_REPO_OWNER_LOWER }}/sub2api:{{ .Env.RELEASE_VERSION }}
+              ```
+          YAML
+          python tools/validate_ru_automation.py --repo-root . --goreleaser-config "${RUNNER_TEMP}/goreleaser.ru.yaml"
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
         with:
-          version: '~> v2'
-          args: release --clean --skip=validate ${{ env.SIMPLE_RELEASE == 'true' && '--config=.goreleaser.simple.yaml' || '' }}
+          version: v2.17.1
+          args: release --clean --config=${{ runner.temp }}/goreleaser.ru.yaml
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           TAG_MESSAGE: ${{ steps.tag_message.outputs.message }}
+          RELEASE_TAG: ${{ steps.guard.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.guard.outputs.version }}
+          RELEASE_BASE_TAG: ${{ steps.guard.outputs.base_tag }}
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO_OWNER_LOWER: ${{ steps.lowercase.outputs.owner }}
           GITHUB_REPO_NAME: ${{ github.event.repository.name }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME || 'skip' }}
 
-      # Update DockerHub description
-      - name: Update DockerHub description
-        if: ${{ env.SIMPLE_RELEASE != 'true' && env.DOCKERHUB_USERNAME != '' }}
-        uses: peter-evans/dockerhub-description@v5
+      - name: Verify Linux release binary identity
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/sub2api
-          short-description: "Sub2API - AI API Gateway Platform"
-          readme-filepath: ./deploy/DOCKER.md
+          RELEASE_VERSION: ${{ steps.guard.outputs.version }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          version_output="$(dist/sub2api_linux_amd64_v1/sub2api --version 2>&1)"
+          printf '%s\n' "$version_output"
+          printf '%s\n' "$version_output" | grep -F "Sub2API ${RELEASE_VERSION} "
+          printf '%s\n' "$version_output" | grep -F "commit: ${EXPECTED_COMMIT}"
 
-      # Send Telegram notification
-      - name: Send Telegram Notification
-        if: ${{ env.SIMPLE_RELEASE != 'true' }}
+      - name: Verify local release checksums
+        run: |
+          test -s dist/checksums.txt
+          (cd dist && sha256sum -c checksums.txt)
+
+      - name: Verify versioned GHCR manifest
+        id: image
+        run: |
+          image="ghcr.io/${{ steps.lowercase.outputs.owner }}/sub2api:${{ steps.guard.outputs.version }}"
+          inspect="$(docker buildx imagetools inspect "$image")"
+          printf '%s\n' "$inspect"
+          digest="$(printf '%s\n' "$inspect" | awk '$1 == "Digest:" {print $2; exit}')"
+          case "$digest" in
+            sha256:*) ;;
+            *) echo "Unable to resolve manifest digest for ${image}" >&2; exit 1 ;;
+          esac
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish verified metadata and release
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        continue-on-error: true
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.guard.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.guard.outputs.version }}
+          RELEASE_BASE_TAG: ${{ steps.guard.outputs.base_tag }}
+          RELEASE_BASE_REF: ${{ steps.guard.outputs.base_ref }}
+          IMAGE: ${{ steps.image.outputs.image }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: |
-          # 检查必要的环境变量
-          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-            echo "Telegram credentials not configured, skipping notification"
-            exit 0
-          fi
+          export RU_COMMIT="$(git rev-parse HEAD)"
+          export UPSTREAM_COMMIT="$(git rev-list -n 1 "${RELEASE_BASE_REF}")"
+          export BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export CHECKSUMS_SHA256="$(sha256sum dist/checksums.txt | awk '{print $1}')"
+          python - <<'PY'
+          import os
+          from pathlib import Path
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_NAME=${{ github.event.inputs.tag }}
-          else
-            TAG_NAME=${GITHUB_REF#refs/tags/}
-          fi
-          VERSION=${TAG_NAME#v}
-          REPO="${{ github.repository }}"
-          GHCR_IMAGE="ghcr.io/${REPO,,}"  # ${,,} converts to lowercase
+          metadata = "\n".join([
+              f"release_tag={os.environ['RELEASE_TAG']}",
+              f"release_version={os.environ['RELEASE_VERSION']}",
+              f"upstream_tag={os.environ['RELEASE_BASE_TAG']}",
+              f"upstream_commit={os.environ['UPSTREAM_COMMIT']}",
+              f"ru_commit={os.environ['RU_COMMIT']}",
+              f"build_date={os.environ['BUILD_DATE']}",
+              f"image={os.environ['IMAGE']}",
+              f"image_digest={os.environ['IMAGE_DIGEST']}",
+              f"checksums_sha256={os.environ['CHECKSUMS_SHA256']}",
+          ]) + "\n"
+          Path("dist/release-metadata.txt").write_text(metadata, encoding="utf-8")
+          PY
+          (cd dist && sha256sum release-metadata.txt > release-metadata.txt.sha256)
+          gh release upload -R YLeon2007/sub2api "${RELEASE_TAG}" \
+            dist/release-metadata.txt \
+            dist/release-metadata.txt.sha256
+          gh release view -R YLeon2007/sub2api "${RELEASE_TAG}" --json body --jq .body > "${RUNNER_TEMP}/release-body.md"
+          cat >> "${RUNNER_TEMP}/release-body.md" <<EOF
 
-          # 获取 tag message 内容并转义 Markdown 特殊字符
-          TAG_MESSAGE='${{ steps.tag_message.outputs.message }}'
-          TAG_MESSAGE=$(echo "$TAG_MESSAGE" | sed 's/\([_*`\[]\)/\\\1/g')
+          <!-- ru-build-metadata -->
+          ## Verified build metadata
 
-          # 限制消息长度（Telegram 消息限制 4096 字符，预留空间给头尾固定内容）
-          if [ ${#TAG_MESSAGE} -gt 3500 ]; then
-            TAG_MESSAGE="${TAG_MESSAGE:0:3500}..."
-          fi
-
-          # 构建消息内容
-          MESSAGE="🚀 *Sub2API 新版本发布！*"$'\n'$'\n'
-          MESSAGE+="📦 版本号: \`${VERSION}\`"$'\n'$'\n'
-
-          # 添加更新内容
-          if [ -n "$TAG_MESSAGE" ]; then
-            MESSAGE+="${TAG_MESSAGE}"$'\n'$'\n'
-          fi
-
-          MESSAGE+="🐳 *Docker 部署:*"$'\n'
-          MESSAGE+="\`\`\`bash"$'\n'
-          # 根据是否配置 DockerHub 动态生成
-          if [ -n "$DOCKERHUB_USERNAME" ]; then
-            DOCKER_IMAGE="${DOCKERHUB_USERNAME}/sub2api"
-            MESSAGE+="# Docker Hub"$'\n'
-            MESSAGE+="docker pull ${DOCKER_IMAGE}:${VERSION}"$'\n'
-            MESSAGE+="# GitHub Container Registry"$'\n'
-          fi
-          MESSAGE+="docker pull ${GHCR_IMAGE}:${VERSION}"$'\n'
-          MESSAGE+="\`\`\`"$'\n'$'\n'
-          MESSAGE+="🔗 *相关链接:*"$'\n'
-          MESSAGE+="• [GitHub Release](https://github.com/${REPO}/releases/tag/${TAG_NAME})"$'\n'
-          if [ -n "$DOCKERHUB_USERNAME" ]; then
-            MESSAGE+="• [Docker Hub](https://hub.docker.com/r/${DOCKER_IMAGE})"$'\n'
-          fi
-          MESSAGE+="• [GitHub Packages](https://github.com/${REPO}/pkgs/container/sub2api)"$'\n'$'\n'
-          MESSAGE+="#Sub2API #Release #${TAG_NAME//./_}"
-
-          # 发送消息
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n \
-              --arg chat_id "${TELEGRAM_CHAT_ID}" \
-              --arg text "${MESSAGE}" \
-              '{
-                chat_id: $chat_id,
-                text: $text,
-                parse_mode: "Markdown",
-                disable_web_page_preview: true
-              }')"
-
-  sync-version-file:
-    needs: [release]
-    if: ${{ needs.release.result == 'success' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout default branch
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-
-      - name: Sync VERSION file to released tag
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION=${{ github.event.inputs.tag }}
-            VERSION=${VERSION#v}
-          else
-            VERSION=${GITHUB_REF#refs/tags/v}
-          fi
-
-          CURRENT_VERSION=$(tr -d '\r\n' < backend/cmd/server/VERSION || true)
-          if [ "$CURRENT_VERSION" = "$VERSION" ]; then
-            echo "VERSION file already matches $VERSION"
-            exit 0
-          fi
-
-          echo "$VERSION" > backend/cmd/server/VERSION
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add backend/cmd/server/VERSION
-          git commit -m "chore: sync VERSION to ${VERSION} [skip ci]"
-          git push origin HEAD:${{ github.event.repository.default_branch }}
+          - Upstream: \`${RELEASE_BASE_TAG}\` (\`${UPSTREAM_COMMIT}\`)
+          - RU commit: \`${RU_COMMIT}\`
+          - Build date: \`${BUILD_DATE}\`
+          - Image: \`${IMAGE}@${IMAGE_DIGEST}\`
+          - checksums.txt SHA-256: \`${CHECKSUMS_SHA256}\`
+          EOF
+          gh release edit -R YLeon2007/sub2api "${RELEASE_TAG}" \
+            --notes-file "${RUNNER_TEMP}/release-body.md" \
+            --draft=false

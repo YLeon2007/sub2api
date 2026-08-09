@@ -651,9 +651,10 @@ import {
 import { useClipboard } from '@/composables/useClipboard'
 import Icon from '@/components/icons/Icon.vue'
 
-const GITHUB_REPO = 'Wei-Shaw/sub2api'
-// Docker Hub image published by CI (tags carry no "v" prefix, e.g. weishaw/sub2api:0.1.146)
-const DOCKER_IMAGE = 'weishaw/sub2api'
+const GITHUB_REPO = 'YLeon2007/sub2api'
+// Versioned GHCR images are published by the RU fork release workflow.
+const DOCKER_IMAGE = 'ghcr.io/yleon2007/sub2api'
+const RU_RELEASE_VERSION_RE = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-ru\.[1-9]\d*$/
 
 const { t } = useI18n()
 
@@ -707,20 +708,40 @@ const manualTabs = computed(() => [
   { key: 'docker' as const, label: t('version.deployDocker') }
 ])
 
+function inspectedRemoteScriptCommand(url: string, invocation: string): string {
+  return [
+    'set -eu',
+    'script_path="$(mktemp)"',
+    'trap \'rm -f "$script_path"\' EXIT',
+    `curl -fL --proto '=https' --tlsv1.2 -o "$script_path" "${url}"`,
+    'chmod 700 "$script_path"',
+    'less "$script_path"',
+    "printf 'Run the inspected script? [y/N] '",
+    'read -r answer',
+    `case "$answer" in y|Y) sudo bash "$script_path" ${invocation} ;; *) echo "Aborted"; exit 1 ;; esac`
+  ].join('\n')
+}
+
 const scriptRollbackCommand = computed(() => {
-  if (!selectedRollbackVersion.value) return ''
-  const tag = `v${selectedRollbackVersion.value}`
-  return `curl -sSL https://raw.githubusercontent.com/${GITHUB_REPO}/${tag}/deploy/install.sh | sudo bash -s -- rollback ${tag}`
+  const version = selectedRollbackVersion.value
+  if (!RU_RELEASE_VERSION_RE.test(version)) return ''
+  const tag = `v${version}`
+  const url = `https://raw.githubusercontent.com/${GITHUB_REPO}/${tag}/deploy/install.sh`
+  return inspectedRemoteScriptCommand(url, `rollback "${tag}"`)
 })
 
 const dockerRollbackCommand = computed(() => {
-  if (!selectedRollbackVersion.value) return ''
+  const version = selectedRollbackVersion.value
+  if (!RU_RELEASE_VERSION_RE.test(version)) return ''
+  const tag = `v${version}`
+  const image = `${DOCKER_IMAGE}:${version}`
+  const url = `https://raw.githubusercontent.com/${GITHUB_REPO}/${tag}/deploy/sync-runtime-from-image.sh`
   return [
     `# ${t('version.dockerEditCompose')}`,
-    `image: ${DOCKER_IMAGE}:${selectedRollbackVersion.value}`,
+    `image: ${image}`,
     '',
     `# ${t('version.dockerRecreate')}`,
-    'docker compose up -d'
+    inspectedRemoteScriptCommand(url, `"${image}" "$(pwd)"`)
   ].join('\n')
 })
 
