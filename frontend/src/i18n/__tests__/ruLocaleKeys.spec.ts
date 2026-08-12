@@ -270,4 +270,24 @@ describe('Russian locale key coverage', () => {
       'Опционально: агрегирует метрики работоспособности из реального трафика gateway без тестовых запросов к upstream. В режиме V2 проверки V1 остановлены.'
     )
   })
+
+  it('preserves the added v0.1.175 backup, response billing, scheduling, and Codex fingerprint semantics in Russian', () => {
+    expect(ru.admin.backup.columns.parts).toBe('Части')
+    expect(ru.admin.backup.actions.downloadParts).toBe('Скачать части')
+    expect(ru.admin.backup.actions.downloadPartsHint).toContain('cat payload.part-* > backup.sql.gz')
+    expect(ru.admin.backup.actions.downloadPartsHint).toContain('copy /b payload.part-000001+payload.part-000002 backup.sql.gz')
+    expect(ru.admin.backup.actions.partLabel).toBe('Часть {index}')
+    expect(ru.admin.backup.actions.downloadFailed).toBe('Ссылка для скачивания отсутствует')
+    expect(ru.admin.channels.form.billingModelSourceResponse).toBe('Считать по модели в ответе upstream')
+    expect(ru.admin.accounts.accountSchedulingThresholdOverride).toBe(
+      'Переопределение порога авто-паузы аккаунта'
+    )
+    expect(ru.admin.accounts.accountSchedulingThresholdOverrideDisabledHint).toContain('100 отключает')
+    expect(ru.admin.accounts.openai.codexFingerprintMode).toBe('Сведение отпечатков Codex')
+    expect(ru.admin.accounts.openai.codexFingerprintModeDesc).toContain('стабильным значениям уровня аккаунта')
+    expect(ru.admin.accounts.openai.codexFingerprintOff).toBe('Выключено (сквозная передача)')
+    expect(ru.admin.accounts.openai.codexFingerprintDevice).toBe('Только устройство')
+    expect(ru.admin.accounts.openai.codexFingerprintSession).toBe('Устройство и сессия (рекомендуется)')
+    expect(ru.admin.accounts.openai.codexFingerprintFull).toBe('Полное сведение')
+  })
 })

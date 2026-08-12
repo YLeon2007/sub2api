@@ -27,7 +27,7 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 [ -n "$url" ] && [ -n "$out" ]
-archive_name="sub2api_0.1.173-ru.1_linux_amd64.tar.gz"
+archive_name="sub2api_0.1.175-ru.1_linux_amd64.tar.gz"
 digest=$(printf 'archive' | /usr/bin/sha256sum | cut -d' ' -f1)
 case "$url" in
     */checksums.txt)
@@ -79,7 +79,7 @@ run_case() {
             msg() { printf "%s" "$1"; }
             OS=linux
             ARCH=amd64
-            LATEST_VERSION=v0.1.173-ru.1
+            LATEST_VERSION=v0.1.175-ru.1
             INSTALL_DIR=$CASE_INSTALL_DIR
             download_and_extract
         '

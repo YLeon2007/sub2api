@@ -225,12 +225,12 @@ func TestUpdateServiceRollbackToVersionAcceptsVPrefix(t *testing.T) {
 }
 
 func TestSelectReleaseAssetsRequiresExactVersionedArchiveAndChecksum(t *testing.T) {
-	version := "0.1.173-ru.1"
-	exactArchive := "sub2api_0.1.173-ru.1_linux_amd64.tar.gz"
+	version := "0.1.175-ru.1"
+	exactArchive := "sub2api_0.1.175-ru.1_linux_amd64.tar.gz"
 	assets := []Asset{
-		{Name: exactArchive + ".evil", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.173-ru.1/confusable"},
-		{Name: exactArchive, DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.173-ru.1/" + exactArchive},
-		{Name: "checksums.txt", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.173-ru.1/checksums.txt"},
+		{Name: exactArchive + ".evil", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.175-ru.1/confusable"},
+		{Name: exactArchive, DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.175-ru.1/" + exactArchive},
+		{Name: "checksums.txt", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.1.175-ru.1/checksums.txt"},
 	}
 
 	archive, checksum, err := selectReleaseAssets(version, "linux", "amd64", assets)
@@ -250,7 +250,7 @@ func TestSelectReleaseAssetsRequiresExactVersionedArchiveAndChecksum(t *testing.
 }
 
 func TestExpectedChecksumForFileRequiresOneExactBasename(t *testing.T) {
-	name := "sub2api_0.1.173-ru.1_linux_amd64.tar.gz"
+	name := "sub2api_0.1.175-ru.1_linux_amd64.tar.gz"
 	digest := strings.Repeat("a", 64)
 
 	got, err := expectedChecksumForFile([]byte(digest+"  "+name+"\n"), name)

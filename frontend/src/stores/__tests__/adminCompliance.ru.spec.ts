@@ -29,9 +29,9 @@ function status(required = true) {
     document_path_zh: 'docs/legal/admin-compliance.zh.md',
     document_path_en: 'docs/legal/admin-compliance.en.md',
     document_path_ru: 'docs/legal/admin-compliance.ru.md',
-    document_url_zh: 'https://github.com/YLeon2007/sub2api/blob/v0.1.173-ru.1/docs/legal/admin-compliance.zh.md',
-    document_url_en: 'https://github.com/YLeon2007/sub2api/blob/v0.1.173-ru.1/docs/legal/admin-compliance.en.md',
-    document_url_ru: 'https://github.com/YLeon2007/sub2api/blob/v0.1.173-ru.1/docs/legal/admin-compliance.ru.md',
+    document_url_zh: 'https://github.com/YLeon2007/sub2api/blob/v0.1.175-ru.1/docs/legal/admin-compliance.zh.md',
+    document_url_en: 'https://github.com/YLeon2007/sub2api/blob/v0.1.175-ru.1/docs/legal/admin-compliance.en.md',
+    document_url_ru: 'https://github.com/YLeon2007/sub2api/blob/v0.1.175-ru.1/docs/legal/admin-compliance.ru.md',
     ack_phrase_zh: 'zh phrase',
     ack_phrase_en: 'en phrase',
     ack_phrase_ru: RU_PHRASE
@@ -52,16 +52,16 @@ describe('Russian admin compliance contract', () => {
 
     expect(store.expectedPhrase).toBe(RU_PHRASE)
     expect(store.status?.document_path_ru).toBe('docs/legal/admin-compliance.ru.md')
-    expect(store.status?.document_url_ru).toContain('/blob/v0.1.173-ru.1/')
+    expect(store.status?.document_url_ru).toContain('/blob/v0.1.175-ru.1/')
   })
 
   it('pins fallback document URLs to the immutable RU release', () => {
     const store = useAdminComplianceStore()
     store.requireAcknowledgement({ version: 'v2026.06.10' })
 
-    expect(store.status?.document_url_zh).toContain('/blob/v0.1.173-ru.1/')
-    expect(store.status?.document_url_en).toContain('/blob/v0.1.173-ru.1/')
-    expect(store.status?.document_url_ru).toContain('/blob/v0.1.173-ru.1/')
+    expect(store.status?.document_url_zh).toContain('/blob/v0.1.175-ru.1/')
+    expect(store.status?.document_url_en).toContain('/blob/v0.1.175-ru.1/')
+    expect(store.status?.document_url_ru).toContain('/blob/v0.1.175-ru.1/')
   })
 
   it('submits the Russian locale and phrase', async () => {

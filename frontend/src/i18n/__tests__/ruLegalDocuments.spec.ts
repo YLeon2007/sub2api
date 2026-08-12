@@ -33,6 +33,6 @@ describe('Russian legal document integration', () => {
     expect(dialog).toContain("if (locale === 'ru')")
     expect(dialog).toContain('document_url_ru')
     expect(dialog).toContain('YLeon2007/sub2api')
-    expect(dialog).toContain('/blob/v0.1.173-ru.1/')
+    expect(dialog).toContain('/blob/v0.1.175-ru.1/')
   })
 })
