@@ -35,4 +35,15 @@ describe('Russian legal document integration', () => {
     expect(dialog).toContain('YLeon2007/sub2api')
     expect(dialog).toContain('/blob/v0.1.175-ru.1/')
   })
+
+  it('pins every public payment integration doc_url to the immutable RU release', () => {
+    for (const path of [
+      'docs/ADMIN_PAYMENT_INTEGRATION_API.md',
+      'docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md',
+    ]) {
+      const document = source(path)
+      expect(document).not.toContain('/blob/main/')
+      expect(document).toContain('/blob/v0.1.175-ru.1/')
+    }
+  })
 })
