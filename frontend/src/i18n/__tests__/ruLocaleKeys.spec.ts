@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { baseCompile } from '@intlify/message-compiler'
 
@@ -276,6 +278,10 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.backup.actions.downloadParts).toBe('Скачать части')
     expect(ru.admin.backup.actions.downloadPartsHint).toContain('cat payload.part-* > backup.sql.gz')
     expect(ru.admin.backup.actions.downloadPartsHint).toContain('copy /b payload.part-000001+payload.part-000002 backup.sql.gz')
+    expect(ru.admin.backup.actions.downloadPartsHint).toContain('свыше 4 ГиБ')
+    expect(ru.admin.backup.actions.downloadPartsHint).toContain('полный локальный gzip-архив')
+    expect(ru.admin.backup.actions.downloadPartsHint).toContain('двух сжатых копий')
+    expect(ru.admin.backup.actions.downloadPartsHint).toContain('30 минут')
     expect(ru.admin.backup.actions.partLabel).toBe('Часть {index}')
     expect(ru.admin.backup.actions.downloadFailed).toBe('Ссылка для скачивания отсутствует')
     expect(ru.admin.channels.form.billingModelSourceResponse).toBe('Считать по модели в ответе upstream')
@@ -325,5 +331,13 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.settings.emailTemplates.previewing).toBe('Формируется предпросмотр...')
     expect(ru.admin.settings.emailTemplates.placeholderCopied).toBe('Переменная скопирована')
     expect(ru.admin.settings.emailTemplates.noPreview).toContain('предпросмотр')
+  })
+
+  it('documents the v0.1.175 backup spool capacity contract for Russian operators', () => {
+    const readme = readFileSync(resolve(process.cwd(), '../README_RU.md'), 'utf8')
+    expect(readme).toContain('сначала создаёт полный локальный gzip-архив')
+    expect(readme).toContain('свыше 4 ГиБ')
+    expect(readme).toContain('примерно для двух сжатых копий')
+    expect(readme).toContain('30 минут')
   })
 })

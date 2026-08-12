@@ -30,7 +30,7 @@ ALLOWED_SECRET_REFS = {"GITHUB_TOKEN"}
 SECRET_REF_RE = re.compile(r"secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 WRITE_PERMISSION_RE = re.compile(r"^\s*(actions|checks|contents|deployments|id-token|issues|packages|pages|pull-requests|security-events|statuses)\s*:\s*write\s*$", re.M)
 ACTION_REF_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*[^@\s]+@([^\s#]+)", re.M)
-APPROVED_GORELEASER_DOCKERFILE_SHA256 = "ec3b494986fa4e5076112a60b38918b7bb367a6ff40f5d58b67d2d53d3b94955"
+APPROVED_GORELEASER_DOCKERFILE_SHA256 = "761adda9fccae39a4c07b16c938f640818e561cf782f71ea5116aa70ef1e24e8"
 APPROVED_DEPLOY_COMPOSE_SHA256 = "be28cba82900c9c7bb6e91bdc2956104bea12864c8ec83f5a196db75ec600993"
 RU_VERSION_RE = re.compile(
     r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-ru\.[1-9]\d*"
@@ -204,7 +204,20 @@ def validate_release_workflow(text: str, errors: list[str]) -> None:
     require("contents: write" in text, "release.yml: release needs contents: write for GitHub Releases", errors)
     require("packages: write" in text, "release.yml: release needs packages: write for GHCR", errors)
     require("tools/ru_release_guard.py" in text and "--emit-github-output" in text, "release.yml: missing RU tag/base guard", errors)
-    require("goreleaser/goreleaser-action" in text, "release.yml: missing GoReleaser action", errors)
+    required_release_inputs = (
+        "tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0",
+        "moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8",
+        "a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80",
+        "1bd4bff62897b99fd790104bd374049c8c486498da43240a3c97555e4d644b85",
+        "goreleaser_Linux_x86_64.tar.gz",
+    )
+    for token in required_release_inputs:
+        require(token in text, f"release.yml: missing pinned release input {token}", errors)
+    require(
+        "goreleaser/goreleaser-action" not in text,
+        "release.yml: GoReleaser action may execute a semantic-version download without exact byte verification",
+        errors,
+    )
     require("checksums.txt" in text and "sha256sum -c" in text, "release.yml: missing checksum generation/verification", errors)
     for installer_test in (
         "deploy/tests/install-github-token-test.sh",
@@ -473,6 +486,12 @@ def validate_goreleaser_dockerfile(
     require(
         text_sha256(text) == approved_sha256,
         "Dockerfile.goreleaser: content must match approved content SHA-256",
+        errors,
+    )
+    require(
+        "alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d" in text
+        and "postgres:18-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15" in text,
+        "Dockerfile.goreleaser: runtime base images must be pinned by content digest",
         errors,
     )
     logical_dockerfile = re.sub(r"\\\r?\n[ \t]*", " ", text)
@@ -1596,7 +1615,10 @@ def self_test() -> None:
     assert any("platform-qualified binary COPY" in error for error in unsafe_docker_errors)
     safe_docker_errors: list[str] = []
     safe_docker_text = (
-        "FROM alpine:3.21\nARG TARGETOS\nARG TARGETARCH\n"
+        "ARG ALPINE_IMAGE=alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d\n"
+        "ARG POSTGRES_IMAGE=postgres:18-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15\n"
+        "FROM ${POSTGRES_IMAGE} AS pg-client\nFROM ${ALPINE_IMAGE}\n"
+        "ARG TARGETOS\nARG TARGETARCH\n"
         "LABEL org.opencontainers.image.source=\"https://github.com/YLeon2007/sub2api\"\n"
         "COPY ${TARGETOS}/${TARGETARCH}/sub2api /app/sub2api\n"
     )
@@ -1606,6 +1628,21 @@ def self_test() -> None:
         text_sha256(safe_docker_text),
     )
     assert not safe_docker_errors
+    for mutable_base in ("alpine:3.21", "postgres:18-alpine"):
+        mutable_base_text = safe_docker_text.replace(
+            next(line.split("=", 1)[1] for line in safe_docker_text.splitlines() if line.startswith(
+                "ARG ALPINE_IMAGE=" if mutable_base.startswith("alpine") else "ARG POSTGRES_IMAGE="
+            )),
+            mutable_base,
+            1,
+        )
+        mutable_base_errors: list[str] = []
+        validate_goreleaser_dockerfile(
+            mutable_base_text,
+            mutable_base_errors,
+            text_sha256(mutable_base_text),
+        )
+        assert any("content digest" in error for error in mutable_base_errors)
     upstream_label_errors: list[str] = []
     validate_goreleaser_dockerfile(
         "FROM alpine:3.21\nARG TARGETOS\nARG TARGETARCH\n"
@@ -2073,6 +2110,8 @@ jobs:
       - run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0 && govulncheck ./... && make test-unit
       - run: bash deploy/tests/install-github-token-test.sh
       - run: bash deploy/tests/install-checksum-integrity-test.sh
+      - run: echo tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+      - run: echo moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
       - name: Require unused immutable publication targets
         run: |
           python - <<'PY'
@@ -2091,7 +2130,10 @@ jobs:
               raise SystemExit(f"GHCR manifest absence probe returned HTTP {manifest_status}")
           PY
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v7
+        run: |
+          echo a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80 goreleaser_Linux_x86_64.tar.gz | sha256sum -c -
+          echo 1bd4bff62897b99fd790104bd374049c8c486498da43240a3c97555e4d644b85 goreleaser | sha256sum -c -
+          goreleaser release
       - name: Verify Linux release binary identity
         run: |
           dist/sub2api_linux_amd64_v1/sub2api --version
@@ -2221,7 +2263,10 @@ jobs:
             encoding="utf-8",
         )
         fixture_dockerfile = (
-            "FROM alpine:3.21\nARG TARGETOS\nARG TARGETARCH\n"
+            "ARG ALPINE_IMAGE=alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d\n"
+            "ARG POSTGRES_IMAGE=postgres:18-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15\n"
+            "FROM ${POSTGRES_IMAGE} AS pg-client\nFROM ${ALPINE_IMAGE}\n"
+            "ARG TARGETOS\nARG TARGETARCH\n"
             "LABEL org.opencontainers.image.source=\"https://github.com/YLeon2007/sub2api\"\n"
             "COPY ${TARGETOS}/${TARGETARCH}/sub2api /app/sub2api\n"
         )

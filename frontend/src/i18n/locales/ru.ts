@@ -2181,7 +2181,7 @@ export const ruOverrides = {
       "actions": {
         "download": "Скачать",
         "downloadParts": "Скачать части",
-        "downloadPartsHint": "Скачайте все части по порядку и объедините байты gzip: в Linux/macOS выполните cat payload.part-* > backup.sql.gz; в Windows — copy /b payload.part-000001+payload.part-000002 backup.sql.gz.",
+        "downloadPartsHint": "Для резервной копии свыше 4 ГиБ сервер сначала создаёт полный локальный gzip-архив, затем разбивает его на части; во время разбиения предусмотрите свободное место примерно для двух сжатых копий. На всю операцию действует существующий тайм-аут 30 минут. Скачайте все части по порядку и объедините байты gzip: в Linux/macOS выполните cat payload.part-* > backup.sql.gz; в Windows — copy /b payload.part-000001+payload.part-000002 backup.sql.gz.",
         "partLabel": "Часть {index}",
         "downloadFailed": "Ссылка для скачивания отсутствует",
         "restore": "Восстановить",
