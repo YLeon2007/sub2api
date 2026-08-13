@@ -28,7 +28,7 @@
 | `config.example.yaml` | Полный config reference |
 | `EDGE_SECURITY.md` | Reverse proxy/CDN/WAF/trusted proxy hardening |
 
-Fork defaults используют immutable image `ghcr.io/yleon2007/sub2api:0.1.175-ru.1`. Новые releases требуют явной смены tag; не переводите production на чужой mutable `latest`.
+Fork defaults используют immutable image `ghcr.io/yleon2007/sub2api:0.1.175-ru.2`. Новые releases требуют явной смены tag; не переводите production на чужой mutable `latest`.
 
 ## Docker: preparation script
 
@@ -39,7 +39,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/docker-deploy.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.175-ru.1/deploy/docker-deploy.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.175-ru.2/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -207,7 +207,7 @@ Apple helper принимает `SERVER_PORT` только в непривиле
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/install.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.175-ru.1/deploy/install.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.175-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in

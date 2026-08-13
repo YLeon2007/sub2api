@@ -5,7 +5,7 @@ Sub2API is an AI API gateway for distributing and managing AI product subscripti
 Fork releases use immutable images such as:
 
 ```text
-ghcr.io/yleon2007/sub2api:0.1.175-ru.1
+ghcr.io/yleon2007/sub2api:0.1.175-ru.2
 ```
 
 Floating `latest`, `main`, or `dev` tags are intentionally not deployment targets. Pin an explicit release tag or digest.
@@ -103,7 +103,7 @@ The complete version-specific list is in `.env.example`, `config.example.yaml`, 
 
 ## Image tags
 
-- `0.1.175-ru.1` — current immutable Russian release;
+- `0.1.175-ru.2` — current immutable Russian release;
 - `x.y.z-ru.n` — immutable Russian release format.
 
 ## Links

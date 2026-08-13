@@ -33,7 +33,7 @@ describe('Russian legal document integration', () => {
     expect(dialog).toContain("if (locale === 'ru')")
     expect(dialog).toContain('document_url_ru')
     expect(dialog).toContain('YLeon2007/sub2api')
-    expect(dialog).toContain('/blob/v0.1.175-ru.1/')
+    expect(dialog).toContain('/blob/v0.1.175-ru.2/')
   })
 
   it('pins every public payment integration doc_url to the immutable RU release', () => {
@@ -43,7 +43,7 @@ describe('Russian legal document integration', () => {
     ]) {
       const document = source(path)
       expect(document).not.toContain('/blob/main/')
-      expect(document).toContain('/blob/v0.1.175-ru.1/')
+      expect(document).toContain('/blob/v0.1.175-ru.2/')
     }
   })
 })

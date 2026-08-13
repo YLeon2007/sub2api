@@ -17,6 +17,7 @@ env:
   UPSTREAM_REPO: Wei-Shaw/sub2api
   LANG: C.UTF-8
   LC_ALL: C.UTF-8
+  PYTHONDONTWRITEBYTECODE: '1'
 
 jobs:
   release:
