@@ -2940,7 +2940,7 @@ export const ruOverrides = {
       "revertChanges": "Откатить",
       "userInfo": "Информация о пользователе",
       "platforms": {
-        "all": "All Platforms",
+        "all": "Все платформы",
         "anthropic": "Anthropic",
         "openai": "OpenAI",
         "gemini": "Gemini",
@@ -3059,7 +3059,7 @@ export const ruOverrides = {
         "endpoints": {
           "any": "Любой",
           "messages": "Messages",
-          "countTokens": "Count Tokens",
+          "countTokens": "Подсчёт токенов",
           "responses": "Responses",
           "chatCompletions": "Chat Completions",
           "embeddings": "Embeddings",
@@ -3100,7 +3100,7 @@ export const ruOverrides = {
         "exactMappingHint": "Точные переопределения моделей Claude имеют приоритет над семействами и могут направлять конкретную модель Claude на другую целевую модель.",
         "noExactMappings": "Точных переопределений моделей пока нет",
         "addExactMapping": "Добавить точный маппинг",
-        "claudeModel": "Claude Model",
+        "claudeModel": "Модель Claude",
         "claudeModelPlaceholder": "e.g., claude-sonnet-4-5-20250929",
         "targetModel": "Целевая модель",
         "targetModelPlaceholder": "e.g., gpt-5.4",
@@ -3982,7 +3982,7 @@ export const ruOverrides = {
       "allGroups": "Все группы",
       "ungroupedGroup": "Без группы",
       "oauthType": "OAuth",
-      "setupToken": "Setup Token",
+      "setupToken": "Токен настройки",
       "apiKey": "API-ключ",
       "schedulable": "Доступен для маршрутизации",
       "schedulableHint": "Включите, чтобы аккаунт участвовал в маршрутизации API-запросов",
@@ -4006,9 +4006,9 @@ export const ruOverrides = {
         "codeAssist": "Code Assist",
         "antigravityOauth": "Antigravity OAuth",
         "grokOauth": "Grok OAuth",
-        "antigravityApikey": "Connect via Base URL + API Key",
+        "antigravityApikey": "Подключение через Base URL и API-ключ",
         "upstream": "Апстрим",
-        "upstreamDesc": "Connect via Base URL + API Key"
+        "upstreamDesc": "Подключение через Base URL и API-ключ"
       },
       "antigravityProjectIdLabel": "GCP Project ID (необязательно)",
       "antigravityProjectIdPlaceholder": "your-gcp-project-id",
@@ -4384,9 +4384,9 @@ export const ruOverrides = {
       "vertexSaJsonMissingClientEmail": "В Service Account JSON отсутствует client_email",
       "vertexSaJsonInvalid": "Неверный формат Service Account JSON",
       "vertexSaJsonRequired": "Загрузите Service Account JSON",
-      "oauthSetupToken": "OAuth / Setup Token",
+      "oauthSetupToken": "OAuth / токен настройки",
       "addMethod": "Добавить способ",
-      "setupTokenLongLived": "Setup Token (долгоживущий)",
+      "setupTokenLongLived": "Токен настройки (долгоживущий)",
       "baseUrl": "Base URL",
       "baseUrlHint": "Оставьте значение по умолчанию для официального Anthropic API",
       "apiKeyRequired": "API Key *",
@@ -4421,8 +4421,8 @@ export const ruOverrides = {
         "responsesMode": "Поддержка Responses API",
         "responsesModeDesc": "Применяется только к аккаунтам OpenAI API Key. Auto следует результатам probe; принудительные режимы переопределяют probing.",
         "responsesModeAuto": "Auto",
-        "responsesModeForceResponses": "Force Responses",
-        "responsesModeForceChatCompletions": "Force Chat Completions",
+        "responsesModeForceResponses": "Принудительно Responses",
+        "responsesModeForceChatCompletions": "Принудительно Chat Completions",
         "responsesModeTextDisabledHint": "Неприменимо, когда endpoint Responses / Chat Completions не включён.",
         "endpointCapabilities": "Возможности endpoint-ов",
         "endpointCapabilitiesDesc": "Используется маршрутизацией аккаунтов. Текстовый endpoint следует настройке поддержки Responses API выше и отображается как Responses, Chat Completions или auto-режим; Embeddings отдельно управляет /v1/embeddings.",
@@ -4464,7 +4464,7 @@ export const ruOverrides = {
         "codexImageToolBadgeEnabled": "Принудительно внедряется",
         "codexImageToolBadgeDisabled": "Без внедрения",
         "codexImageToolBadgeBlock": "Заблокировано",
-        "compactMode": "Compact mode",
+        "compactMode": "Режим Compact",
         "compactModeDesc": "Управляет участием этого аккаунта в маршрутизации /responses/compact. Auto следует результатам probe, Force On всегда разрешает, Force Off всегда исключает.",
         "compactModeAuto": "Auto",
         "compactModeForceOn": "Force On",
@@ -4568,7 +4568,7 @@ export const ruOverrides = {
       "addModel": "Добавить",
       "modelExists": "Модель уже существует",
       "modelCount": "Моделей: {count}",
-      "poolMode": "Pool Mode",
+      "poolMode": "Режим пула",
       "poolModeHint": "Включите, когда upstream является пулом аккаунтов; ошибки не будут помечать локальный статус аккаунта",
       "poolModeInfo": "Если включено, upstream-ошибки 429/403/401 будут автоматически повторяться без пометки аккаунта как ограниченного по лимиту или ошибочного. Подходит для upstream, указывающего на другой экземпляр sub2api.",
       "poolModeRetryCount": "Повторы на том же аккаунте",
@@ -4699,15 +4699,15 @@ export const ruOverrides = {
           "urlHint": "Relay service URL (e.g., https://relay.example.com)"
         },
         "clientAffinity": {
-          "label": "Маршрутизация Client Affinity",
+          "label": "Маршрутизация с привязкой клиентов",
           "hint": "Если включено, новые сессии предпочитают аккаунты, которые этот клиент использовал раньше, чтобы сократить переключения аккаунтов"
         }
       },
       "affinityNoClients": "Нет affinity-клиентов",
       "affinityClients": "Affinity-клиентов: {count}",
-      "affinitySection": "Client Affinity",
+      "affinitySection": "Привязка клиентов",
       "affinitySectionHint": "Управляйте распределением клиентов по аккаунтам. Настройте пороги зон для балансировки нагрузки.",
-      "affinityToggle": "Включить Client Affinity",
+      "affinityToggle": "Включить привязку клиентов",
       "affinityToggleHint": "Новые сессии предпочитают аккаунты, которые этот клиент использовал раньше",
       "affinityBase": "Базовый лимит (Green Zone)",
       "affinityBasePlaceholder": "Пусто = без лимита",
@@ -6291,7 +6291,7 @@ export const ruOverrides = {
         "status": {
           "firing": "FIRING",
           "resolved": "RESOLVED",
-          "manualResolved": "MANUAL RESOLVED"
+          "manualResolved": "УСТРАНЕНО ВРУЧНУЮ"
         },
         "detail": {
           "title": "Детали оповещения",
@@ -6628,7 +6628,7 @@ export const ruOverrides = {
         "connected": "Realtime подключён",
         "connecting": "Realtime подключается",
         "reconnecting": "Realtime переподключается",
-        "offline": "Realtime offline",
+        "offline": "Realtime недоступен",
         "closed": "Realtime закрыт",
         "reconnectIn": "повтор через {seconds}с"
       },

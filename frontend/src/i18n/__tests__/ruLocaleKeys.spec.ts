@@ -92,6 +92,30 @@ describe('Russian locale key coverage', () => {
     expect(mismatches).toEqual([])
   })
 
+  it('localizes active account, group, alert, and realtime UI prose', () => {
+    expect(ru.admin.groups.platforms.all).toBe('Все платформы')
+    expect(ru.admin.groups.compositeRoutes.endpoints.countTokens).toBe('Подсчёт токенов')
+    expect(ru.admin.groups.openaiMessages.claudeModel).toBe('Модель Claude')
+    expect(ru.admin.accounts.setupToken).toBe('Токен настройки')
+    expect(ru.admin.accounts.types.antigravityApikey).toBe('Подключение через Base URL и API-ключ')
+    expect(ru.admin.accounts.types.upstreamDesc).toBe('Подключение через Base URL и API-ключ')
+    expect(ru.admin.accounts.oauthSetupToken).toBe('OAuth / токен настройки')
+    expect(ru.admin.accounts.setupTokenLongLived).toBe('Токен настройки (долгоживущий)')
+    expect(ru.admin.accounts.openai.responsesModeForceResponses).toBe('Принудительно Responses')
+    expect(ru.admin.accounts.openai.responsesModeForceChatCompletions).toBe(
+      'Принудительно Chat Completions'
+    )
+    expect(ru.admin.accounts.openai.compactMode).toBe('Режим Compact')
+    expect(ru.admin.accounts.poolMode).toBe('Режим пула')
+    expect(ru.admin.accounts.quotaControl.clientAffinity.label).toBe(
+      'Маршрутизация с привязкой клиентов'
+    )
+    expect(ru.admin.accounts.affinitySection).toBe('Привязка клиентов')
+    expect(ru.admin.accounts.affinityToggle).toBe('Включить привязку клиентов')
+    expect(ru.admin.ops.alertEvents.status.manualResolved).toBe('УСТРАНЕНО ВРУЧНУЮ')
+    expect(ru.admin.ops.realtime.offline).toBe('Realtime недоступен')
+  })
+
   it('preserves the updated v0.1.170 upstream billing semantics in Russian', () => {
     expect(ru.admin.accounts.upstreamBilling.autoProbeHint).toBe(
       'Обновлять объявленный upstream-тариф с глобальным интервалом. Сам по себе этот переключатель не изменяет тариф аккаунта.'
