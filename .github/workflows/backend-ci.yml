@@ -173,6 +173,7 @@ jobs:
           python tools/check_pnpm_audit_exceptions.py \
             --audit frontend/audit.json \
             --exceptions .github/audit-exceptions.yml
+          python -m unittest -v tools.test_check_pnpm_audit_exceptions
 
   release-validation:
     name: Release validation

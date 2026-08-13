@@ -54,6 +54,12 @@ corrupt[-1] ^= 0xFF
 (root / "corrupt-gzip.tar.gz").write_bytes(corrupt)
 tar_bytes = gzip.decompress((root / "exact.tar.gz").read_bytes())
 (root / "trailing-budget.tar.gz").write_bytes(gzip.compress(tar_bytes + b"x" * (1024 * 1024 + 1)))
+(root / "trailing-content.tar.gz").write_bytes(gzip.compress(tar_bytes + b"HIDDEN-TAR-TAIL"))
+with gzip.open(root / "second-member.gz", "wb") as stream:
+    stream.write(b"SECOND-GZIP-MEMBER")
+(root / "concatenated-gzip.tar.gz").write_bytes(
+    (root / "exact.tar.gz").read_bytes() + (root / "second-member.gz").read_bytes()
+)
 PY
 
 cat > "$MOCK_BIN/curl" <<'EOF'
@@ -129,7 +135,7 @@ for mode in missing confusable duplicate; do
     grep -Fxq 'ORIGINAL' "$TEST_ROOT/checksum-$mode/install/sub2api"
 done
 
-for mode in traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget; do
+for mode in traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget trailing-content concatenated-gzip; do
     if run_case "archive-$mode" exact "$mode"; then
         echo "installer accepted unsafe release archive: $mode" >&2
         exit 1

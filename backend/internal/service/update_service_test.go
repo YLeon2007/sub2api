@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -571,6 +572,67 @@ func TestExtractBinaryRejectsCorruptOrAmbiguousCompleteArchives(t *testing.T) {
 			require.Equal(t, []byte("ORIGINAL"), got)
 		})
 	}
+}
+
+func TestExtractBinaryRejectsContentOutsideArchiveContainer(t *testing.T) {
+	t.Parallel()
+	svc := &UpdateService{}
+
+	t.Run("zip suffix", func(t *testing.T) {
+		path := writeExtractionTestZip(t, []extractionArchiveMember{{name: "sub2api.exe", data: []byte("BINARY")}})
+		file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+		require.NoError(t, err)
+		_, err = file.Write([]byte("HIDDEN-ZIP-SUFFIX"))
+		require.NoError(t, err)
+		require.NoError(t, file.Close())
+		dest := filepath.Join(t.TempDir(), "sub2api.exe")
+		require.NoError(t, os.WriteFile(dest, []byte("ORIGINAL"), 0o700))
+		require.Error(t, svc.extractBinary(path, dest))
+		got, readErr := os.ReadFile(dest)
+		require.NoError(t, readErr)
+		require.Equal(t, []byte("ORIGINAL"), got)
+	})
+
+	t.Run("non-zero decompressed tar tail", func(t *testing.T) {
+		path := writeExtractionTestTar(t, []extractionArchiveMember{{name: "sub2api", data: []byte("BINARY")}})
+		raw, err := os.ReadFile(path)
+		require.NoError(t, err)
+		reader, err := gzip.NewReader(bytes.NewReader(raw))
+		require.NoError(t, err)
+		payload, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		require.NoError(t, reader.Close())
+		var rebuilt bytes.Buffer
+		writer := gzip.NewWriter(&rebuilt)
+		_, err = writer.Write(append(payload, []byte("HIDDEN-TAR-TAIL")...))
+		require.NoError(t, err)
+		require.NoError(t, writer.Close())
+		require.NoError(t, os.WriteFile(path, rebuilt.Bytes(), 0o600))
+		dest := filepath.Join(t.TempDir(), "sub2api")
+		require.NoError(t, os.WriteFile(dest, []byte("ORIGINAL"), 0o700))
+		require.Error(t, svc.extractBinary(path, dest))
+		got, readErr := os.ReadFile(dest)
+		require.NoError(t, readErr)
+		require.Equal(t, []byte("ORIGINAL"), got)
+	})
+
+	t.Run("concatenated gzip member", func(t *testing.T) {
+		path := writeExtractionTestTar(t, []extractionArchiveMember{{name: "sub2api", data: []byte("BINARY")}})
+		raw, err := os.ReadFile(path)
+		require.NoError(t, err)
+		var second bytes.Buffer
+		writer := gzip.NewWriter(&second)
+		_, err = writer.Write([]byte("SECOND-GZIP-MEMBER"))
+		require.NoError(t, err)
+		require.NoError(t, writer.Close())
+		require.NoError(t, os.WriteFile(path, append(raw, second.Bytes()...), 0o600))
+		dest := filepath.Join(t.TempDir(), "sub2api")
+		require.NoError(t, os.WriteFile(dest, []byte("ORIGINAL"), 0o700))
+		require.Error(t, svc.extractBinary(path, dest))
+		got, readErr := os.ReadFile(dest)
+		require.NoError(t, readErr)
+		require.Equal(t, []byte("ORIGINAL"), got)
+	})
 }
 
 func TestExtractBinaryEnforcesArchiveMemberBudget(t *testing.T) {

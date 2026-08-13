@@ -128,6 +128,7 @@ def validate_ci(text: str, errors: list[str]) -> None:
     require("make test-unit" in text, "backend-ci.yml: missing backend unit tests", errors)
     require("govulncheck" in text, "backend-ci.yml: missing govulncheck security validation", errors)
     require("check_pnpm_audit_exceptions.py" in text, "backend-ci.yml: missing pnpm audit exception gate", errors)
+    require("test_check_pnpm_audit_exceptions" in text, "backend-ci.yml: missing pnpm audit payload contract tests", errors)
     require("ru_release_guard.py --self-test" in text, "backend-ci.yml: missing release guard self-test", errors)
     require("validate_ru_automation.py" in text, "backend-ci.yml: missing workflow automation guard", errors)
     for installer_test in (
@@ -210,6 +211,9 @@ def validate_release_workflow(text: str, errors: list[str]) -> None:
         "a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80",
         "1bd4bff62897b99fd790104bd374049c8c486498da43240a3c97555e4d644b85",
         "goreleaser_Linux_x86_64.tar.gz",
+        "BUILDX_VERSION: v0.36.1",
+        "BUILDX_BINARY_SHA256: 48af8a397ebd60178778bf63611dbcebe5f5e7a9be90eb9147b24b9587455778",
+        "buildx-v0.36.1.linux-amd64",
     )
     for token in required_release_inputs:
         require(token in text, f"release.yml: missing pinned release input {token}", errors)
@@ -330,6 +334,7 @@ def validate_release_workflow(text: str, errors: list[str]) -> None:
     require("make test-unit" in text, "release.yml: missing exact-tag backend gate", errors)
     security_gate_tokens = [
         "check_pnpm_audit_exceptions.py",
+        "test_check_pnpm_audit_exceptions",
         "govulncheck@v1.6.0",
         "govulncheck ./...",
     ]
@@ -2123,7 +2128,7 @@ jobs:
   backend:
     steps:
       - run: make test-unit && govulncheck ./...
-      - run: python tools/check_pnpm_audit_exceptions.py
+      - run: python tools/check_pnpm_audit_exceptions.py && python -m unittest -v tools.test_check_pnpm_audit_exceptions
 """
 
     derived_ci_command = 'python tools/ru_release_guard.py --tag "v${version}" --skip-git'
@@ -2200,6 +2205,7 @@ jobs:
       - run: make test-unit
       - run: govulncheck ./...
       - run: python tools/check_pnpm_audit_exceptions.py
+      - run: python -m unittest -v tools.test_check_pnpm_audit_exceptions
 """,
             encoding="utf-8",
         )
@@ -2229,12 +2235,17 @@ jobs:
           print(f"message<<{delimiter}", file=open(GITHUB_OUTPUT, "a"))
           PY
       - run: python tools/check_pnpm_audit_exceptions.py
+      - run: python -m unittest -v tools.test_check_pnpm_audit_exceptions
       - run: pnpm run lint:check && pnpm run test:run && pnpm run typecheck && pnpm run build
       - run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0 && govulncheck ./... && make test-unit
       - run: bash deploy/tests/install-github-token-test.sh
       - run: bash deploy/tests/install-checksum-integrity-test.sh
       - run: echo tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
       - run: echo moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
+      - run: |
+          BUILDX_VERSION: v0.36.1
+          BUILDX_BINARY_SHA256: 48af8a397ebd60178778bf63611dbcebe5f5e7a9be90eb9147b24b9587455778
+          echo buildx-v0.36.1.linux-amd64
       - name: Require unused immutable publication targets
         run: |
           python - <<'PY'
@@ -2294,6 +2305,15 @@ jobs:
         )
         assert any("portable asset basename" in error for error in bad_metadata_checksum_errors)
         valid_release_fixture = (workflow_dir / "release.yml").read_text(encoding="utf-8")
+        missing_buildx_pin_errors: list[str] = []
+        validate_release_workflow(
+            valid_release_fixture
+            .replace("BUILDX_VERSION: v0.36.1", "BUILDX_VERSION: latest")
+            .replace("BUILDX_BINARY_SHA256: 48af8a397ebd60178778bf63611dbcebe5f5e7a9be90eb9147b24b9587455778", "BUILDX_BINARY_SHA256: unpinned")
+            .replace("buildx-v0.36.1.linux-amd64", "buildx-latest.linux-amd64"),
+            missing_buildx_pin_errors,
+        )
+        assert any("BUILDX" in error or "Buildx" in error for error in missing_buildx_pin_errors)
         clobber_errors: list[str] = []
         validate_release_workflow(valid_release_fixture + "\n--clobber\n", clobber_errors)
         assert any("must never use --clobber" in error for error in clobber_errors)

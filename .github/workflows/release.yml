@@ -104,6 +104,8 @@ jobs:
           python ../tools/check_pnpm_audit_exceptions.py \
             --audit "${RUNNER_TEMP}/pnpm-audit.json" \
             --exceptions ../.github/audit-exceptions.yml
+          cd ..
+          python -m unittest -v tools.test_check_pnpm_audit_exceptions
 
       - name: Run exact-tag frontend gate and build embedded assets
         working-directory: frontend
@@ -147,10 +149,34 @@ jobs:
         with:
           image: tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-        with:
-          driver-opts: image=moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
+      - name: Install verified Docker Buildx client
+        env:
+          BUILDX_VERSION: v0.36.1
+          BUILDX_BINARY_SHA256: 48af8a397ebd60178778bf63611dbcebe5f5e7a9be90eb9147b24b9587455778
+        run: |
+          install_dir="${RUNNER_TEMP}/docker-buildx"
+          binary_name="buildx-v0.36.1.linux-amd64"
+          binary_path="${install_dir}/docker-buildx"
+          mkdir -m 0700 "$install_dir"
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/${binary_name}" \
+            --output "$binary_path"
+          printf '%s  %s\n' "$BUILDX_BINARY_SHA256" "$binary_path" | sha256sum -c -
+          chmod 0755 "$binary_path"
+          mkdir -p "$HOME/.docker/cli-plugins"
+          install -m 0755 "$binary_path" "$HOME/.docker/cli-plugins/docker-buildx"
+          docker buildx version | grep -F 'github.com/docker/buildx v0.36.1 1d8dde89b8aba914e05e45366770736fea1fd690'
+
+      - name: Set up verified Docker Buildx builder
+        env:
+          BUILDKIT_IMAGE: moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
+        run: |
+          docker buildx create \
+            --name ru-release \
+            --driver docker-container \
+            --driver-opt "image=${BUILDKIT_IMAGE}" \
+            --use
+          docker buildx inspect --bootstrap
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3

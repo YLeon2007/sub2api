@@ -659,6 +659,42 @@ func binaryLikeMember(canonical, expected string) bool {
 	return pathpkg.Base(canonical) == expected && canonical != expected
 }
 
+func validateZipContainerEnd(archivePath string) error {
+	file, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = file.Close() }()
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	const minimumEndRecord = int64(22)
+	const maximumComment = int64(65535)
+	if info.Size() < minimumEndRecord {
+		return fmt.Errorf("ZIP end record missing")
+	}
+	window := minimumEndRecord + maximumComment
+	if info.Size() < window {
+		window = info.Size()
+	}
+	start := info.Size() - window
+	tail := make([]byte, int(window))
+	if _, err := file.ReadAt(tail, start); err != nil {
+		return err
+	}
+	for offset := len(tail) - int(minimumEndRecord); offset >= 0; offset-- {
+		if !bytes.Equal(tail[offset:offset+4], []byte{'P', 'K', 5, 6}) {
+			continue
+		}
+		commentLength := int(tail[offset+20]) | int(tail[offset+21])<<8
+		if start+int64(offset)+minimumEndRecord+int64(commentLength) == info.Size() {
+			return nil
+		}
+	}
+	return fmt.Errorf("ZIP has data outside its end record")
+}
+
 func (s *UpdateService) extractBinary(archivePath, destPath string) error {
 	const maxBinarySize = 500 * 1024 * 1024
 	archiveName := strings.ToLower(archivePath)
@@ -671,6 +707,9 @@ func (s *UpdateService) extractBinary(archivePath, destPath string) error {
 	}
 
 	if isZip {
+		if err := validateZipContainerEnd(archivePath); err != nil {
+			return err
+		}
 		reader, err := zip.OpenReader(archivePath)
 		if err != nil {
 			return err
@@ -746,11 +785,13 @@ func (s *UpdateService) extractBinary(archivePath, destPath string) error {
 		return err
 	}
 	defer func() { _ = file.Close() }()
-	gzr, err := gzip.NewReader(file)
+	buffered := bufio.NewReader(file)
+	gzr, err := gzip.NewReader(buffered)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = gzr.Close() }()
+	gzr.Multistream(false)
 
 	tr := tar.NewReader(gzr)
 	seen := make(map[string]struct{})
@@ -804,14 +845,34 @@ func (s *UpdateService) extractBinary(archivePath, destPath string) error {
 			binary = data
 		}
 	}
-	// tar.Reader stops at TAR EOF blocks. Drain gzip to its verified EOF so trailer
-	// CRC/size errors and bounded non-TAR trailing decompressed data are not ignored.
-	trailing, err := io.Copy(io.Discard, io.LimitReader(gzr, maxArchiveTrailingBytes+1))
-	if err != nil {
-		return fmt.Errorf("validate gzip trailer: %w", err)
+	// tar.Reader stops after the TAR EOF blocks. The only valid remaining
+	// decompressed bytes are bounded zero padding from the TAR record layout.
+	trailing := int64(0)
+	buffer := make([]byte, 64*1024)
+	for {
+		n, readErr := gzr.Read(buffer)
+		if n > 0 {
+			trailing += int64(n)
+			if trailing > maxArchiveTrailingBytes {
+				return fmt.Errorf("excessive decompressed data after tar EOF")
+			}
+			for _, value := range buffer[:n] {
+				if value != 0 {
+					return fmt.Errorf("non-zero decompressed data after tar EOF")
+				}
+			}
+		}
+		if readErr == io.EOF {
+			break
+		}
+		if readErr != nil {
+			return fmt.Errorf("validate gzip trailer: %w", readErr)
+		}
 	}
-	if trailing > maxArchiveTrailingBytes {
-		return fmt.Errorf("excessive decompressed data after tar EOF")
+	if _, readErr := buffered.ReadByte(); readErr == nil {
+		return fmt.Errorf("data after first gzip member")
+	} else if readErr != io.EOF {
+		return fmt.Errorf("validate bytes after gzip member: %w", readErr)
 	}
 	if matches != 1 {
 		return fmt.Errorf("expected exactly one binary %q in archive, found %d", expectedBinary, matches)

@@ -499,6 +499,7 @@ import re
 import shutil
 import sys
 import tarfile
+import zlib
 from pathlib import Path, PurePosixPath
 
 archive_path = Path(sys.argv[1])
@@ -507,6 +508,26 @@ max_members = 1024
 max_member_bytes = 500 * 1024 * 1024
 max_total_bytes = 600 * 1024 * 1024
 max_trailing_bytes = 1024 * 1024
+
+
+def validate_single_gzip_member() -> None:
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    expanded = 0
+    expanded_limit = max_total_bytes + (max_members + 4) * 1024 + max_trailing_bytes
+    with archive_path.open("rb") as raw:
+        pending = b""
+        while not decompressor.eof:
+            if not pending:
+                pending = raw.read(64 * 1024)
+                if not pending:
+                    raise ValueError("truncated gzip stream")
+            output = decompressor.decompress(pending, 1024 * 1024)
+            pending = decompressor.unconsumed_tail
+            expanded += len(output)
+            if expanded > expanded_limit:
+                raise ValueError("gzip expanded size exceeds validation limit")
+        if decompressor.unused_data or pending or raw.read(1):
+            raise ValueError("data after first gzip member")
 
 
 def canonical(name: str) -> str:
@@ -523,6 +544,7 @@ def canonical(name: str) -> str:
 
 
 extract_dir.mkdir(mode=0o700, parents=True, exist_ok=False)
+validate_single_gzip_member()
 seen: set[str] = set()
 regular: list[tuple[tarfile.TarInfo, str]] = []
 total = 0
@@ -563,6 +585,8 @@ with archive_path.open("rb") as raw, gzip.GzipFile(fileobj=raw, mode="rb") as st
         trailing += len(chunk)
         if trailing > max_trailing_bytes:
             raise ValueError("excessive decompressed data after tar EOF")
+        if any(chunk):
+            raise ValueError("non-zero decompressed data after tar EOF")
 
 binary_members = [name for member, name in regular if name == "sub2api"]
 if binary_members != ["sub2api"]:

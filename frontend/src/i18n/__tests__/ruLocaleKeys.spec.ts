@@ -358,5 +358,40 @@ describe('Russian locale key coverage', () => {
     expect(readme).toContain('свыше 4 ГиБ')
     expect(readme).toContain('примерно для двух сжатых копий')
     expect(readme).toContain('30 минут')
+    expect(readme).toContain('TMPDIR')
+    expect(readme).toContain('os.TempDir()')
+  })
+
+  it('localizes the reviewed reachable RU leaves and runtime call sites', () => {
+    expect([
+      ru.admin.accounts.refreshInterval5s,
+      ru.admin.accounts.refreshInterval10s,
+      ru.admin.accounts.refreshInterval15s,
+      ru.admin.accounts.refreshInterval30s,
+    ]).toEqual(['5 секунд', '10 секунд', '15 секунд', '30 секунд'])
+    expect(ru.admin.accounts.openai.responsesStatusAutoSupported).toBe('Автопроверка: Responses')
+    expect(ru.admin.accounts.openai.responsesStatusAutoUnsupported).toBe('Автопроверка: Chat Completions')
+    expect(ru.admin.accounts.openai.responsesStatusForcedResponses).toBe('Принудительно: Responses')
+    expect(ru.admin.accounts.openai.responsesStatusForcedChatCompletions).toBe('Принудительно: Chat Completions')
+    expect(ru.auth.oauth.callbackTitle).toBe('Обратный вызов OAuth')
+    expect(ru.auth.oauth.callbackHint).toContain('код и параметр состояния')
+    expect(ru.admin.errorPassthrough.form.keywordsPlaceholder).toContain('Одно ключевое слово на строку')
+    expect(ru.admin.errorPassthrough.form.skipMonitoring).toBe('Не учитывать в мониторинге')
+    expect(ru.admin.accounts.imagePromptDefault).toContain('оранжевым котом-космонавтом')
+    expect(ru.admin.accounts.imagePromptPlaceholder).toContain('оранжевый кот-космонавт')
+
+    const sourceRoot = resolve(process.cwd(), 'src')
+    const keyUsage = readFileSync(resolve(sourceRoot, 'views/KeyUsageView.vue'), 'utf8')
+    const usage = readFileSync(resolve(sourceRoot, 'views/admin/UsageView.vue'), 'utf8')
+    const customPage = readFileSync(resolve(sourceRoot, 'views/user/CustomPageView.vue'), 'utf8')
+    const navigation = readFileSync(resolve(sourceRoot, 'components/common/NavigationProgress.vue'), 'utf8')
+    const batchImage = readFileSync(resolve(sourceRoot, 'views/user/BatchImageGuideView.vue'), 'utf8')
+    expect(keyUsage).not.toMatch(/statusText:\s*['"](?:Active|Quota Exhausted|Expired)['"]/)
+    expect(keyUsage).not.toContain("|| 'Unknown'")
+    expect(usage).toContain("appStore.showError(t('usage.exportFailed'))")
+    expect(customPage).toContain("t('customPage.loadFailed')")
+    expect(navigation).toContain(":aria-label=\"t('common.loading')\"")
+    expect(batchImage).not.toContain('return message || fallback')
+    expect(batchImage).toContain("batchImageText('errorReference')")
   })
 })

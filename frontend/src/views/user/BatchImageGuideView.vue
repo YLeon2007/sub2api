@@ -2582,11 +2582,8 @@ function batchImageErrorMessage(error: any, fallback: string) {
   if (code === 'INTERNAL_ERROR' || code === '500') {
     return batchImageAdminError(fallback, error)
   }
-  if (isZhLocale()) {
-    const detail = message ? `${batchImageText('errorReference')}：${message}` : batchImageText('adminReference')
-    return `${fallback}。${detail} ${batchImageErrorReference(error)}`
-  }
-  return message || fallback
+  const detail = message ? `${batchImageText('errorReference')}：${message}` : batchImageText('adminReference')
+  return `${fallback}。${detail} ${batchImageErrorReference(error)}`
 }
 
 function formatDate(timestamp: number) {

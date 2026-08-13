@@ -589,20 +589,20 @@ const statusInfo = computed(() => {
   if (data.mode === 'quota_limited') {
     const isValid = data.isValid !== false
     const statusMap: Record<string, string> = {
-      active: 'Active',
-      quota_exhausted: 'Quota Exhausted',
-      expired: 'Expired',
+      active: t('keys.status.active'),
+      quota_exhausted: t('keys.status.quota_exhausted'),
+      expired: t('keys.status.expired'),
     }
     return {
       label: t('keyUsage.quotaMode'),
-      statusText: statusMap[data.status] || data.status || 'Unknown',
+      statusText: statusMap[data.status] || data.status || t('common.unknown'),
       isActive: isValid && data.status === 'active',
     }
   }
 
   return {
     label: data.planName || t('keyUsage.walletBalance'),
-    statusText: 'Active',
+    statusText: t('keys.status.active'),
     isActive: true,
   }
 })
