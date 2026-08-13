@@ -2607,7 +2607,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("后端回调地址", "Backend Callback URL", 'Callback URL backend') }}
+                        {{ localText("后端回调地址", "Backend Callback URL", 'Адрес обратного вызова: сервер') }}
                       </label>
                       <input
                         v-model="form.github_oauth_redirect_url"
@@ -2634,7 +2634,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("前端回跳地址", "Frontend Callback URL", 'Callback URL frontend') }}
+                        {{ localText("前端回跳地址", "Frontend Callback URL", 'Адрес обратного вызова: интерфейс') }}
                       </label>
                       <input
                         v-model="form.github_oauth_frontend_redirect_url"
@@ -2701,7 +2701,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("后端回调地址", "Backend Callback URL", 'Callback URL backend') }}
+                        {{ localText("后端回调地址", "Backend Callback URL", 'Адрес обратного вызова: сервер') }}
                       </label>
                       <input
                         v-model="form.google_oauth_redirect_url"
@@ -2728,7 +2728,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("前端回跳地址", "Frontend Callback URL", 'Callback URL frontend') }}
+                        {{ localText("前端回跳地址", "Frontend Callback URL", 'Адрес обратного вызова: интерфейс') }}
                       </label>
                       <input
                         v-model="form.google_oauth_frontend_redirect_url"

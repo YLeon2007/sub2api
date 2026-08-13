@@ -186,8 +186,7 @@ async function submit(): Promise<void> {
       attemptedSubmit.value = false
     }
   } catch (error) {
-    const message = (error as { message?: string })?.message || t('adminCompliance.acceptFailed')
-    appStore.showError(message)
+    appStore.showError(t('adminCompliance.acceptFailed'))
   }
 }
 

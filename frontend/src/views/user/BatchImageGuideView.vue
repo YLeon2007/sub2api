@@ -2381,7 +2381,7 @@ function friendlyItemError(error: BatchImageItem['error']) {
   if (!error) return '-'
   if (error.code === 'EMPTY_IMAGE_OUTPUT') return t('batchImage.itemResult.emptyImageOutput')
   if (error.code === 'PROVIDER_ITEM_FAILED') return t('batchImage.itemResult.providerItemFailed')
-  return error.message || error.code || '-'
+  return t('batchImage.itemResult.errorReference')
 }
 
 function formatMoney(value: number | null | undefined) {

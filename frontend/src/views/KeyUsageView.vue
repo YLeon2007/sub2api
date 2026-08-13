@@ -595,7 +595,7 @@ const statusInfo = computed(() => {
     }
     return {
       label: t('keyUsage.quotaMode'),
-      statusText: statusMap[data.status] || data.status || t('common.unknown'),
+      statusText: statusMap[data.status] || t('common.unknown'),
       isActive: isValid && data.status === 'active',
     }
   }
@@ -888,9 +888,7 @@ async function fetchUsage(key: string) {
     headers: { 'Authorization': 'Bearer ' + key },
   })
   if (!res.ok) {
-    const body = await res.json().catch(() => null)
-    const msg = body?.error?.message || body?.message || `${t('keyUsage.queryFailed')} (${res.status})`
-    throw new Error(msg)
+    throw new Error(t('keyUsage.queryFailedRetry'))
   }
   return await res.json()
 }
