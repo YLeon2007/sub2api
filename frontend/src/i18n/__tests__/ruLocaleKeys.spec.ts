@@ -333,6 +333,25 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.settings.emailTemplates.noPreview).toContain('предпросмотр')
   })
 
+  it('does not expose the reviewed sentence-level English leaks in active Russian admin UI', () => {
+    const reviewedRuntimeValues = [
+      ru.admin.dataManagement.s3Profiles.editHint,
+      ru.admin.accounts.openai.responsesStatusAutoUnknown,
+      ru.admin.accounts.quotaControl.sessionLimit.idleTimeout,
+      ru.admin.settings.features.affiliate.modal.userPlaceholder,
+      ru.admin.settings.site.backendMode
+    ]
+
+    expect(reviewedRuntimeValues).toEqual([
+      'Нажмите «Изменить», чтобы отредактировать параметры профиля в правой панели.',
+      'Автопроверка: статус неизвестен',
+      'Тайм-аут бездействия',
+      'Поиск по email или имени пользователя',
+      'Режим backend-а'
+    ])
+    expect(reviewedRuntimeValues.every((value) => /[А-Яа-яЁё]/.test(value))).toBe(true)
+  })
+
   it('documents the v0.1.175 backup spool capacity contract for Russian operators', () => {
     const readme = readFileSync(resolve(process.cwd(), '../README_RU.md'), 'utf8')
     expect(readme).toContain('сначала создаёт полный локальный gzip-архив')

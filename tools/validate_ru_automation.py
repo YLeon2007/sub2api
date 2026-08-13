@@ -1149,9 +1149,43 @@ def validate_updater_installer_integrity_texts(
         errors,
     )
     require(
+        "cleanup_download_temp()" in installer
+        and "trap cleanup_download_temp EXIT" in installer
+        and 'rm -rf -- "$TEMP_DIR"' in installer
+        and 'trap "rm -rf $TEMP_DIR" EXIT' not in installer,
+        "deploy/install.sh: temporary cleanup must not reparse an environment-derived path",
+        errors,
+    )
+    require(
+        "validate_and_extract_release_archive" in installer
+        and "too many archive members" in installer
+        and "duplicate archive member" in installer
+        and "unsafe archive member type" in installer
+        and "exactly one root sub2api binary" in installer
+        and "gzip.GzipFile" in installer
+        and "max_trailing_bytes" in installer
+        and "excessive decompressed data after tar EOF" in installer,
+        "deploy/install.sh: checksum-valid TAR must pass full fail-closed member validation",
+        errors,
+    )
+    require(
+        'mv -f -- "$staged_binary" "$INSTALL_DIR/sub2api"' in installer
+        and 'cp -- "$extract_dir/sub2api" "$staged_binary"' in installer,
+        "deploy/install.sh: executable replacement must be staged beside and atomically moved over the destination",
+        errors,
+    )
+    require(
         "installer accepted unsafe checksum manifest" in installer_tests
         and "missing confusable duplicate" in installer_tests,
         "install-checksum-integrity-test.sh: missing adversarial checksum cases",
+        errors,
+    )
+    require(
+        "installer accepted unsafe release archive" in installer_tests
+        and "traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget" in installer_tests
+        and "TRAP_PWNED" in installer_tests
+        and "ORIGINAL" in installer_tests,
+        "install-checksum-integrity-test.sh: missing archive/trap/destination adversarial cases",
         errors,
     )
     ru_payment = f"https://github.com/YLeon2007/sub2api/blob/v{version}/docs/PAYMENT_RU.md"
@@ -1171,6 +1205,54 @@ def validate_updater_installer_integrity(repo_root: Path, errors: list[str]) -> 
         read_text(repo_root / "deploy/tests/install-checksum-integrity-test.sh"),
         read_text(repo_root / "frontend/src/views/admin/SettingsView.vue"),
         read_text(repo_root / "backend/cmd/server/VERSION").strip(),
+        errors,
+    )
+
+
+def validate_dompurify_security_texts(
+    package_text: str,
+    lockfile: str,
+    regression_test: str,
+    errors: list[str],
+) -> None:
+    try:
+        package = json.loads(package_text)
+    except json.JSONDecodeError:
+        require(False, "frontend/package.json: invalid JSON", errors)
+        return
+    dependencies = package.get("dependencies") or {}
+    overrides = (package.get("pnpm") or {}).get("overrides") or {}
+    require(
+        dependencies.get("dompurify") == "^3.4.13",
+        "frontend/package.json: direct DOMPurify security boundary must start at 3.4.13",
+        errors,
+    )
+    require(
+        overrides.get("dompurify@<3.4.13") == "3.4.13",
+        "frontend/package.json: transitive DOMPurify instances below 3.4.13 must be overridden",
+        errors,
+    )
+    versions = re.findall(r"(?m)^  dompurify@(\d+)\.(\d+)\.(\d+):$", lockfile)
+    require(bool(versions), "frontend/pnpm-lock.yaml: missing DOMPurify resolution", errors)
+    require(
+        bool(versions) and all(tuple(map(int, version)) >= (3, 4, 13) for version in versions),
+        "frontend/pnpm-lock.yaml: vulnerable DOMPurify resolution below 3.4.13",
+        errors,
+    )
+    require(
+        "pins every direct and transitive runtime instance" in regression_test
+        and "dompurify@<3.4.13" in regression_test
+        and "does not enable the DOM-object IN_PLACE sanitization mode" in regression_test,
+        "dompurifyResolution.spec.ts: missing sanitizer version/IN_PLACE regressions",
+        errors,
+    )
+
+
+def validate_dompurify_security(repo_root: Path, errors: list[str]) -> None:
+    validate_dompurify_security_texts(
+        read_text(repo_root / "frontend/package.json"),
+        read_text(repo_root / "frontend/pnpm-lock.yaml"),
+        read_text(repo_root / "frontend/src/security/__tests__/dompurifyResolution.spec.ts"),
         errors,
     )
 
@@ -1288,6 +1370,7 @@ def validate_repo(
     validate_fork_documentation(repo_root, errors)
     validate_operator_execution_surfaces(repo_root, errors)
     validate_updater_installer_integrity(repo_root, errors)
+    validate_dompurify_security(repo_root, errors)
 
     all_workflows = (repo_root / ".github" / "workflows").glob("*.yml")
     for workflow in all_workflows:
@@ -1518,6 +1601,10 @@ def self_test() -> None:
     assert any("exact and mandatory" in error for error in unsafe_integrity_errors)
     assert any("exact-asset/checksum regression" in error for error in unsafe_integrity_errors)
     assert any("fail closed" in error for error in unsafe_integrity_errors)
+    assert any("environment-derived path" in error for error in unsafe_integrity_errors)
+    assert any("full fail-closed member validation" in error for error in unsafe_integrity_errors)
+    assert any("atomically moved" in error for error in unsafe_integrity_errors)
+    assert any("archive/trap/destination" in error for error in unsafe_integrity_errors)
     assert any("immutable fork release" in error for error in unsafe_integrity_errors)
 
     safe_integrity_errors: list[str] = []
@@ -1525,15 +1612,51 @@ def self_test() -> None:
     validate_updater_installer_integrity_texts(
         "selectReleaseAssets(version\nexpected exactly one checksums.txt\n",
         "checksum_match_count\nExpected exactly one checksum\n"
-        "curl -fsSL --proto '=https' --tlsv1.2 \"$checksum_url\"\n",
+        "curl -fsSL --proto '=https' --tlsv1.2 \"$checksum_url\"\n"
+        "cleanup_download_temp()\ntrap cleanup_download_temp EXIT\nrm -rf -- \"$TEMP_DIR\"\n"
+        "validate_and_extract_release_archive\ntoo many archive members\nduplicate archive member\n"
+        "unsafe archive member type\nexactly one root sub2api binary\ngzip.GzipFile\nmax_trailing_bytes\nexcessive decompressed data after tar EOF\n"
+        "cp -- \"$extract_dir/sub2api\" \"$staged_binary\"\n"
+        "mv -f -- \"$staged_binary\" \"$INSTALL_DIR/sub2api\"\n",
         "TestSelectReleaseAssetsRequiresExactVersionedArchiveAndChecksum\n"
         "TestExpectedChecksumForFileRequiresOneExactBasename\n",
-        "installer accepted unsafe checksum manifest\nmissing confusable duplicate\n",
+        "installer accepted unsafe checksum manifest\nmissing confusable duplicate\n"
+        "installer accepted unsafe release archive\n"
+        "traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget\n"
+        "TRAP_PWNED\nORIGINAL\n",
         safe_ru_payment + "\n" + safe_ru_payment + "#поддерживаемые-провайдеры\n",
         "0.1.175-ru.1",
         safe_integrity_errors,
     )
     assert not safe_integrity_errors
+
+    vulnerable_dompurify_errors: list[str] = []
+    validate_dompurify_security_texts(
+        json.dumps({"dependencies": {"dompurify": "^3.3.1"}, "pnpm": {"overrides": {}}}),
+        "  dompurify@3.3.3:\n",
+        "",
+        vulnerable_dompurify_errors,
+    )
+    assert any("direct DOMPurify" in error for error in vulnerable_dompurify_errors)
+    assert any("transitive DOMPurify" in error for error in vulnerable_dompurify_errors)
+    assert any("vulnerable DOMPurify" in error for error in vulnerable_dompurify_errors)
+    assert any("sanitizer version/IN_PLACE" in error for error in vulnerable_dompurify_errors)
+
+    safe_dompurify_errors: list[str] = []
+    validate_dompurify_security_texts(
+        json.dumps(
+            {
+                "dependencies": {"dompurify": "^3.4.13"},
+                "pnpm": {"overrides": {"dompurify@<3.4.13": "3.4.13"}},
+            }
+        ),
+        "  dompurify@3.4.13:\n",
+        "pins every direct and transitive runtime instance\n"
+        "dompurify@<3.4.13\n"
+        "does not enable the DOM-object IN_PLACE sanitization mode\n",
+        safe_dompurify_errors,
+    )
+    assert not safe_dompurify_errors
 
     stale_image_docs = dict(valid_docs)
     stale_image_docs["deploy/docker-compose.local.yml"] = test_compose("0.1.169-ru.2")
@@ -2317,16 +2440,36 @@ jobs:
             "deploy/install.sh": (
                 "checksum_match_count\nExpected exactly one checksum\n"
                 "curl -fsSL --proto '=https' --tlsv1.2 \"$checksum_url\"\n"
+                "cleanup_download_temp()\ntrap cleanup_download_temp EXIT\nrm -rf -- \"$TEMP_DIR\"\n"
+                "validate_and_extract_release_archive\ntoo many archive members\nduplicate archive member\n"
+                "unsafe archive member type\nexactly one root sub2api binary\ngzip.GzipFile\nmax_trailing_bytes\nexcessive decompressed data after tar EOF\n"
+                "cp -- \"$extract_dir/sub2api\" \"$staged_binary\"\n"
+                "mv -f -- \"$staged_binary\" \"$INSTALL_DIR/sub2api\"\n"
             ),
             "deploy/docker-compose.local.yml": fixture_compose,
             "deploy/docker-compose.standalone.yml": fixture_compose,
             "deploy/tests/install-github-token-test.sh": "fork-owned installer token lifecycle test\n",
             "deploy/tests/install-checksum-integrity-test.sh": (
                 "installer accepted unsafe checksum manifest\nmissing confusable duplicate\n"
+                "installer accepted unsafe release archive\n"
+                "traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget\n"
+                "TRAP_PWNED\nORIGINAL\n"
             ),
             "frontend/src/views/admin/SettingsView.vue": (
                 f"https://github.com/YLeon2007/sub2api/blob/v{fixture_version}/docs/PAYMENT_RU.md\n"
                 f"https://github.com/YLeon2007/sub2api/blob/v{fixture_version}/docs/PAYMENT_RU.md#поддерживаемые-провайдеры\n"
+            ),
+            "frontend/package.json": json.dumps(
+                {
+                    "dependencies": {"dompurify": "^3.4.13"},
+                    "pnpm": {"overrides": {"dompurify@<3.4.13": "3.4.13"}},
+                }
+            ),
+            "frontend/pnpm-lock.yaml": "  dompurify@3.4.13:\n",
+            "frontend/src/security/__tests__/dompurifyResolution.spec.ts": (
+                "pins every direct and transitive runtime instance\n"
+                "dompurify@<3.4.13\n"
+                "does not enable the DOM-object IN_PLACE sanitization mode\n"
             ),
             "docs/ADMIN_PAYMENT_INTEGRATION_API.md": (
                 "English | [Русский](ADMIN_PAYMENT_INTEGRATION_API_RU.md)\nYLeon2007/sub2api\n"
