@@ -427,6 +427,8 @@ describe('Russian locale key coverage', () => {
     expect(keyUsage).not.toMatch(/statusText:\s*['"](?:Active|Quota Exhausted|Expired)['"]/)
     expect(keyUsage).not.toContain("|| 'Unknown'")
     expect(keyUsage).not.toContain('response?.data?.message')
+    expect(keyUsage).not.toContain('(err as Error).message')
+    expect(keyUsage).not.toContain('windowLabels[rl.window] || rl.window')
     expect(usage).toContain("appStore.showError(t('usage.exportFailed'))")
     expect(customPage).toContain("t('customPage.loadFailed')")
     expect(navigation).toContain(":aria-label=\"t('common.loading')\"")

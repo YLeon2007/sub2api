@@ -624,7 +624,7 @@ const ringItems = computed<RingItem[]>(() => {
       for (const rl of data.rate_limits) {
         const pct = rl.limit > 0 ? Math.min(Math.round((rl.used / rl.limit) * 100), 100) : 0
         items.push({
-          title: windowLabels[rl.window] || rl.window,
+          title: windowLabels[rl.window] || t('common.unknown'),
           pct,
           amount: `${usd(rl.used)} / ${usd(rl.limit)}`,
           iconType: windowIcons[rl.window] || 'clock',
@@ -921,7 +921,7 @@ async function queryKey() {
   } catch (err) {
     showResults.value = false
     showLoading.value = false
-    appStore.showError((err as Error).message || t('keyUsage.queryFailedRetry'))
+    appStore.showError(t('keyUsage.queryFailedRetry'))
   } finally {
     isQuerying.value = false
   }
