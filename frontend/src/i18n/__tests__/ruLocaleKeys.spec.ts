@@ -321,6 +321,17 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.accounts.openai.codexFingerprintFull).toBe('Полное сведение')
   })
 
+  it('preserves the added v0.1.176 group and video pricing semantics in Russian', () => {
+    expect(ru.admin.groups.modelPricing.title).toBe('Цены группы по моделям')
+    expect(ru.admin.groups.modelPricing.description).toContain('Переопределяют цены канала')
+    expect(ru.admin.groups.modelPricing.longContext).toContain('длинного контекста')
+    expect(ru.admin.groups.modelPricing.longContextHint).toContain('базовую цену первой ступени')
+    expect(ru.admin.groups.modelPricing.add).toBe('Добавить цену модели')
+    expect(ru.admin.channels.billingMode.video).toBe('Видео (за секунду)')
+    expect(ru.admin.channels.form.videoTiers).toContain('за секунду')
+    expect(ru.admin.channels.form.defaultVideoPrice).toContain('за секунду')
+  })
+
   it('does not expose source-language labels on Russian admin surfaces', () => {
     expect(ru.admin.availableChannels.description).toBe(
       'Сводный вид каждого канала, связанных групп и поддерживаемых моделей с раскрытыми шаблонами'

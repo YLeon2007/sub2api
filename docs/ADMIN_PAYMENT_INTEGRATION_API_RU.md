@@ -104,5 +104,5 @@ JWT находится в query string. Встраиваемый адрес до
 
 ## 6. URL документации (`doc_url`)
 
-- Этот документ: `https://github.com/YLeon2007/sub2api/blob/v0.1.175-ru.2/docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md`
-- Китайская/английская версия: `https://github.com/YLeon2007/sub2api/blob/v0.1.175-ru.2/docs/ADMIN_PAYMENT_INTEGRATION_API.md`
+- Этот документ: `https://github.com/YLeon2007/sub2api/blob/v0.1.176-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md`
+- Китайская/английская версия: `https://github.com/YLeon2007/sub2api/blob/v0.1.176-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API.md`
