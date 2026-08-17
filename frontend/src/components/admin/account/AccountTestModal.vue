@@ -938,6 +938,22 @@ const startTest = async () => {
   }
 }
 
+const localizeKnownAccountTestText = (text: string) => {
+  if (testMode.value !== 'compact') {
+    return text
+  }
+  if (text === 'Compact probe succeeded (native remote compaction v2)') {
+    return t('admin.accounts.openai.compactProbeSuccess')
+  }
+  if (
+    text ===
+    'Upstream returned 2xx without a compaction output item (native remote compaction v2 unsupported on this chain)'
+  ) {
+    return t('admin.accounts.openai.compactProbeUnsupported')
+  }
+  return text
+}
+
 const handleEvent = (event: {
   type: string
   text?: string
@@ -981,7 +997,7 @@ const handleEvent = (event: {
 
     case 'content':
       if (event.text) {
-        streamingContent.value += event.text
+        streamingContent.value += localizeKnownAccountTestText(event.text)
         scrollToBottom()
       }
       break
@@ -1032,13 +1048,17 @@ const handleEvent = (event: {
         status.value = 'success'
       } else {
         status.value = 'error'
-        errorMessage.value = event.error || t('admin.accounts.testFailed')
+        errorMessage.value = event.error
+          ? localizeKnownAccountTestText(event.error)
+          : t('admin.accounts.testFailed')
       }
       break
 
     case 'error':
       status.value = 'error'
-      errorMessage.value = event.error || t('common.unknownError')
+      errorMessage.value = event.error
+        ? localizeKnownAccountTestText(event.error)
+        : t('common.unknownError')
       if (streamingContent.value) {
         addLine(streamingContent.value, 'text-green-300')
         streamingContent.value = ''

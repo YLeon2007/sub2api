@@ -147,6 +147,27 @@ def main() -> int:
 
     with open(args.audit, "r", encoding="utf-8") as handle:
         audit = json.load(handle)
+    if not isinstance(audit, dict):
+        sys.stderr.write("pnpm audit output must be a JSON object\n")
+        return 1
+    if audit.get("error"):
+        sys.stderr.write("pnpm audit reported a transport/registry error\n")
+        return 1
+    advisories = audit.get("advisories")
+    vulnerabilities = audit.get("vulnerabilities")
+    metadata = audit.get("metadata")
+    if not isinstance(metadata, dict) or not (
+        isinstance(advisories, dict) or isinstance(vulnerabilities, dict)
+    ):
+        sys.stderr.write("pnpm audit output is missing advisory/vulnerability data and metadata\n")
+        return 1
+    counts = metadata.get("vulnerabilities")
+    if not isinstance(counts, dict) or any(
+        not isinstance(counts.get(level), int) or isinstance(counts.get(level), bool)
+        for level in ("info", "low", "moderate", "high", "critical")
+    ):
+        sys.stderr.write("pnpm audit metadata vulnerability counts are malformed\n")
+        return 1
 
     # 读取异常清单并建立索引，便于快速匹配包名 + advisory。
     exceptions = parse_exceptions(args.exceptions)

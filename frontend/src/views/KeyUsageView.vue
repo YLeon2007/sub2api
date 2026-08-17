@@ -589,20 +589,20 @@ const statusInfo = computed(() => {
   if (data.mode === 'quota_limited') {
     const isValid = data.isValid !== false
     const statusMap: Record<string, string> = {
-      active: 'Active',
-      quota_exhausted: 'Quota Exhausted',
-      expired: 'Expired',
+      active: t('keys.status.active'),
+      quota_exhausted: t('keys.status.quota_exhausted'),
+      expired: t('keys.status.expired'),
     }
     return {
       label: t('keyUsage.quotaMode'),
-      statusText: statusMap[data.status] || data.status || 'Unknown',
+      statusText: statusMap[data.status] || t('common.unknown'),
       isActive: isValid && data.status === 'active',
     }
   }
 
   return {
     label: data.planName || t('keyUsage.walletBalance'),
-    statusText: 'Active',
+    statusText: t('keys.status.active'),
     isActive: true,
   }
 })
@@ -624,7 +624,7 @@ const ringItems = computed<RingItem[]>(() => {
       for (const rl of data.rate_limits) {
         const pct = rl.limit > 0 ? Math.min(Math.round((rl.used / rl.limit) * 100), 100) : 0
         items.push({
-          title: windowLabels[rl.window] || rl.window,
+          title: windowLabels[rl.window] || t('common.unknown'),
           pct,
           amount: `${usd(rl.used)} / ${usd(rl.limit)}`,
           iconType: windowIcons[rl.window] || 'clock',
@@ -709,7 +709,6 @@ const detailRows = computed<DetailRow[]>(() => {
       })
     }
     if (data.rate_limits) {
-      const windowMap: Record<string, string> = { '5h': '5H', '1d': locale.value === 'zh' ? '日' : 'D', '7d': '7D' }
       for (const rl of data.rate_limits) {
         const pct = rl.limit > 0 ? (rl.used / rl.limit) * 100 : 0
         let valueStr = `${usd(rl.used)} / ${usd(rl.limit)}`
@@ -719,7 +718,7 @@ const detailRows = computed<DetailRow[]>(() => {
         }
         rows.push({
           iconBg: 'bg-primary-500/10', iconColor: 'text-primary-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${windowMap[rl.window] || rl.window})`,
+          label: `${t('keyUsage.usedQuota')} (${formatPeriodShort(rl.window)})`,
           value: valueStr,
           valueClass: getUsageColor(pct),
         })
@@ -737,21 +736,21 @@ const detailRows = computed<DetailRow[]>(() => {
         const pct = (sub.daily_usage_usd / sub.daily_limit_usd) * 100
         rows.push({
           iconBg: 'bg-primary-500/10', iconColor: 'text-primary-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '日' : 'D'})`, value: `${usd(sub.daily_usage_usd)} / ${usd(sub.daily_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${t('keyUsage.usedQuota')} (${formatPeriodShort('1d')})`, value: `${usd(sub.daily_usage_usd)} / ${usd(sub.daily_limit_usd)}`, valueClass: getUsageColor(pct),
         })
       }
       if (sub.weekly_limit_usd > 0) {
         const pct = (sub.weekly_usage_usd / sub.weekly_limit_usd) * 100
         rows.push({
           iconBg: 'bg-indigo-500/10', iconColor: 'text-indigo-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '周' : 'W'})`, value: `${usd(sub.weekly_usage_usd)} / ${usd(sub.weekly_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${t('keyUsage.usedQuota')} (${formatPeriodShort('weekly')})`, value: `${usd(sub.weekly_usage_usd)} / ${usd(sub.weekly_limit_usd)}`, valueClass: getUsageColor(pct),
         })
       }
       if (sub.monthly_limit_usd > 0) {
         const pct = (sub.monthly_usage_usd / sub.monthly_limit_usd) * 100
         rows.push({
           iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '月' : 'M'})`, value: `${usd(sub.monthly_usage_usd)} / ${usd(sub.monthly_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${t('keyUsage.usedQuota')} (${formatPeriodShort('monthly')})`, value: `${usd(sub.monthly_usage_usd)} / ${usd(sub.monthly_limit_usd)}`, valueClass: getUsageColor(pct),
         })
       }
       if (sub.expires_at) {
@@ -839,11 +838,37 @@ function fmtNum(val: number | null | undefined): string {
   return val.toLocaleString()
 }
 
+function currentLanguage(): 'zh' | 'ru' | 'en' {
+  const normalized = locale.value.toLowerCase()
+  if (normalized.startsWith('zh')) return 'zh'
+  if (normalized.startsWith('ru')) return 'ru'
+  return 'en'
+}
+
+function currentIntlLocale(): string {
+  switch (currentLanguage()) {
+    case 'zh':
+      return 'zh-CN'
+    case 'ru':
+      return 'ru-RU'
+    default:
+      return locale.value || 'en-US'
+  }
+}
+
+function formatPeriodShort(period: string): string {
+  const labels: Record<'zh' | 'ru' | 'en', Record<string, string>> = {
+    zh: { '5h': '5H', '1d': '日', '7d': '7D', weekly: '周', monthly: '月' },
+    ru: { '5h': '5 ч', '1d': 'д', '7d': '7 д', weekly: 'н', monthly: 'мес' },
+    en: { '5h': '5H', '1d': 'D', '7d': '7D', weekly: 'W', monthly: 'M' },
+  }
+  return labels[currentLanguage()][period] || period
+}
+
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '-'
   const d = new Date(iso)
-  const loc = locale.value === 'zh' ? 'zh-CN' : 'en-US'
-  return d.toLocaleDateString(loc, { year: 'numeric', month: 'long', day: 'numeric' })
+  return d.toLocaleDateString(currentIntlLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 function getBrowserTimezone(): string {
@@ -863,9 +888,7 @@ async function fetchUsage(key: string) {
     headers: { 'Authorization': 'Bearer ' + key },
   })
   if (!res.ok) {
-    const body = await res.json().catch(() => null)
-    const msg = body?.error?.message || body?.message || `${t('keyUsage.queryFailed')} (${res.status})`
-    throw new Error(msg)
+    throw new Error(t('keyUsage.queryFailedRetry'))
   }
   return await res.json()
 }
@@ -898,7 +921,7 @@ async function queryKey() {
   } catch (err) {
     showResults.value = false
     showLoading.value = false
-    appStore.showError((err as Error).message || t('keyUsage.queryFailedRetry'))
+    appStore.showError(t('keyUsage.queryFailedRetry'))
   } finally {
     isQuerying.value = false
   }
@@ -921,6 +944,11 @@ function formatResetTime(resetAt: string | null | undefined): string {
   const days = Math.floor(diff / 86400000)
   const hours = Math.floor((diff % 86400000) / 3600000)
   const mins = Math.floor((diff % 3600000) / 60000)
+  if (currentLanguage() === 'ru') {
+    if (days > 0) return `${days} д ${hours} ч`
+    if (hours > 0) return `${hours} ч ${mins} мин`
+    return `${mins} мин`
+  }
   if (days > 0) return `${days}d ${hours}h`
   if (hours > 0) return `${hours}h ${mins}m`
   return `${mins}m`

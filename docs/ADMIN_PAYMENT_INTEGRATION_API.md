@@ -1,40 +1,35 @@
-﻿# ADMIN_PAYMENT_INTEGRATION_API
+﻿# Admin Payment Integration API
+
+中文 / English | [Русский](ADMIN_PAYMENT_INTEGRATION_API_RU.md)
 
 > 单文件中英双语文档 / Single-file bilingual documentation (Chinese + English)
+
+Set the base URL to the actual Sub2API origin, for example `BASE=https://sub2api.example.com`. There is no repository-defined Beta port.
 
 ---
 
 ## 中文
 
 ### 目标
-本文档用于对接外部支付系统（如 `sub2apipay`）与 Sub2API 的 Admin API，覆盖：
-- 支付成功后充值
-- 用户查询
-- 人工余额修正
-- 前端购买页参数透传
 
-### 基础地址
-- 生产：`https://<your-domain>`
-- Beta：`http://<your-server-ip>:8084`
+本文档用于外部支付系统（例如 `sub2apipay`）对接 Sub2API Admin API，覆盖支付成功后的充值、用户查询、人工余额修正和购买页参数透传。
 
-### 认证
-推荐使用：
-- `x-api-key: admin-<64hex>`
+### 认证与安全
+
+服务间调用推荐使用 Admin API Key：
+
+- `x-api-key: <ADMIN_API_KEY>`
 - `Content-Type: application/json`
-- 幂等接口额外传：`Idempotency-Key`
+- 写接口额外传 `Idempotency-Key`
 
-说明：管理员 JWT 也可访问 admin 路由，但服务间调用建议使用 Admin API Key。
+管理员 JWT 也可访问 admin 路由，但不建议用于服务间集成。请仅通过 HTTPS 发送凭证，并将 Admin API Key 保存在服务器端。
 
-### 1) 一步完成创建并兑换
+### 1. 原子创建并兑换
+
 `POST /api/v1/admin/redeem-codes/create-and-redeem`
 
-用途：原子完成“创建兑换码 + 兑换到指定用户”。
+请求头必须包含 `Idempotency-Key`。请求体：
 
-请求头：
-- `x-api-key`
-- `Idempotency-Key`
-
-请求体示例：
 ```json
 {
   "code": "s2p_cm1234567890",
@@ -45,15 +40,16 @@
 }
 ```
 
-幂等语义：
-- 同 `code` 且 `used_by` 一致：`200`
-- 同 `code` 但 `used_by` 不一致：`409`
-- 缺少 `Idempotency-Key`：`400`（`IDEMPOTENCY_KEY_REQUIRED`）
+幂等/冲突语义：
 
-curl 示例：
+- 同 `code` 且已由同一用户兑换：`200`
+- 同 `code` 但 `used_by` 不同：`409`
+- 缺少 `Idempotency-Key`：`400`，错误码 `IDEMPOTENCY_KEY_REQUIRED`
+
 ```bash
-curl -X POST "${BASE}/api/v1/admin/redeem-codes/create-and-redeem" \
-  -H "x-api-key: ${KEY}" \
+BASE=https://sub2api.example.com
+curl --fail-with-body -X POST "$BASE/api/v1/admin/redeem-codes/create-and-redeem" \
+  -H "x-api-key: <ADMIN_API_KEY>" \
   -H "Idempotency-Key: pay-cm1234567890-success" \
   -H "Content-Type: application/json" \
   -d '{
@@ -65,179 +61,109 @@ curl -X POST "${BASE}/api/v1/admin/redeem-codes/create-and-redeem" \
   }'
 ```
 
-### 2) 查询用户（可选前置校验）
+### 2. 查询用户（可选前置校验）
+
 `GET /api/v1/admin/users/:id`
 
 ```bash
-curl -s "${BASE}/api/v1/admin/users/123" \
-  -H "x-api-key: ${KEY}"
+curl --fail-with-body "$BASE/api/v1/admin/users/123" \
+  -H "x-api-key: <ADMIN_API_KEY>"
 ```
 
-### 3) 余额调整（已有接口）
+### 3. 调整余额
+
 `POST /api/v1/admin/users/:id/balance`
 
-用途：人工补偿 / 扣减，支持 `set` / `add` / `subtract`。
-
-请求体示例（扣减）：
-```json
-{
-  "balance": 100.0,
-  "operation": "subtract",
-  "notes": "manual correction"
-}
-```
+`operation` 只允许 `set`、`add` 或 `subtract`，`balance` 必须大于零。该写接口也要求 `Idempotency-Key`。
 
 ```bash
-curl -X POST "${BASE}/api/v1/admin/users/123/balance" \
-  -H "x-api-key: ${KEY}" \
+curl --fail-with-body -X POST "$BASE/api/v1/admin/users/123/balance" \
+  -H "x-api-key: <ADMIN_API_KEY>" \
   -H "Idempotency-Key: balance-subtract-cm1234567890" \
   -H "Content-Type: application/json" \
-  -d '{
-    "balance":100.00,
-    "operation":"subtract",
-    "notes":"manual correction"
-  }'
+  -d '{"balance":100.00,"operation":"subtract","notes":"manual correction"}'
 ```
 
-### 4) 购买页 / 自定义页面 URL Query 透传（iframe / 新窗口一致）
-当 Sub2API 打开 `purchase_subscription_url` 或用户侧自定义页面 iframe URL 时，会统一追加：
-- `user_id`
-- `token`
+### 4. 嵌入购买页/自定义页的 Query 参数
+
+Sub2API 使用共享 URL builder 打开 `purchase_subscription_url` 和用户自定义 iframe 页面。它会追加：
+
+- `user_id`、`token`（仅在有已登录用户时）
 - `theme`（`light` / `dark`）
-- `lang`（例如 `zh` / `en`，用于向嵌入页传递当前界面语言）
-- `ui_mode`（固定 `embedded`）
+- `lang`（例如 `zh-CN`、`en`、`ru`）
+- `ui_mode=embedded`
+- `src_host`（Sub2API origin）
+- `src_url`（当前 Sub2API 页面 URL）
 
-示例：
 ```text
-https://pay.example.com/pay?user_id=123&token=<jwt>&theme=light&lang=zh&ui_mode=embedded
+https://pay.example.com/pay?user_id=123&token=<jwt>&theme=light&lang=zh-CN&ui_mode=embedded&src_host=https%3A%2F%2Fsub2api.example.com&src_url=https%3A%2F%2Fsub2api.example.com%2Fpurchase
 ```
 
-### 5) 失败处理建议
-- 支付成功与充值成功分状态落库
-- 回调验签成功后立即标记“支付成功”
-- 支付成功但充值失败的订单允许后续重试
-- 重试保持相同 `code`，并使用新的 `Idempotency-Key`
+`token` 出现在 URL query 中，因此嵌入目标必须完全可信、使用 HTTPS，且不得把完整 URL 写入日志、分析系统或 Referer 可泄露的位置。
 
-### 6) `doc_url` 配置建议
-- 查看链接：`https://github.com/Wei-Shaw/sub2api/blob/main/ADMIN_PAYMENT_INTEGRATION_API.md`
-- 下载链接：`https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/ADMIN_PAYMENT_INTEGRATION_API.md`
+### 5. 失败处理
+
+- 分别持久化“支付成功”和“充值成功”状态。
+- 只有在回调验签成功后才标记支付成功。
+- 支付成功但充值失败的订单应允许重试。
+- 重试保持相同业务 `code`；每次独立尝试使用唯一且可追踪的 `Idempotency-Key`。
+
+### 6. `doc_url`
+
+- 当前文档：`https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API.md`
+- 俄语文档：`https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md`
 
 ---
 
 ## English
 
 ### Purpose
-This document describes the minimal Sub2API Admin API surface for external payment integrations (for example, `sub2apipay`), including:
-- Recharge after payment success
-- User lookup
-- Manual balance correction
-- Purchase page query parameter forwarding
 
-### Base URL
-- Production: `https://<your-domain>`
-- Beta: `http://<your-server-ip>:8084`
+This document describes the Sub2API Admin API surface used by an external payment service for post-payment recharge, user lookup, manual balance correction and embedded purchase-page parameters.
 
-### Authentication
-Recommended headers:
-- `x-api-key: admin-<64hex>`
+### Authentication and security
+
+For server-to-server calls use an Admin API Key:
+
+- `x-api-key: <ADMIN_API_KEY>`
 - `Content-Type: application/json`
-- `Idempotency-Key` for idempotent endpoints
+- `Idempotency-Key` on write endpoints
 
-Note: Admin JWT can also access admin routes, but Admin API Key is recommended for server-to-server integration.
+Admin JWT authentication also works on admin routes, but it is not recommended for service integration. Send credentials only over HTTPS and keep the Admin API Key server-side.
 
-### 1) Create and Redeem in one step
+### 1. Atomically create and redeem
+
 `POST /api/v1/admin/redeem-codes/create-and-redeem`
 
-Use case: atomically create a redeem code and redeem it to a target user.
+The request body and executable `curl` example are shown in the Chinese section above. The endpoint requires `Idempotency-Key`.
 
-Headers:
-- `x-api-key`
-- `Idempotency-Key`
+- Same `code`, already redeemed by the same user: `200`
+- Same `code`, different `used_by`: `409`
+- Missing key: `400` with `IDEMPOTENCY_KEY_REQUIRED`
 
-Request body:
-```json
-{
-  "code": "s2p_cm1234567890",
-  "type": "balance",
-  "value": 100.0,
-  "user_id": 123,
-  "notes": "sub2apipay order: cm1234567890"
-}
-```
+### 2. Query a user
 
-Idempotency behavior:
-- Same `code` and same `used_by`: `200`
-- Same `code` but different `used_by`: `409`
-- Missing `Idempotency-Key`: `400` (`IDEMPOTENCY_KEY_REQUIRED`)
-
-curl example:
-```bash
-curl -X POST "${BASE}/api/v1/admin/redeem-codes/create-and-redeem" \
-  -H "x-api-key: ${KEY}" \
-  -H "Idempotency-Key: pay-cm1234567890-success" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code":"s2p_cm1234567890",
-    "type":"balance",
-    "value":100.00,
-    "user_id":123,
-    "notes":"sub2apipay order: cm1234567890"
-  }'
-```
-
-### 2) Query User (optional pre-check)
 `GET /api/v1/admin/users/:id`
 
-```bash
-curl -s "${BASE}/api/v1/admin/users/123" \
-  -H "x-api-key: ${KEY}"
-```
+This is an optional pre-check. Authenticate with `x-api-key` as shown above.
 
-### 3) Balance Adjustment (existing API)
+### 3. Adjust balance
+
 `POST /api/v1/admin/users/:id/balance`
 
-Use case: manual correction with `set` / `add` / `subtract`.
+`operation` is one of `set`, `add`, or `subtract`; `balance` must be greater than zero. This write endpoint also requires `Idempotency-Key`.
 
-Request body example (`subtract`):
-```json
-{
-  "balance": 100.0,
-  "operation": "subtract",
-  "notes": "manual correction"
-}
-```
+### 4. Embedded purchase/custom-page query parameters
 
-```bash
-curl -X POST "${BASE}/api/v1/admin/users/123/balance" \
-  -H "x-api-key: ${KEY}" \
-  -H "Idempotency-Key: balance-subtract-cm1234567890" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "balance":100.00,
-    "operation":"subtract",
-    "notes":"manual correction"
-  }'
-```
+The shared URL builder appends `user_id`, `token`, `theme`, `lang`, `ui_mode=embedded`, `src_host`, and `src_url`. User and token are present only when an authenticated user is available.
 
-### 4) Purchase / Custom Page URL query forwarding (iframe and new tab)
-When Sub2API opens `purchase_subscription_url` or a user-facing custom page iframe URL, it appends:
-- `user_id`
-- `token`
-- `theme` (`light` / `dark`)
-- `lang` (for example `zh` / `en`, used to pass the current UI language to the embedded page)
-- `ui_mode` (fixed: `embedded`)
+Because the JWT is carried in the query string, the embedded destination must be fully trusted and HTTPS-only. Do not log or forward the complete URL through analytics or Referer-leaking flows.
 
-Example:
-```text
-https://pay.example.com/pay?user_id=123&token=<jwt>&theme=light&lang=zh&ui_mode=embedded
-```
+### 5. Retry guidance
 
-### 5) Failure handling recommendations
-- Persist payment success and recharge success as separate states
-- Mark payment as successful immediately after verified callback
-- Allow retry for orders with payment success but recharge failure
-- Keep the same `code` for retry, and use a new `Idempotency-Key`
+Persist payment success separately from recharge success, verify callback signatures first, retain the same business `code` across retries, and use a unique traceable `Idempotency-Key` for each independent attempt.
 
-### 6) Recommended `doc_url`
-- View URL: `https://github.com/Wei-Shaw/sub2api/blob/main/ADMIN_PAYMENT_INTEGRATION_API.md`
-- Download URL: `https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/ADMIN_PAYMENT_INTEGRATION_API.md`
+### 6. Documentation URLs
+
+- This document: `https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API.md`
+- Russian: `https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md`

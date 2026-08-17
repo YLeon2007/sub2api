@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -620,6 +623,62 @@ describe("admin SettingsView email domain quota copy", () => {
   });
 });
 
+function findLocalTextCallsWithoutRussianBranch(source: string): number[] {
+  const missing: number[] = [];
+  const callPattern = /localText\s*\(/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = callPattern.exec(source))) {
+    const callStart = match.index;
+    const prefix = source.slice(Math.max(0, callStart - 20), callStart);
+    if (/function\s+$/.test(prefix)) continue;
+
+    let cursor = callPattern.lastIndex;
+    let depth = 1;
+    let quote: string | null = null;
+    let escaped = false;
+    let topLevelCommas = 0;
+    let lastArgumentStart = cursor;
+
+    while (cursor < source.length && depth > 0) {
+      const ch = source[cursor];
+
+      if (quote) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === quote) {
+          quote = null;
+        }
+        cursor += 1;
+        continue;
+      }
+
+      if (ch === '"' || ch === "'" || ch === "`") {
+        quote = ch;
+      } else if (ch === "(" || ch === "[" || ch === "{") {
+        depth += 1;
+      } else if (ch === ")" || ch === "]" || ch === "}") {
+        depth -= 1;
+      } else if (ch === "," && depth === 1) {
+        topLevelCommas += 1;
+        lastArgumentStart = cursor + 1;
+      }
+      cursor += 1;
+    }
+
+    const tailHasArgument = source.slice(lastArgumentStart, cursor - 1).trim().length > 0;
+    const argumentCount = topLevelCommas + (tailHasArgument ? 1 : 0);
+    if (argumentCount < 3) {
+      missing.push(source.slice(0, callStart).split("\n").length);
+    }
+    callPattern.lastIndex = cursor;
+  }
+
+  return missing;
+}
+
 describe("admin SettingsView payment visible method controls", () => {
   beforeEach(() => {
     getSettings.mockReset();
@@ -766,6 +825,36 @@ describe("admin SettingsView payment visible method controls", () => {
       public_ip_rpm: 300,
     });
     expect(showSuccess).toHaveBeenCalled();
+  });
+
+  it("adds explicit Russian branches for all hardcoded localText copy", () => {
+    const source = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), "../SettingsView.vue"),
+      "utf8",
+    );
+
+    expect(findLocalTextCallsWithoutRussianBranch(source)).toEqual([]);
+  });
+
+  it("renders Russian OAuth and agreement copy instead of English fallback", async () => {
+    localeRef.value = "ru";
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      github_oauth_enabled: true,
+      google_oauth_enabled: true,
+      login_agreement_enabled: true,
+    });
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    const text = wrapper.text();
+    expect(text).toContain("Быстрый вход по email OAuth");
+    expect(text).toContain("Подтверждение соглашения при входе");
+    expect(text).not.toContain("Email OAuth Sign-in");
+    expect(text).not.toContain("Login agreement");
+
+    wrapper.unmount();
   });
 
   it("does not render legacy visible payment method controls", async () => {
@@ -1051,6 +1140,28 @@ describe("admin SettingsView payment visible method controls", () => {
     for (const link of paymentLinks) {
       expect(link.attributes("href")).toContain("docs/PAYMENT");
     }
+  });
+
+  it("links Russian payment guidance to immutable fork documentation", async () => {
+    localeRef.value = "ru-RU";
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    const paymentLinks = wrapper
+      .findAll("a")
+      .filter((node) =>
+        ["查看支付配置说明", "查看支持的支付方式"].includes(node.text()),
+      );
+
+    expect(paymentLinks).toHaveLength(2);
+    expect(paymentLinks[0]?.attributes("href")).toBe(
+      "https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/PAYMENT_RU.md",
+    );
+    expect(paymentLinks[1]?.attributes("href")).toBe(
+      "https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/PAYMENT_RU.md#поддерживаемые-провайдеры",
+    );
   });
 
   it("does not submit legacy visible payment method settings", async () => {

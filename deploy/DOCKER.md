@@ -1,76 +1,113 @@
-# Sub2API Docker Image
+# Sub2API Docker image
 
-Sub2API is an AI API Gateway Platform for distributing and managing AI product subscription API quotas.
+Sub2API is an AI API gateway for distributing and managing AI product subscription/API quotas.
 
-## Quick Start
+Fork releases use immutable images such as:
+
+```text
+ghcr.io/yleon2007/sub2api:0.1.177-ru.1
+```
+
+Floating `latest`, `main`, or `dev` tags are intentionally not deployment targets. Pin an explicit release tag or digest.
+
+## Recommended quick start
+
+Use the reviewed Compose files rather than constructing an incomplete `docker run` command:
 
 ```bash
-docker run -d \
-  --name sub2api \
-  -p 8080:8080 \
-  -e DATABASE_URL="postgres://user:pass@host:5432/sub2api" \
-  -e REDIS_URL="redis://host:6379" \
-  weishaw/sub2api:latest
+git clone https://github.com/YLeon2007/sub2api.git
+cd sub2api/deploy
+cp .env.example .env
+chmod 600 .env
+# Edit .env with a local editor and replace every required/placeholder secret.
+
+docker compose -f docker-compose.local.yml config --quiet
+docker compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.local.yml ps
 ```
 
-## Docker Compose
+Before startup, replace all required/placeholder secrets in `.env`. Never commit `.env`.
 
-```yaml
-version: '3.8'
+Compose variants:
 
-services:
-  sub2api:
-    image: weishaw/sub2api:latest
-    ports:
-      - "8080:8080"
-    environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/sub2api?sslmode=disable
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - db
-      - redis
+| File | Use case |
+|---|---|
+| `docker-compose.yml` | Bundled PostgreSQL/Redis with named volumes and persistent `/app` runtime |
+| `docker-compose.local.yml` | Bundled PostgreSQL/Redis with bind-mounted local data directories |
+| `docker-compose.standalone.yml` | Application only; PostgreSQL and Redis are external |
 
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=sub2api
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+See [`README.md`](README.md) for backup, upgrade, rollback and inspect-before-run instructions.
 
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
+## External PostgreSQL and Redis
 
-volumes:
-  postgres_data:
-  redis_data:
+`docker-compose.standalone.yml` uses split configuration variables, not `DATABASE_URL` or `REDIS_URL`.
+
+After copying `.env.example`, explicitly add and review at least:
+
+```dotenv
+DATABASE_HOST=replace-with-postgresql-host
+DATABASE_PORT=5432
+DATABASE_USER=sub2api
+DATABASE_PASSWORD=replace-with-database-password
+DATABASE_DBNAME=sub2api
+DATABASE_SSLMODE=require
+
+REDIS_HOST=replace-with-redis-host
+REDIS_PORT=6379
+REDIS_USERNAME=
+REDIS_PASSWORD=
+REDIS_DB=0
+REDIS_ENABLE_TLS=true
+
+JWT_SECRET=replace-with-random-secret
+TOTP_ENCRYPTION_KEY=replace-with-random-secret
 ```
 
-## Environment Variables
+Choose `DATABASE_SSLMODE` and `REDIS_ENABLE_TLS` according to the actual trusted network and server certificates; do not copy the example blindly.
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes | - |
-| `REDIS_URL` | Redis connection string | Yes | - |
-| `PORT` | Server port | No | `8080` |
-| `GIN_MODE` | Gin framework mode (`debug`/`release`) | No | `release` |
+Validate before creating a container:
 
-## Supported Architectures
+```bash
+docker compose --env-file .env -f docker-compose.standalone.yml config --quiet
+docker compose --env-file .env -f docker-compose.standalone.yml up -d
+docker compose --env-file .env -f docker-compose.standalone.yml logs -f sub2api
+```
+
+## Key environment variables
+
+| Variable | Meaning | Required/default |
+|---|---|---|
+| `DATABASE_HOST` | PostgreSQL host | Required for standalone |
+| `DATABASE_PORT` | PostgreSQL port | `5432` |
+| `DATABASE_USER` | PostgreSQL user | `sub2api` |
+| `DATABASE_PASSWORD` | PostgreSQL password | Required for standalone |
+| `DATABASE_DBNAME` | PostgreSQL database | `sub2api` |
+| `DATABASE_SSLMODE` | PostgreSQL TLS mode | Compose default `disable`; review for production |
+| `REDIS_HOST` | Redis host | Required for standalone |
+| `REDIS_PORT` | Redis port | `6379` |
+| `REDIS_USERNAME`, `REDIS_PASSWORD` | Redis ACL credentials | Empty by default |
+| `REDIS_DB` | Redis database | `0` |
+| `REDIS_ENABLE_TLS` | Redis TLS switch | `false`; review for production |
+| `SERVER_MODE` | Server mode (`debug`/`release`) | `release` |
+| `BIND_HOST` | Host interface used for published port | `0.0.0.0` |
+| `SERVER_PORT` | Host-published port in Compose | `8080`; container listens on `8080` |
+| `JWT_SECRET` | JWT signing secret | Generate and persist |
+| `TOTP_ENCRYPTION_KEY` | Encrypts TOTP material | Generate and persist when 2FA is used |
+
+The complete version-specific list is in `.env.example`, `config.example.yaml`, and the selected Compose file.
+
+## Supported architectures
 
 - `linux/amd64`
 - `linux/arm64`
 
-## Tags
+## Image tags
 
-- `latest` - Latest stable release
-- `x.y.z` - Specific version
-- `x.y` - Latest patch of minor version
-- `x` - Latest minor of major version
+- `0.1.177-ru.1` — current immutable Russian release;
+- `x.y.z-ru.n` — immutable Russian release format.
 
 ## Links
 
-- [GitHub Repository](https://github.com/weishaw/sub2api)
-- [Documentation](https://github.com/weishaw/sub2api#readme)
+- [Fork repository](https://github.com/YLeon2007/sub2api)
+- [Container package](https://github.com/YLeon2007/sub2api/pkgs/container/sub2api)
+- [Fork releases](https://github.com/YLeon2007/sub2api/releases)

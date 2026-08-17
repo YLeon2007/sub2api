@@ -579,6 +579,9 @@ export default {
         codexFingerprintDevice: 'Device only',
         codexFingerprintSession: 'Device + Session',
         codexFingerprintFull: 'Full convergence',
+        compactProbeSuccess: 'Compact probe succeeded (native remote compaction v2)',
+        compactProbeUnsupported:
+          'Upstream returned 2xx without a compaction output item (native remote compaction v2 unsupported on this chain)',
         codexImageTool: 'Codex image bridge policy',
         codexImageToolDesc:
           'Controls the hosted image_generation bridge and client-declared image tools on Codex /responses text requests. Hosted auto-injection applies only to non-Responses Lite requests. Account policy takes precedence over channel and global settings; standalone image-generation endpoints are unaffected.',
