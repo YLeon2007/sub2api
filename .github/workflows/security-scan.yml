@@ -20,9 +20,13 @@ jobs:
           go-version-file: backend/go.mod
           check-latest: false
           cache-dependency-path: backend/go.sum
-      - name: Verify Go version
+      - name: Verify Go version from go.mod
         run: |
-          go version | grep -q 'go1.26.6'
+          expected="go$(awk '/^go / {print $2; exit}' backend/go.mod)"
+          actual="$(go env GOVERSION)"
+          test "$actual" = "$expected"
+      - name: Verify release binary identity parser
+        run: python tools/validate_release_binary_identity.py --self-test
       - name: Run govulncheck
         working-directory: backend
         run: |

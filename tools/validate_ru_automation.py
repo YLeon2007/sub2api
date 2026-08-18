@@ -353,12 +353,23 @@ def validate_release_workflow(text: str, errors: list[str]) -> None:
         "release.yml: release must use a read-only Go module graph",
         errors,
     )
+    binary_identity_tokens = [
+        "- name: Verify Linux release binary identity",
+        "python tools/validate_release_binary_identity.py",
+        "--binary dist/sub2api_linux_amd64_v1/sub2api",
+        '--version "${RELEASE_VERSION}"',
+        '--commit "${EXPECTED_COMMIT}"',
+    ]
     require(
-        "- name: Verify Linux release binary identity" in text
-        and "dist/sub2api_linux_amd64_v1/sub2api --version" in text
-        and "Sub2API ${RELEASE_VERSION}" in text
-        and "commit: ${EXPECTED_COMMIT}" in text,
-        "release.yml: missing exact binary identity version/commit gate",
+        all(token in text for token in binary_identity_tokens)
+        and 'grep -F "Sub2API ${RELEASE_VERSION}' not in text
+        and 'grep -F "commit: ${EXPECTED_COMMIT}' not in text,
+        "release.yml: missing complete structured binary identity parser",
+        errors,
+    )
+    require(
+        "python tools/validate_release_binary_identity.py --self-test" in text,
+        "release.yml: complete binary identity parser self-test must run before GoReleaser",
         errors,
     )
     goreleaser_step_position = text.find("- name: Run GoReleaser")
@@ -475,6 +486,23 @@ def validate_security_workflow(text: str, errors: list[str]) -> None:
     writes = write_permissions(text)
     require(not writes, f"security-scan.yml: security scan must not request write permissions, found {sorted(writes)}", errors)
     require("contents: read" in text, "security-scan.yml: expected contents: read permission", errors)
+    dynamic_go_tokens = [
+        "go-version-file: backend/go.mod",
+        'expected="go$(awk \'/^go / {print $2; exit}\' backend/go.mod)"',
+        'actual="$(go env GOVERSION)"',
+        'test "$actual" = "$expected"',
+    ]
+    require(
+        all(token in text for token in dynamic_go_tokens)
+        and re.search(r"go\s+version[^\n|]*grep[^\n|]*go[0-9]", text) is None,
+        "security-scan.yml: derive the exact Go version from backend/go.mod and compare go env GOVERSION",
+        errors,
+    )
+    require(
+        "python tools/validate_release_binary_identity.py --self-test" in text,
+        "security-scan.yml: missing complete release binary identity parser self-test",
+        errors,
+    )
 
 
 def validate_goreleaser_config(path: Path, errors: list[str]) -> None:
@@ -1395,6 +1423,10 @@ def validate_repo(
 
 
 def self_test() -> None:
+    from validate_release_binary_identity import self_test as binary_identity_self_test
+
+    binary_identity_self_test()
+
     def test_compose(version: str) -> str:
         return f"services:\n  sub2api:\n    image: ghcr.io/yleon2007/sub2api:{version}\n"
 
@@ -2247,6 +2279,7 @@ jobs:
       - run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0 && govulncheck ./... && make test-unit
       - run: bash deploy/tests/install-github-token-test.sh
       - run: bash deploy/tests/install-checksum-integrity-test.sh
+      - run: python tools/validate_release_binary_identity.py --self-test
       - run: echo tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
       - run: echo moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
       - run: |
@@ -2277,9 +2310,10 @@ jobs:
           goreleaser release
       - name: Verify Linux release binary identity
         run: |
-          dist/sub2api_linux_amd64_v1/sub2api --version
-          echo "Sub2API ${RELEASE_VERSION}"
-          echo "commit: ${EXPECTED_COMMIT}"
+          python tools/validate_release_binary_identity.py \
+            --binary dist/sub2api_linux_amd64_v1/sub2api \
+            --version "${RELEASE_VERSION}" \
+            --commit "${EXPECTED_COMMIT}"
       - name: Verify local release checksums
         run: sha256sum -c checksums.txt
       - name: Verify versioned GHCR manifest
@@ -2312,6 +2346,18 @@ jobs:
         )
         assert any("portable asset basename" in error for error in bad_metadata_checksum_errors)
         valid_release_fixture = (workflow_dir / "release.yml").read_text(encoding="utf-8")
+        weak_binary_identity_errors: list[str] = []
+        validate_release_workflow(
+            valid_release_fixture.replace(
+                "tools/validate_release_binary_identity.py",
+                "tools/weak_binary_identity_check.py",
+            ),
+            weak_binary_identity_errors,
+        )
+        assert any(
+            "complete structured binary identity parser" in error
+            for error in weak_binary_identity_errors
+        )
         missing_python_bytecode_guard_errors: list[str] = []
         validate_release_workflow(
             valid_release_fixture.replace("  PYTHONDONTWRITEBYTECODE: '1'\n", ""),
@@ -2417,9 +2463,36 @@ permissions:
 jobs:
   scan:
     steps:
+      - uses: actions/setup-go@0000000000000000000000000000000000000000
+        with:
+          go-version-file: backend/go.mod
+      - run: |
+          expected="go$(awk '/^go / {print $2; exit}' backend/go.mod)"
+          actual="$(go env GOVERSION)"
+          test "$actual" = "$expected"
+      - run: python tools/validate_release_binary_identity.py --self-test
       - run: govulncheck ./...
 """,
             encoding="utf-8",
+        )
+        hardcoded_security_go_errors: list[str] = []
+        validate_security_workflow(
+            """name: Security Scan
+permissions:
+  contents: read
+jobs:
+  scan:
+    steps:
+      - uses: actions/setup-go@0000000000000000000000000000000000000000
+        with:
+          go-version-file: backend/go.mod
+      - run: go version | grep -F 'go1.26.6'
+""",
+            hardcoded_security_go_errors,
+        )
+        assert any(
+            "derive the exact Go version from backend/go.mod" in error
+            for error in hardcoded_security_go_errors
         )
         fixture_dockerfile = (
             "ARG ALPINE_IMAGE=alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d\n"

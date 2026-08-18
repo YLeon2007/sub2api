@@ -145,6 +145,9 @@ jobs:
           bash deploy/tests/install-github-token-test.sh
           bash deploy/tests/install-checksum-integrity-test.sh
 
+      - name: Verify release binary identity parser self-test
+        run: python tools/validate_release_binary_identity.py --self-test
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
         with:
@@ -423,10 +426,10 @@ jobs:
           RELEASE_VERSION: ${{ steps.guard.outputs.version }}
           EXPECTED_COMMIT: ${{ github.sha }}
         run: |
-          version_output="$(dist/sub2api_linux_amd64_v1/sub2api --version 2>&1)"
-          printf '%s\n' "$version_output"
-          printf '%s\n' "$version_output" | grep -F "Sub2API ${RELEASE_VERSION} "
-          printf '%s\n' "$version_output" | grep -F "commit: ${EXPECTED_COMMIT}"
+          python tools/validate_release_binary_identity.py \
+            --binary dist/sub2api_linux_amd64_v1/sub2api \
+            --version "${RELEASE_VERSION}" \
+            --commit "${EXPECTED_COMMIT}"
 
       - name: Verify local release checksums
         run: |

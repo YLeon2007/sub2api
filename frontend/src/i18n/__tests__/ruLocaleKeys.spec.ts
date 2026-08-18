@@ -455,4 +455,54 @@ describe('Russian locale key coverage', () => {
     expect(settings).not.toContain('Callback URL backend')
     expect(settings).not.toContain('Callback URL frontend')
   })
+
+  it('localizes the v0.1.177 active RU controls, accessibility labels, and primary errors', () => {
+    expect(ru.redeem.days).toBe(' дн.')
+    expect(ru.auth.oauthCallbackPageTitle).toBe('Обратный вызов OAuth')
+    expect(ru.admin.accounts.openai.compactModeAuto).toBe('Авто')
+    expect(ru.admin.accounts.openai.compactModeForceOn).toBe('Принудительно включён')
+    expect(ru.admin.accounts.openai.compactModeForceOff).toBe('Принудительно выключен')
+    expect(ru.admin.accounts.openai.compactModelMapping).toBe('Сопоставление моделей только для Compact')
+    expect(ru.admin.accounts.openai.wsModeOff).toBe('Выключен (off)')
+    expect(ru.admin.accounts.openai.wsModeCtxPool).toBe('Пул контекста (ctx_pool)')
+    expect(ru.admin.accounts.openai.wsModePassthrough).toBe('Сквозная передача (passthrough)')
+    expect(ru.admin.accounts.openai.wsModeHttpBridge).toBe('HTTP-мост (http_bridge)')
+    expect(ru.admin.accounts.openai.wsModeShared).toBe('Общий (shared)')
+    expect(ru.admin.accounts.openai.wsModeDedicated).toBe('Выделенный (dedicated)')
+    expect(ru.admin.accounts.openai.oauthResponsesWebsocketsV2).toBe('Режим WebSocket для OAuth')
+    expect(ru.admin.accounts.openai.apiKeyResponsesWebsocketsV2).toBe('Режим WebSocket для API-ключа')
+    expect(
+      Array.from(ruLeaves.entries())
+        .filter(([path]) => path.endsWith('.modelMapping'))
+        .map(([, value]) => value)
+    ).not.toContain('Model Mapping')
+
+    const sourceRoot = resolve(process.cwd(), 'src')
+    const usageFilters = readFileSync(resolve(sourceRoot, 'components/admin/usage/UsageFilters.vue'), 'utf8')
+    expect(usageFilters).toContain("t('admin.usage.clearUserFilter')")
+    expect(usageFilters).toContain("t('admin.usage.clearApiKeyFilter')")
+    expect(usageFilters).toContain("t('admin.usage.clearAccountFilter')")
+    expect(usageFilters).not.toContain('Clear user filter')
+    expect(usageFilters).not.toContain('Clear API key filter')
+    expect(usageFilters).not.toContain('Clear account filter')
+
+    const primaryErrorFiles = [
+      'components/admin/account/AccountTestModal.vue',
+      'components/account/AccountTestModal.vue',
+      'views/admin/GroupsView.vue',
+      'views/admin/PromoCodesView.vue',
+      'views/admin/BackupView.vue'
+    ].map((path) => readFileSync(resolve(sourceRoot, path), 'utf8'))
+    for (const source of primaryErrorFiles) {
+      expect(source).not.toContain('errorMessage.value = event.error')
+      expect(source).not.toContain('errorMessage.value = msg')
+      expect(source).not.toContain('showError(error.response?.data?.message || t(')
+      expect(source).not.toContain('showError(error.response?.data?.detail || t(')
+      expect(source).not.toContain('showError(error.message || t(')
+      expect(source).not.toContain('showError(err.response?.data?.message || t(')
+      expect(source).not.toContain('showError(err.message || t(')
+      expect(source).not.toContain('showError(result.error || t(')
+      expect(source).not.toContain('showError(record.error_message || t(')
+    }
+  })
 })

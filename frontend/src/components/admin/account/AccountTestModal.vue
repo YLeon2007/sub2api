@@ -933,7 +933,7 @@ const startTest = async () => {
     }
     status.value = 'error'
     const msg = error instanceof Error ? error.message : t('common.unknownError')
-    errorMessage.value = msg
+    errorMessage.value = t('admin.accounts.testFailed')
     addLine(t('admin.accounts.errorPrefix', { message: msg }), 'text-red-400')
   }
 }
@@ -1048,17 +1048,33 @@ const handleEvent = (event: {
         status.value = 'success'
       } else {
         status.value = 'error'
-        errorMessage.value = event.error
-          ? localizeKnownAccountTestText(event.error)
-          : t('admin.accounts.testFailed')
+        if (event.error) {
+          const localizedError = localizeKnownAccountTestText(event.error)
+          if (localizedError === event.error) {
+            errorMessage.value = t('admin.accounts.testFailed')
+            addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
+          } else {
+            errorMessage.value = localizedError
+          }
+        } else {
+          errorMessage.value = t('admin.accounts.testFailed')
+        }
       }
       break
 
     case 'error':
       status.value = 'error'
-      errorMessage.value = event.error
-        ? localizeKnownAccountTestText(event.error)
-        : t('common.unknownError')
+      if (event.error) {
+        const localizedEventError = localizeKnownAccountTestText(event.error)
+        if (localizedEventError === event.error) {
+          errorMessage.value = t('admin.accounts.testFailed')
+          addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
+        } else {
+          errorMessage.value = localizedEventError
+        }
+      } else {
+        errorMessage.value = t('admin.accounts.testFailed')
+      }
       if (streamingContent.value) {
         addLine(streamingContent.value, 'text-green-300')
         streamingContent.value = ''
