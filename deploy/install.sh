@@ -556,6 +556,8 @@ with archive_path.open("rb") as raw, gzip.GzipFile(fileobj=raw, mode="rb") as st
         if name in seen:
             raise ValueError(f"duplicate archive member: {name}")
         seen.add(name)
+        if name == "deploy/sub2api" or name.startswith("deploy/sub2api/"):
+            raise ValueError("archive deploy tree must not occupy the executable destination")
         if member.isdir():
             continue
         if not member.isreg():
@@ -576,10 +578,11 @@ with archive_path.open("rb") as raw, gzip.GzipFile(fileobj=raw, mode="rb") as st
         if destination.stat().st_size != member.size:
             raise ValueError(f"short archive member: {name}")
         os.chmod(destination, 0o755 if name == "sub2api" else 0o644)
-    # The streaming reader must consume the gzip trailer before success.
+    # Read through tarfile's stream adapter so buffered read-ahead after TAR EOF
+    # is validated before the underlying gzip stream is considered complete.
     trailing = 0
     while True:
-        chunk = stream.read(min(1024 * 1024, max_trailing_bytes + 1 - trailing))
+        chunk = archive.fileobj.read(min(1024 * 1024, max_trailing_bytes + 1 - trailing))
         if not chunk:
             break
         trailing += len(chunk)
@@ -657,7 +660,8 @@ download_github_release_asset() {
     local initial_url=$1 destination=$2 max_bytes=$3
     local current_url=$initial_url redirect_count=0 status location location_count
     local partial_path="${destination}.partial.$$" header_path="${destination}.headers.$$"
-    local file_blocks=$(( (max_bytes + 511) / 512 ))
+    # Bash ulimit -f counts 1024-byte blocks on this supported installer shell.
+    local file_blocks=$(( (max_bytes + 1023) / 1024 ))
 
     rm -f -- "$partial_path" "$header_path"
     while :; do

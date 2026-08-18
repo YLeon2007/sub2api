@@ -4672,23 +4672,23 @@ export const ruOverrides = {
         "rpmLimit": {
           "label": "Лимит RPM",
           "hint": "Ограничьте запросы в минуту для защиты upstream-аккаунтов",
-          "baseRpm": "Base RPM",
+          "baseRpm": "Базовый RPM",
           "baseRpmPlaceholder": "15",
           "baseRpmHint": "Максимум запросов в минуту; 0 или пусто = без лимита",
           "strategy": "Стратегия RPM",
           "strategyTiered": "Многоуровневая модель",
           "strategyStickyExempt": "Исключать sticky-сессии",
-          "strategyTieredHint": "Green → Yellow → только sticky → Blocked, постепенное ограничение",
+          "strategyTieredHint": "Зелёная зона → жёлтая зона → только привязанные сессии → блокировка; ограничение усиливается постепенно",
           "strategyStickyExemptHint": "При превышении лимита разрешены только sticky-сессии",
-          "strategyHint": "Tiered: постепенно ограничивает при превышении; Sticky Exempt: существующие сессии не ограничиваются",
-          "stickyBuffer": "Sticky Buffer",
+          "strategyHint": "Многоуровневая: постепенно ограничивает при превышении; без ограничений для привязанных сессий: существующие сессии не ограничиваются",
+          "stickyBuffer": "Буфер привязанных сессий",
           "stickyBufferPlaceholder": "По умолчанию: 20% от base RPM",
           "stickyBufferHint": "Дополнительные запросы для sticky-сессий после превышения base RPM. Оставьте пустым, чтобы использовать значение по умолчанию (20% от base RPM, минимум 1)",
           "userMsgQueue": "Контроль частоты сообщений пользователя",
           "userMsgQueueHint": "Ограничивайте частоту сообщений пользователя, чтобы не срабатывать upstream-лимиты RPM",
-          "umqModeOff": "Off",
-          "umqModeThrottle": "Throttle",
-          "umqModeSerialize": "Serialize"
+          "umqModeOff": "Выключен",
+          "umqModeThrottle": "Ограничение",
+          "umqModeSerialize": "Последовательная обработка"
         },
         "tlsFingerprint": {
           "label": "Симуляция TLS fingerprint",
@@ -4709,7 +4709,7 @@ export const ruOverrides = {
         "customBaseUrl": {
           "label": "Пользовательский Relay URL",
           "hint": "Пересылать запросы в пользовательский relay-сервис. Proxy URL будет передан как query-параметр.",
-          "urlHint": "Relay service URL (e.g., https://relay.example.com)"
+          "urlHint": "URL сервиса ретрансляции (например, https://relay.example.com)"
         },
         "clientAffinity": {
           "label": "Маршрутизация с привязкой клиентов",
@@ -4722,13 +4722,13 @@ export const ruOverrides = {
       "affinitySectionHint": "Управляйте распределением клиентов по аккаунтам. Настройте пороги зон для балансировки нагрузки.",
       "affinityToggle": "Включить привязку клиентов",
       "affinityToggleHint": "Новые сессии предпочитают аккаунты, которые этот клиент использовал раньше",
-      "affinityBase": "Базовый лимит (Green Zone)",
+      "affinityBase": "Базовый лимит (зелёная зона)",
       "affinityBasePlaceholder": "Пусто = без лимита",
-      "affinityBaseHint": "Максимум клиентов в green zone (полный приоритет маршрутизации)",
+      "affinityBaseHint": "Максимум клиентов в зелёной зоне (полный приоритет маршрутизации)",
       "affinityBaseOffHint": "Нет лимита green zone. Все клиенты получают полный приоритет маршрутизации.",
       "affinityBuffer": "Буфер (жёлтая зона)",
       "affinityBufferPlaceholder": "например, 3",
-      "affinityBufferHint": "Дополнительные клиенты, разрешённые в yellow zone (пониженный приоритет)",
+      "affinityBufferHint": "Дополнительные клиенты, разрешённые в жёлтой зоне (пониженный приоритет)",
       "affinityBufferInfinite": "Безлимитно",
       "expired": "Истекла",
       "proxy": "Proxy",

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { baseCompile } from '@intlify/message-compiler'
+import ts from 'typescript'
 
 import en from '../locales/en'
 import ru, { ruOverrides } from '../locales/ru'
@@ -53,6 +54,80 @@ function extractPlaceholders(message: string): string[] {
 
   visit(result.ast)
   return Array.from(placeholders).sort()
+}
+
+function expectLocalizedCatchErrors(
+  vueSource: string,
+  expectedByFunction: Record<string, string>
+): void {
+  const script = vueSource.match(/<script\s+setup(?:\s+lang=["']ts["'])?[^>]*>([\s\S]*?)<\/script>/)
+  expect(script, 'GroupsView.vue must expose a script setup block').not.toBeNull()
+  const sourceFile = ts.createSourceFile(
+    'GroupsView.ts',
+    script?.[1] ?? '',
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  )
+
+  for (const [functionName, expectedKey] of Object.entries(expectedByFunction)) {
+    let initializer: ts.Expression | undefined
+    const findFunction = (node: ts.Node): void => {
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.name.text === functionName &&
+        node.initializer
+      ) {
+        initializer = node.initializer
+        return
+      }
+      if (!initializer) ts.forEachChild(node, findFunction)
+    }
+    findFunction(sourceFile)
+    expect(initializer, `missing ${functionName}`).toBeDefined()
+
+    const catches: ts.CatchClause[] = []
+    const findCatches = (node: ts.Node): void => {
+      if (ts.isCatchClause(node)) catches.push(node)
+      ts.forEachChild(node, findCatches)
+    }
+    if (initializer) findCatches(initializer)
+    expect(catches.length, `${functionName} must have a guarded failure path`).toBeGreaterThan(0)
+
+    const localizedKeys: string[] = []
+    for (const clause of catches) {
+      const visitCatch = (node: ts.Node): void => {
+        if (
+          ts.isCallExpression(node) &&
+          ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.text === 'showError'
+        ) {
+          const message = node.arguments[0]
+          expect(
+            message &&
+              ts.isCallExpression(message) &&
+              ts.isIdentifier(message.expression) &&
+              message.expression.text === 't' &&
+              message.arguments.length === 1 &&
+              ts.isStringLiteral(message.arguments[0]),
+            `${functionName} must pass a literal i18n key to showError in catch`
+          ).toBe(true)
+          if (
+            message &&
+            ts.isCallExpression(message) &&
+            message.arguments.length === 1 &&
+            ts.isStringLiteral(message.arguments[0])
+          ) {
+            localizedKeys.push(message.arguments[0].text)
+          }
+        }
+        ts.forEachChild(node, visitCatch)
+      }
+      visitCatch(clause.block)
+    }
+    expect(localizedKeys).toContain(expectedKey)
+  }
 }
 
 describe('Russian locale key coverage', () => {
@@ -112,6 +187,31 @@ describe('Russian locale key coverage', () => {
     )
     expect(ru.admin.accounts.affinitySection).toBe('Привязка клиентов')
     expect(ru.admin.accounts.affinityToggle).toBe('Включить привязку клиентов')
+    expect(ru.admin.accounts.quotaControl.rpmLimit.baseRpm).toBe('Базовый RPM')
+    expect(ru.admin.accounts.quotaControl.rpmLimit.stickyBuffer).toBe(
+      'Буфер привязанных сессий'
+    )
+    expect(ru.admin.accounts.quotaControl.rpmLimit.umqModeOff).toBe('Выключен')
+    expect(ru.admin.accounts.quotaControl.rpmLimit.umqModeThrottle).toBe('Ограничение')
+    expect(ru.admin.accounts.quotaControl.rpmLimit.umqModeSerialize).toBe(
+      'Последовательная обработка'
+    )
+    expect(ru.admin.accounts.quotaControl.customBaseUrl.urlHint).toBe(
+      'URL сервиса ретрансляции (например, https://relay.example.com)'
+    )
+    expect(ru.admin.accounts.quotaControl.rpmLimit.strategyTieredHint).toBe(
+      'Зелёная зона → жёлтая зона → только привязанные сессии → блокировка; ограничение усиливается постепенно'
+    )
+    expect(ru.admin.accounts.quotaControl.rpmLimit.strategyHint).toBe(
+      'Многоуровневая: постепенно ограничивает при превышении; без ограничений для привязанных сессий: существующие сессии не ограничиваются'
+    )
+    expect(ru.admin.accounts.affinityBase).toBe('Базовый лимит (зелёная зона)')
+    expect(ru.admin.accounts.affinityBaseHint).toBe(
+      'Максимум клиентов в зелёной зоне (полный приоритет маршрутизации)'
+    )
+    expect(ru.admin.accounts.affinityBufferHint).toBe(
+      'Дополнительные клиенты, разрешённые в жёлтой зоне (пониженный приоритет)'
+    )
     expect(ru.admin.ops.alertEvents.status.manualResolved).toBe('УСТРАНЕНО ВРУЧНУЮ')
     expect(ru.admin.ops.realtime.offline).toBe('Realtime недоступен')
   })
@@ -508,7 +608,13 @@ describe('Russian locale key coverage', () => {
       'views/admin/BackupView.vue'
     ].map((path) => readFileSync(resolve(sourceRoot, path), 'utf8'))
     const groupsView = readFileSync(resolve(sourceRoot, 'views/admin/GroupsView.vue'), 'utf8')
-    expect(groupsView).not.toContain('extractApiErrorMessage(error')
+    expectLocalizedCatchErrors(groupsView, {
+      handleDuplicate: 'admin.groups.duplicateFailed',
+      loadCompositeRoutes: 'admin.groups.compositeRoutes.failedToLoad',
+      saveCompositeRoute: 'admin.groups.compositeRoutes.failedToSave',
+      deleteCompositeRoute: 'admin.groups.compositeRoutes.failedToDelete',
+      previewCompositeRoute: 'admin.groups.compositeRoutes.failedToPreview'
+    })
     for (const source of primaryErrorFiles) {
       expect(source).not.toContain('errorMessage.value = event.error')
       expect(source).not.toContain('errorMessage.value = msg')

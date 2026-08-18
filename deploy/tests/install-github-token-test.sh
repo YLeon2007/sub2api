@@ -101,6 +101,11 @@ grep -Fq 'download_github_release_asset "$download_url" "$TEMP_DIR/$archive_name
 grep -Fq 'download_github_release_asset "$checksum_url" "$TEMP_DIR/checksums.txt" $((1024 * 1024))' "$ROOT_DIR/deploy/install.sh"
 grep -Fq 'is_trusted_github_release_asset_url' "$ROOT_DIR/deploy/install.sh"
 grep -Fq -- '--max-filesize' "$ROOT_DIR/deploy/install.sh"
+grep -Fq 'file_blocks=$(( (max_bytes + 1023) / 1024 ))' "$ROOT_DIR/deploy/install.sh"
+if grep -Fq 'file_blocks=$(( (max_bytes + 511) / 512 ))' "$ROOT_DIR/deploy/install.sh"; then
+    echo "installer still converts byte limits to Bash ulimit -f using 512-byte blocks" >&2
+    exit 1
+fi
 if grep -Fq "curl -fsSL --proto '=https'" "$ROOT_DIR/deploy/install.sh"; then
     echo "installer retained automatic redirect-following release downloads" >&2
     exit 1

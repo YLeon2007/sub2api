@@ -48,6 +48,14 @@ write("symlink", valid + [(member("deploy/host", kind=tarfile.SYMTYPE, link="/et
 write("duplicate", valid + [(member("README.md", b"second\n"), b"second\n")])
 write("nested-binary", [(member("nested/sub2api", binary), binary)])
 write("root-plus-deploy-binary", valid + [(member("deploy/sub2api", b"UNVERIFIED\n"), b"UNVERIFIED\n")])
+write(
+    "root-plus-deploy-binary-directory",
+    valid
+    + [
+        (member("deploy/sub2api", kind=tarfile.DIRTYPE), b""),
+        (member("deploy/sub2api/payload", b"UNVERIFIED\n"), b"UNVERIFIED\n"),
+    ],
+)
 write("special", valid + [(member("deploy/fifo", kind=tarfile.FIFOTYPE), b"")])
 write("member-budget", valid + [(member(f"deploy/f{index}", b""), b"") for index in range(1025)])
 corrupt = bytearray((root / "exact.tar.gz").read_bytes())
@@ -56,6 +64,12 @@ corrupt[-1] ^= 0xFF
 tar_bytes = gzip.decompress((root / "exact.tar.gz").read_bytes())
 (root / "trailing-budget.tar.gz").write_bytes(gzip.compress(tar_bytes + b"x" * (1024 * 1024 + 1)))
 (root / "trailing-content.tar.gz").write_bytes(gzip.compress(tar_bytes + b"HIDDEN-TAR-TAIL"))
+buffered_tail = bytearray(tar_bytes)
+tar_eof = buffered_tail.find(b"\0" * 1024)
+assert tar_eof >= 0
+hidden_tail = b"BUFFERED-HIDDEN-TAR-TAIL"
+buffered_tail[tar_eof + 1024 : tar_eof + 1024 + len(hidden_tail)] = hidden_tail
+(root / "buffered-trailing-content.tar.gz").write_bytes(gzip.compress(buffered_tail))
 with gzip.open(root / "second-member.gz", "wb") as stream:
     stream.write(b"SECOND-GZIP-MEMBER")
 (root / "concatenated-gzip.tar.gz").write_bytes(
@@ -141,11 +155,15 @@ EOF
 chmod +x "$MOCK_BIN/curl"
 
 run_case() {
-    local name=$1 checksum_mode=$2 archive_mode=$3 tmp_parent=${4:-} download_mode=${5:-exact}
+    local name=$1 checksum_mode=$2 archive_mode=$3 tmp_parent=${4:-} download_mode=${5:-exact} fresh_install=${6:-false}
     local case_dir="$TEST_ROOT/$name"
     mkdir -p "$case_dir/install"
-    printf 'ORIGINAL\n' > "$case_dir/install/sub2api"
-    chmod +x "$case_dir/install/sub2api"
+    if [ "$fresh_install" = true ]; then
+        rm -rf -- "$case_dir/install/sub2api"
+    else
+        printf 'ORIGINAL\n' > "$case_dir/install/sub2api"
+        chmod +x "$case_dir/install/sub2api"
+    fi
     if [ -z "$tmp_parent" ]; then
         tmp_parent="$case_dir/tmp"
     fi
@@ -176,13 +194,22 @@ for mode in missing confusable duplicate; do
     grep -Fxq 'ORIGINAL' "$TEST_ROOT/checksum-$mode/install/sub2api"
 done
 
-for mode in traversal symlink duplicate nested-binary root-plus-deploy-binary special member-budget corrupt-gzip trailing-budget trailing-content concatenated-gzip; do
+for mode in traversal symlink duplicate nested-binary root-plus-deploy-binary special member-budget corrupt-gzip trailing-budget trailing-content buffered-trailing-content concatenated-gzip; do
     if run_case "archive-$mode" exact "$mode"; then
         echo "installer accepted unsafe release archive: $mode" >&2
         exit 1
     fi
     grep -Fxq 'ORIGINAL' "$TEST_ROOT/archive-$mode/install/sub2api"
 done
+
+if run_case archive-root-plus-deploy-binary-directory exact root-plus-deploy-binary-directory "" exact true; then
+    echo "installer accepted a deploy/sub2api directory that occupies the executable destination" >&2
+    exit 1
+fi
+if [ -e "$TEST_ROOT/archive-root-plus-deploy-binary-directory/install/sub2api" ]; then
+    echo "installer mutated the executable destination before rejecting deploy/sub2api directory shadowing" >&2
+    exit 1
+fi
 
 if run_case redirect-untrusted exact exact "" untrusted-redirect; then
     echo "installer accepted an untrusted release redirect" >&2
