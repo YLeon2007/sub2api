@@ -96,8 +96,14 @@ assert_unsafe_invocation_rejected url-option -s --url \
 # Every installer release API request must use the scoped helper.
 test "$(grep -c 'github_api_curl .*https://api.github.com/' "$ROOT_DIR/deploy/install.sh")" -eq 3
 
-# Asset and checksum downloads must fail closed and require HTTPS/TLS.
-grep -Fq 'curl -fsSL --proto '\''=https'\'' --tlsv1.2 "$download_url"' "$ROOT_DIR/deploy/install.sh"
-grep -Fq 'curl -fsSL --proto '\''=https'\'' --tlsv1.2 "$checksum_url"' "$ROOT_DIR/deploy/install.sh"
+# Asset and checksum downloads must use the bounded, per-hop authority-checking helper.
+grep -Fq 'download_github_release_asset "$download_url" "$TEMP_DIR/$archive_name" $((500 * 1024 * 1024))' "$ROOT_DIR/deploy/install.sh"
+grep -Fq 'download_github_release_asset "$checksum_url" "$TEMP_DIR/checksums.txt" $((1024 * 1024))' "$ROOT_DIR/deploy/install.sh"
+grep -Fq 'is_trusted_github_release_asset_url' "$ROOT_DIR/deploy/install.sh"
+grep -Fq -- '--max-filesize' "$ROOT_DIR/deploy/install.sh"
+if grep -Fq "curl -fsSL --proto '=https'" "$ROOT_DIR/deploy/install.sh"; then
+    echo "installer retained automatic redirect-following release downloads" >&2
+    exit 1
+fi
 
 echo "install GitHub token checks passed"

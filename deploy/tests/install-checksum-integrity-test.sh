@@ -47,6 +47,7 @@ write("traversal", valid + [(member("../escaped", b"pwned"), b"pwned")])
 write("symlink", valid + [(member("deploy/host", kind=tarfile.SYMTYPE, link="/etc/passwd"), b"")])
 write("duplicate", valid + [(member("README.md", b"second\n"), b"second\n")])
 write("nested-binary", [(member("nested/sub2api", binary), binary)])
+write("root-plus-deploy-binary", valid + [(member("deploy/sub2api", b"UNVERIFIED\n"), b"UNVERIFIED\n")])
 write("special", valid + [(member("deploy/fifo", kind=tarfile.FIFOTYPE), b"")])
 write("member-budget", valid + [(member(f"deploy/f{index}", b""), b"") for index in range(1025)])
 corrupt = bytearray((root / "exact.tar.gz").read_bytes())
@@ -67,11 +68,24 @@ cat > "$MOCK_BIN/curl" <<'EOF'
 set -euo pipefail
 url=""
 out=""
+headers=""
+write_out=""
 while [ "$#" -gt 0 ]; do
     case "$1" in
         -o|--output)
             out=$2
             shift 2
+            ;;
+        -D|--dump-header)
+            headers=$2
+            shift 2
+            ;;
+        -w|--write-out)
+            write_out=$2
+            shift 2
+            ;;
+        --max-filesize|--connect-timeout|--max-time|--proto|--proto-redir|--tlsv1.2)
+            if [ "$1" = "--tlsv1.2" ]; then shift; else shift 2; fi
             ;;
         http://*|https://*)
             url=$1
@@ -84,23 +98,50 @@ done
 archive_name="sub2api_0.1.177-ru.1_linux_amd64.tar.gz"
 fixture="$FIXTURES/$ARCHIVE_MODE.tar.gz"
 digest=$(/usr/bin/sha256sum "$fixture" | cut -d' ' -f1)
+
+if [ "${DOWNLOAD_MODE:-exact}" = "untrusted-redirect" ] && [ -n "$write_out" ]; then
+    printf 'HTTP/1.1 302 Found\r\nLocation: https://evil.example/payload\r\n\r\n' > "$headers"
+    printf '302'
+    exit 0
+fi
+if [ "${DOWNLOAD_MODE:-exact}" = "trusted-redirect" ] && [[ "$url" == https://github.com/* ]] && [ -n "$write_out" ]; then
+    printf 'HTTP/1.1 302 Found\r\nLocation: https://release-assets.githubusercontent.com/test/%s\r\n\r\n' "${url##*/}" > "$headers"
+    printf '302'
+    exit 0
+fi
+
+if [ -n "$headers" ]; then
+    printf 'HTTP/1.1 200 OK\r\n\r\n' > "$headers"
+fi
 case "$url" in
     */checksums.txt)
         case "$CHECKSUM_MODE" in
             missing) exit 22 ;;
             confusable) printf '%s  %s.evil\n' "$digest" "$archive_name" > "$out" ;;
             duplicate) printf '%s  %s\n%s  %s\n' "$digest" "$archive_name" "$digest" "$archive_name" > "$out" ;;
-            exact) printf '%s  %s\n' "$digest" "$archive_name" > "$out" ;;
+            exact)
+                printf '%s  %s\n' "$digest" "$archive_name" > "$out"
+                if [ "${DOWNLOAD_MODE:-exact}" = "oversized-checksum" ]; then
+                    python3 - "$out" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+with p.open('ab') as stream:
+    stream.write(b'x' * (2 * 1024 * 1024))
+PY
+                fi
+                ;;
             *) exit 97 ;;
         esac
         ;;
     *) cp "$fixture" "$out" ;;
 esac
+if [ -n "$write_out" ]; then printf '200'; fi
 EOF
 chmod +x "$MOCK_BIN/curl"
 
 run_case() {
-    local name=$1 checksum_mode=$2 archive_mode=$3 tmp_parent=${4:-}
+    local name=$1 checksum_mode=$2 archive_mode=$3 tmp_parent=${4:-} download_mode=${5:-exact}
     local case_dir="$TEST_ROOT/$name"
     mkdir -p "$case_dir/install"
     printf 'ORIGINAL\n' > "$case_dir/install/sub2api"
@@ -109,7 +150,7 @@ run_case() {
         tmp_parent="$case_dir/tmp"
     fi
     mkdir -p "$tmp_parent"
-    CHECKSUM_MODE=$checksum_mode ARCHIVE_MODE=$archive_mode FIXTURES="$FIXTURES" \
+    CHECKSUM_MODE=$checksum_mode ARCHIVE_MODE=$archive_mode DOWNLOAD_MODE=$download_mode FIXTURES="$FIXTURES" \
         PATH="$MOCK_BIN:$PATH" TMPDIR="$tmp_parent" CASE_INSTALL_DIR="$case_dir/install" \
         ROOT_DIR="$ROOT_DIR" bash -c '
             set -euo pipefail
@@ -135,13 +176,51 @@ for mode in missing confusable duplicate; do
     grep -Fxq 'ORIGINAL' "$TEST_ROOT/checksum-$mode/install/sub2api"
 done
 
-for mode in traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget trailing-content concatenated-gzip; do
+for mode in traversal symlink duplicate nested-binary root-plus-deploy-binary special member-budget corrupt-gzip trailing-budget trailing-content concatenated-gzip; do
     if run_case "archive-$mode" exact "$mode"; then
         echo "installer accepted unsafe release archive: $mode" >&2
         exit 1
     fi
     grep -Fxq 'ORIGINAL' "$TEST_ROOT/archive-$mode/install/sub2api"
 done
+
+if run_case redirect-untrusted exact exact "" untrusted-redirect; then
+    echo "installer accepted an untrusted release redirect" >&2
+    exit 1
+fi
+grep -Fxq 'ORIGINAL' "$TEST_ROOT/redirect-untrusted/install/sub2api"
+
+if run_case checksum-oversized exact exact "" oversized-checksum; then
+    echo "installer accepted an oversized checksum manifest" >&2
+    exit 1
+fi
+grep -Fxq 'ORIGINAL' "$TEST_ROOT/checksum-oversized/install/sub2api"
+
+run_case redirect-trusted exact exact "" trusted-redirect
+grep -Fq 'NEW' "$TEST_ROOT/redirect-trusted/install/sub2api"
+
+ROOT_DIR="$ROOT_DIR" bash -c '
+    set -euo pipefail
+    source <(head -n -1 "$ROOT_DIR/deploy/install.sh")
+    for url in \
+        "https://github.com/YLeon2007/sub2api/releases/download/v1/a" \
+        "https://release-assets.githubusercontent.com/test/a" \
+        "https://objects.githubusercontent.com/test/a"; do
+        is_trusted_github_release_asset_url "$url"
+    done
+    for url in \
+        "http://github.com/YLeon2007/sub2api/a" \
+        "https://user@github.com/YLeon2007/sub2api/a" \
+        "https://github.com:443/YLeon2007/sub2api/a" \
+        "https://github.com.evil.example/a" \
+        "https://notgithub.com/a" \
+        "https://evil.githubusercontent.com/a"; do
+        if is_trusted_github_release_asset_url "$url"; then
+            echo "trusted invalid release asset authority: $url" >&2
+            exit 1
+        fi
+    done
+'
 
 evil_tmp="$TEST_ROOT/evil; touch $TEST_ROOT/TRAP_PWNED; #"
 run_case exact exact exact "$evil_tmp"

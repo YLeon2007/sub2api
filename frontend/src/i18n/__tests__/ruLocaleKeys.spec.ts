@@ -471,6 +471,20 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.accounts.openai.wsModeDedicated).toBe('Выделенный (dedicated)')
     expect(ru.admin.accounts.openai.oauthResponsesWebsocketsV2).toBe('Режим WebSocket для OAuth')
     expect(ru.admin.accounts.openai.apiKeyResponsesWebsocketsV2).toBe('Режим WebSocket для API-ключа')
+    expect(ru.admin.accounts.quotaControl.windowCost.stickyReserve).toBe('Резерв sticky-сессий')
+    expect(ru.admin.accounts.quotaControl.rpmLimit.strategyTiered).toBe('Многоуровневая модель')
+    expect(ru.admin.accounts.quotaControl.rpmLimit.strategyStickyExempt).toBe('Исключать sticky-сессии')
+    expect(ru.admin.accounts.affinityBuffer).toBe('Буфер (жёлтая зона)')
+    expect(ru.admin.settings.oidc.frontendRedirectUrl).toBe('Путь обратного вызова frontend')
+    expect(ru.admin.settings.oidc.tokenAuthMethod).toBe('Метод аутентификации токена')
+    expect(ru.admin.settings.oidc.clockSkewSeconds).toBe('Допуск расхождения часов (сек.)')
+    expect(ru.admin.settings.oidc.allowedSigningAlgs).toBe('Разрешённые алгоритмы подписи')
+    expect(ru.admin.settings.oidc.userinfoEmailPath).toBe('Путь email в UserInfo')
+    expect(ru.admin.settings.oidc.userinfoIdPath).toBe('Путь ID в UserInfo')
+    expect(ru.admin.settings.oidc.userinfoUsernamePath).toBe('Путь имени пользователя в UserInfo')
+    expect(ru.admin.settings.oidc.userinfoEmailPathPlaceholder).toBe('например, data.email')
+    expect(ru.admin.settings.oidc.userinfoIdPathPlaceholder).toBe('например, data.id')
+    expect(ru.admin.settings.oidc.userinfoUsernamePathPlaceholder).toBe('например, data.username')
     expect(
       Array.from(ruLeaves.entries())
         .filter(([path]) => path.endsWith('.modelMapping'))
@@ -493,6 +507,8 @@ describe('Russian locale key coverage', () => {
       'views/admin/PromoCodesView.vue',
       'views/admin/BackupView.vue'
     ].map((path) => readFileSync(resolve(sourceRoot, path), 'utf8'))
+    const groupsView = readFileSync(resolve(sourceRoot, 'views/admin/GroupsView.vue'), 'utf8')
+    expect(groupsView).not.toContain('extractApiErrorMessage(error')
     for (const source of primaryErrorFiles) {
       expect(source).not.toContain('errorMessage.value = event.error')
       expect(source).not.toContain('errorMessage.value = msg')
@@ -503,6 +519,8 @@ describe('Russian locale key coverage', () => {
       expect(source).not.toContain('showError(err.message || t(')
       expect(source).not.toContain('showError(result.error || t(')
       expect(source).not.toContain('showError(record.error_message || t(')
+      expect(source).not.toContain('error.response?.data?.detail ||')
+      expect(source).not.toContain('error.response?.data?.message ||')
     }
   })
 })

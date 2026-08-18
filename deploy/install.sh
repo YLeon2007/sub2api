@@ -588,9 +588,9 @@ with archive_path.open("rb") as raw, gzip.GzipFile(fileobj=raw, mode="rb") as st
         if any(chunk):
             raise ValueError("non-zero decompressed data after tar EOF")
 
-binary_members = [name for member, name in regular if name == "sub2api"]
+binary_members = [name for member, name in regular if PurePosixPath(name).name in ("sub2api", "sub2api.exe")]
 if binary_members != ["sub2api"]:
-    raise ValueError("archive must contain exactly one root sub2api binary")
+    raise ValueError("archive must contain exactly one root sub2api binary and no shadow binary members")
 PY
 }
 
@@ -640,6 +640,84 @@ github_api_curl() {
     else
         UPDATE_GITHUB_TOKEN= GITHUB_TOKEN= GH_TOKEN= curl -q --globoff "$@"
     fi
+}
+
+is_trusted_github_release_asset_url() {
+    case "$1" in
+        https://github.com/*|https://release-assets.githubusercontent.com/*|https://objects.githubusercontent.com/*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+download_github_release_asset() {
+    local initial_url=$1 destination=$2 max_bytes=$3
+    local current_url=$initial_url redirect_count=0 status location location_count
+    local partial_path="${destination}.partial.$$" header_path="${destination}.headers.$$"
+    local file_blocks=$(( (max_bytes + 511) / 512 ))
+
+    rm -f -- "$partial_path" "$header_path"
+    while :; do
+        if ! is_trusted_github_release_asset_url "$current_url"; then
+            echo "Refusing untrusted GitHub release asset URL: $current_url" >&2
+            rm -f -- "$partial_path" "$header_path"
+            return 1
+        fi
+
+        : > "$header_path"
+        rm -f -- "$partial_path"
+        if ! status=$(
+            (
+                ulimit -f "$file_blocks"
+                exec env UPDATE_GITHUB_TOKEN= GITHUB_TOKEN= GH_TOKEN= curl -q --globoff \
+                    --silent --show-error --proto '=https' --proto-redir '=https' --tlsv1.2 \
+                    --connect-timeout 20 --max-time 600 --max-filesize "$max_bytes" \
+                    --dump-header "$header_path" --output "$partial_path" \
+                    --write-out '%{http_code}' "$current_url"
+            )
+        ); then
+            rm -f -- "$partial_path" "$header_path"
+            return 1
+        fi
+        if [[ ! "$status" =~ ^[0-9]{3}$ ]]; then
+            rm -f -- "$partial_path" "$header_path"
+            return 1
+        fi
+
+        case "$status" in
+            200)
+                if [ ! -f "$partial_path" ] || [ "$(wc -c < "$partial_path")" -gt "$max_bytes" ]; then
+                    rm -f -- "$partial_path" "$header_path"
+                    return 1
+                fi
+                mv -f -- "$partial_path" "$destination"
+                rm -f -- "$header_path"
+                return 0
+                ;;
+            301|302|303|307|308)
+                location_count=$(awk 'tolower($0) ~ /^location:[[:space:]]*/ { count++ } END { print count + 0 }' "$header_path")
+                if [ "$location_count" -ne 1 ]; then
+                    rm -f -- "$partial_path" "$header_path"
+                    return 1
+                fi
+                location=$(awk 'tolower($0) ~ /^location:[[:space:]]*/ { sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print }' "$header_path")
+                redirect_count=$((redirect_count + 1))
+                if [ "$redirect_count" -gt 10 ] || ! is_trusted_github_release_asset_url "$location"; then
+                    rm -f -- "$partial_path" "$header_path"
+                    return 1
+                fi
+                current_url=$location
+                rm -f -- "$partial_path" "$header_path"
+                ;;
+            *)
+                rm -f -- "$partial_path" "$header_path"
+                return 1
+                ;;
+        esac
+    done
 }
 
 # Get latest release version
@@ -740,15 +818,15 @@ download_and_extract() {
     TEMP_DIR=$(mktemp -d)
     trap cleanup_download_temp EXIT
 
-    # Download archive
-    if ! curl -fsSL --proto '=https' --tlsv1.2 "$download_url" -o "$TEMP_DIR/$archive_name"; then
+    # Download archive with a hard compressed-byte budget and explicit authority checks on every redirect hop.
+    if ! download_github_release_asset "$download_url" "$TEMP_DIR/$archive_name" $((500 * 1024 * 1024)); then
         print_error "$(msg 'download_failed')"
         exit 1
     fi
 
     # Download and verify the mandatory checksum manifest.
     print_info "$(msg 'verifying_checksum')"
-    if ! curl -fsSL --proto '=https' --tlsv1.2 "$checksum_url" -o "$TEMP_DIR/checksums.txt"; then
+    if ! download_github_release_asset "$checksum_url" "$TEMP_DIR/checksums.txt" $((1024 * 1024)); then
         print_error "$(msg 'checksum_not_found')"
         exit 1
     fi
@@ -793,16 +871,16 @@ download_and_extract() {
     # Create install directory
     mkdir -p "$INSTALL_DIR"
 
-    # Prepare beside the live executable, then atomically replace it.
+    # Copy validated deploy files first; a verified executable replacement must be the final executable write.
+    if [ -d "$extract_dir/deploy" ]; then
+        cp -R "$extract_dir/deploy/." "$INSTALL_DIR/"
+    fi
+
+    # Prepare beside the live executable, then atomically replace it as the final executable-changing operation.
     local staged_binary="$INSTALL_DIR/.sub2api.new.$$"
     cp -- "$extract_dir/sub2api" "$staged_binary"
     chmod 755 "$staged_binary"
     mv -f -- "$staged_binary" "$INSTALL_DIR/sub2api"
-
-    # Copy deploy files if they exist in the archive
-    if [ -d "$extract_dir/deploy" ]; then
-        cp -r "$extract_dir/deploy/"* "$INSTALL_DIR/" 2>/dev/null || true
-    fi
 
     print_success "$(msg 'binary_installed') $INSTALL_DIR/sub2api"
 }

@@ -1182,8 +1182,21 @@ def validate_updater_installer_integrity_texts(
         'print_warning "$(msg \'checksum_not_found\')"' not in installer
         and "checksum_match_count" in installer
         and "Expected exactly one checksum" in installer
-        and "curl -fsSL --proto '=https' --tlsv1.2 \"$checksum_url\"" in installer,
-        "deploy/install.sh: checksum download/cardinality must fail closed",
+        and 'download_github_release_asset "$checksum_url" "$TEMP_DIR/checksums.txt" $((1024 * 1024))' in installer,
+        "deploy/install.sh: checksum download/cardinality and 1 MiB transfer budget must fail closed",
+        errors,
+    )
+    require(
+        'download_github_release_asset "$download_url" "$TEMP_DIR/$archive_name" $((500 * 1024 * 1024))' in installer
+        and "is_trusted_github_release_asset_url" in installer
+        and "https://github.com/*|https://release-assets.githubusercontent.com/*|https://objects.githubusercontent.com/*" in installer
+        and "--max-filesize" in installer
+        and "ulimit -f" in installer
+        and "--dump-header" in installer
+        and "301|302|303|307|308" in installer
+        and 'redirect_count" -gt 10' in installer
+        and "curl -fsSL --proto '=https'" not in installer,
+        "deploy/install.sh: release downloads need hard streaming budgets and exact authority checks on every redirect hop",
         errors,
     )
     require(
@@ -1199,17 +1212,20 @@ def validate_updater_installer_integrity_texts(
         and "too many archive members" in installer
         and "duplicate archive member" in installer
         and "unsafe archive member type" in installer
-        and "exactly one root sub2api binary" in installer
+        and "exactly one root sub2api binary and no shadow binary members" in installer
         and "gzip.GzipFile" in installer
         and "max_trailing_bytes" in installer
         and "excessive decompressed data after tar EOF" in installer,
         "deploy/install.sh: checksum-valid TAR must pass full fail-closed member validation",
         errors,
     )
+    deploy_copy_position = installer.find('cp -R "$extract_dir/deploy/." "$INSTALL_DIR/"')
+    stage_binary_position = installer.find('cp -- "$extract_dir/sub2api" "$staged_binary"')
+    atomic_move_position = installer.find('mv -f -- "$staged_binary" "$INSTALL_DIR/sub2api"')
     require(
-        'mv -f -- "$staged_binary" "$INSTALL_DIR/sub2api"' in installer
-        and 'cp -- "$extract_dir/sub2api" "$staged_binary"' in installer,
-        "deploy/install.sh: executable replacement must be staged beside and atomically moved over the destination",
+        0 <= deploy_copy_position < stage_binary_position < atomic_move_position
+        and 'cp -r "$extract_dir/deploy/"* "$INSTALL_DIR/" 2>/dev/null || true' not in installer,
+        "deploy/install.sh: validated deploy copy must succeed before the final atomic executable replacement",
         errors,
     )
     require(
@@ -1220,10 +1236,20 @@ def validate_updater_installer_integrity_texts(
     )
     require(
         "installer accepted unsafe release archive" in installer_tests
-        and "traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget" in installer_tests
+        and "traversal symlink duplicate nested-binary root-plus-deploy-binary special member-budget corrupt-gzip trailing-budget" in installer_tests
         and "TRAP_PWNED" in installer_tests
         and "ORIGINAL" in installer_tests,
         "install-checksum-integrity-test.sh: missing archive/trap/destination adversarial cases",
+        errors,
+    )
+    require(
+        "installer accepted an untrusted release redirect" in installer_tests
+        and "installer accepted an oversized checksum manifest" in installer_tests
+        and "https://user@github.com" in installer_tests
+        and "https://github.com:443" in installer_tests
+        and "https://github.com.evil.example" in installer_tests
+        and "https://evil.githubusercontent.com" in installer_tests,
+        "install-checksum-integrity-test.sh: missing transfer-budget and redirect-authority adversarial cases",
         errors,
     )
     ru_payment = f"https://github.com/YLeon2007/sub2api/blob/v{version}/docs/PAYMENT_RU.md"
@@ -1645,7 +1671,8 @@ def self_test() -> None:
     assert any("fail closed" in error for error in unsafe_integrity_errors)
     assert any("environment-derived path" in error for error in unsafe_integrity_errors)
     assert any("full fail-closed member validation" in error for error in unsafe_integrity_errors)
-    assert any("atomically moved" in error for error in unsafe_integrity_errors)
+    assert any("final atomic executable" in error for error in unsafe_integrity_errors)
+    assert any("hard streaming budgets" in error for error in unsafe_integrity_errors)
     assert any("archive/trap/destination" in error for error in unsafe_integrity_errors)
     assert any("immutable fork release" in error for error in unsafe_integrity_errors)
 
@@ -1654,17 +1681,24 @@ def self_test() -> None:
     validate_updater_installer_integrity_texts(
         "selectReleaseAssets(version\nexpected exactly one checksums.txt\n",
         "checksum_match_count\nExpected exactly one checksum\n"
-        "curl -fsSL --proto '=https' --tlsv1.2 \"$checksum_url\"\n"
+        "download_github_release_asset \"$checksum_url\" \"$TEMP_DIR/checksums.txt\" $((1024 * 1024))\n"
+        "download_github_release_asset \"$download_url\" \"$TEMP_DIR/$archive_name\" $((500 * 1024 * 1024))\n"
+        "is_trusted_github_release_asset_url\n"
+        "https://github.com/*|https://release-assets.githubusercontent.com/*|https://objects.githubusercontent.com/*\n"
+        "--max-filesize\nulimit -f\n--dump-header\n301|302|303|307|308\nredirect_count\" -gt 10\n"
         "cleanup_download_temp()\ntrap cleanup_download_temp EXIT\nrm -rf -- \"$TEMP_DIR\"\n"
         "validate_and_extract_release_archive\ntoo many archive members\nduplicate archive member\n"
-        "unsafe archive member type\nexactly one root sub2api binary\ngzip.GzipFile\nmax_trailing_bytes\nexcessive decompressed data after tar EOF\n"
+        "unsafe archive member type\nexactly one root sub2api binary and no shadow binary members\ngzip.GzipFile\nmax_trailing_bytes\nexcessive decompressed data after tar EOF\n"
+        "cp -R \"$extract_dir/deploy/.\" \"$INSTALL_DIR/\"\n"
         "cp -- \"$extract_dir/sub2api\" \"$staged_binary\"\n"
         "mv -f -- \"$staged_binary\" \"$INSTALL_DIR/sub2api\"\n",
         "TestSelectReleaseAssetsRequiresExactVersionedArchiveAndChecksum\n"
         "TestExpectedChecksumForFileRequiresOneExactBasename\n",
         "installer accepted unsafe checksum manifest\nmissing confusable duplicate\n"
         "installer accepted unsafe release archive\n"
-        "traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget\n"
+        "traversal symlink duplicate nested-binary root-plus-deploy-binary special member-budget corrupt-gzip trailing-budget\n"
+        "installer accepted an untrusted release redirect\ninstaller accepted an oversized checksum manifest\n"
+        "https://user@github.com\nhttps://github.com:443\nhttps://github.com.evil.example\nhttps://evil.githubusercontent.com\n"
         "TRAP_PWNED\nORIGINAL\n",
         safe_ru_payment + "\n" + safe_ru_payment + "#поддерживаемые-провайдеры\n",
         "0.1.177-ru.1",
@@ -2548,10 +2582,15 @@ jobs:
             ),
             "deploy/install.sh": (
                 "checksum_match_count\nExpected exactly one checksum\n"
-                "curl -fsSL --proto '=https' --tlsv1.2 \"$checksum_url\"\n"
+                "download_github_release_asset \"$checksum_url\" \"$TEMP_DIR/checksums.txt\" $((1024 * 1024))\n"
+                "download_github_release_asset \"$download_url\" \"$TEMP_DIR/$archive_name\" $((500 * 1024 * 1024))\n"
+                "is_trusted_github_release_asset_url\n"
+                "https://github.com/*|https://release-assets.githubusercontent.com/*|https://objects.githubusercontent.com/*\n"
+                "--max-filesize\nulimit -f\n--dump-header\n301|302|303|307|308\nredirect_count\" -gt 10\n"
                 "cleanup_download_temp()\ntrap cleanup_download_temp EXIT\nrm -rf -- \"$TEMP_DIR\"\n"
                 "validate_and_extract_release_archive\ntoo many archive members\nduplicate archive member\n"
-                "unsafe archive member type\nexactly one root sub2api binary\ngzip.GzipFile\nmax_trailing_bytes\nexcessive decompressed data after tar EOF\n"
+                "unsafe archive member type\nexactly one root sub2api binary and no shadow binary members\ngzip.GzipFile\nmax_trailing_bytes\nexcessive decompressed data after tar EOF\n"
+                "cp -R \"$extract_dir/deploy/.\" \"$INSTALL_DIR/\"\n"
                 "cp -- \"$extract_dir/sub2api\" \"$staged_binary\"\n"
                 "mv -f -- \"$staged_binary\" \"$INSTALL_DIR/sub2api\"\n"
             ),
@@ -2561,7 +2600,9 @@ jobs:
             "deploy/tests/install-checksum-integrity-test.sh": (
                 "installer accepted unsafe checksum manifest\nmissing confusable duplicate\n"
                 "installer accepted unsafe release archive\n"
-                "traversal symlink duplicate nested-binary special member-budget corrupt-gzip trailing-budget\n"
+                "traversal symlink duplicate nested-binary root-plus-deploy-binary special member-budget corrupt-gzip trailing-budget\n"
+                "installer accepted an untrusted release redirect\ninstaller accepted an oversized checksum manifest\n"
+                "https://user@github.com\nhttps://github.com:443\nhttps://github.com.evil.example\nhttps://evil.githubusercontent.com\n"
                 "TRAP_PWNED\nORIGINAL\n"
             ),
             "frontend/src/views/admin/SettingsView.vue": (
