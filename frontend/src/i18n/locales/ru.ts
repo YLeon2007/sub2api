@@ -1107,8 +1107,60 @@ export const ruOverrides = {
       "openai": "OpenAI",
       "anthropic": "Anthropic",
       "gemini": "Gemini",
-      "grok": "Grok"
+      "grok": "Grok",
+      "antigravity": "Antigravity",
+      "kimi": "Kimi",
+      "zhipu": "Zhipu GLM",
+      "deepseek": "DeepSeek"
     },
+    "checkMode": {
+      "probe": "Probe",
+      "quota": "Quota",
+      "quota_probe": "Probe + Quota"
+    },
+    "quota": {
+      "unavailable": "Квота недоступна",
+      "resetSoon": "скоро сброс",
+      "labels": {
+        "pro": "Pro",
+        "flash": "Flash",
+        "shared": "Общее",
+        "tokens": "Токены",
+        "requests": "Запросы"
+      },
+      "windows": {
+        "5h": "5 ч",
+        "7d": "7 д",
+        "30d": "30 д",
+        "daily": "День",
+        "weekly": "Неделя",
+        "total": "Всего",
+        "7dSonnet": "7 д Sonnet",
+        "7dFable": "7 д Fable"
+        },
+        "errors": {
+        "authenticationFailed": "Ошибка аутентификации",
+        "authenticationFailedHttp": "Ошибка аутентификации (HTTP {status})",
+        "apiError": "Ошибка API",
+        "apiErrorHttp": "Ошибка API (HTTP {status})",
+        "linkedAccountNotFound": "Связанный аккаунт не найден",
+        "snapshotMissing": "Отсутствует quota snapshot (снимок квоты)",
+        "quotaHigh": "Высокий расход quota (квоты): {window} — {percent}%",
+        "balanceDepleted": "Исчерпан balance (баланс) ({currency})",
+        "noBalanceEndpoint": "У этого provider (поставщика) нет balance endpoint (endpoint баланса)",
+        "codingPlanNoBalanceEndpoint": "Для аккаунта coding plan (тариф для coding) нет balance endpoint (endpoint баланса); используйте quota probe (проверку квоты)",
+        "apiKeyEmpty": "У аккаунта не указан api_key",
+        "accountNotFound": "Аккаунт не найден",
+        "invalidPlatform": "Аккаунт не относится к CN provider (китайскому provider)",
+        "notCodingPlan": "Аккаунт не является coding plan (тарифом для coding)",
+        "serviceNotConfigured": "Сервис quota (квот) не настроен",
+        "requestBuildFailed": "Не удалось собрать запрос quota (квоты)",
+        "upstreamRequestFailed": "Ошибка запроса к upstream (вышестоящему сервису)",
+        "noData": "Сервис usage (расхода) не вернул данные",
+        "probeFailed": "Quota probe (проверка квоты) завершился ошибкой",
+        "generic": "Диагностика quota (квоты) недоступна"
+        }
+        },
     "extraModelsHeader": "Дополнительные модели",
     "extraModelsEmpty": "Нет дополнительных моделей",
     "latencyEmpty": "-",
@@ -2947,6 +2999,9 @@ export const ruOverrides = {
         "gemini": "Gemini",
         "antigravity": "Antigravity",
         "grok": "Grok",
+        "kimi": "Kimi",
+        "zhipu": "Zhipu GLM",
+        "deepseek": "DeepSeek",
         "composite": "Композитная"
       },
       "deleteConfirm": "Удалить группу '{name}'? Все связанные API-ключи больше не будут принадлежать группе.",
@@ -3270,6 +3325,13 @@ export const ruOverrides = {
           "perRequestPrice": "цена за запрос"
         }
       },
+      "timePricingValidation": {
+        "format": "Время начала и окончания должно быть в формате HH:mm:ss",
+        "range": "Время начала должно быть раньше времени окончания; диапазоны через полночь нужно разделить",
+        "overlap": "Периоды времени не должны пересекаться",
+        "multiplier": "Множитель должен быть больше 0 и иметь не больше двух знаков после запятой",
+        "timezone": "Выберите корректный IANA time zone"
+      },
       "deleteConfirm": "Удалить канал \"{name}\"? Это действие нельзя отменить.",
       "columns": {
         "name": "Имя",
@@ -3312,6 +3374,13 @@ export const ruOverrides = {
         "imageOutputPrice": "Цена выходного изображения",
         "pricePlaceholder": "По умолчанию",
         "intervals": "Интервалы контекста (необязательно)",
+        "timePricing": "Цены по времени (time-based pricing, необязательно)",
+        "timezone": "Часовой пояс",
+        "addTimePeriod": "Добавить период",
+        "startTime": "Время начала",
+        "endTime": "Время окончания",
+        "multiplier": "Множитель",
+        "removeTimePeriod": "Удалить период",
         "minTokens": "Мин.",
         "maxTokens": "Макс.",
         "inclusive": "(включительно)",
@@ -3685,6 +3754,7 @@ export const ruOverrides = {
       "deleteConfirm": "Удалить монитор \"{name}\"? Это действие нельзя отменить.",
       "nameRequired": "Введите имя монитора",
       "primaryModelRequired": "Введите основную модель",
+      "linkedAccountRequired": "Выберите связанный аккаунт",
       "columns": {
         "name": "Имя",
         "provider": "Провайдер",
@@ -3724,7 +3794,20 @@ export const ruOverrides = {
         "jitterSeconds": "Случайный разброс (± секунд)",
         "jitterSecondsHint": "Каждая проверка запускается с интервалом ± случайное смещение в пределах этого значения; 0 означает фиксированный интервал. Интервал минус разброс должен быть ≥ 15с",
         "enabled": "Включить монитор",
-        "kindRequired": "Выберите провайдера"
+        "kindRequired": "Выберите провайдера",
+        "checkMode": "Режим проверки",
+        "checkModeProbe": "Probe (проверка)",
+        "checkModeProbeHint": "Отправляет лёгкий LLM-запрос для измерения доступности и latency (задержки)",
+        "checkModeQuota": "Quota (квота)",
+        "checkModeQuotaHint": "Только запрашивает окна usage (расхода) и balance (баланс) связанного аккаунта, без probe-запросов (тестовых запросов)",
+        "checkModeQuotaProbe": "Probe + Quota (проверка канала + квота)",
+        "checkModeQuotaProbeHint": "Проверяет канал и прикрепляет quota snapshot (снимок квоты) к результату основной модели",
+        "linkedAccount": "Связанный аккаунт",
+        "linkedAccountPlaceholder": "Выберите аккаунт",
+        "linkedAccountHint": "Данные quota (квоты) берутся из выбранного аккаунта: используются его usage (расход) и balance (баланс)",
+        "linkedAccountEmpty": "На этой платформе пока нет аккаунтов. Сначала добавьте аккаунт в Управлении аккаунтами",
+        "linkedAccountMissing": "Связанный аккаунт больше не существует или недоступен. Выберите аккаунт заново",
+        "openAIQuotaProbeHint": "Примечание: на платформе OpenAI запрос usage (расхода) может запускать Codex probe (проверку Codex), который расходует собственную квоту аккаунта (не чаще одного раза в 10 минут)"
       },
       "runResultTitle": "Результат проверки",
       "noMonitorsYet": "Мониторов пока нет",
@@ -4007,7 +4090,35 @@ export const ruOverrides = {
         "openai": "OpenAI",
         "gemini": "Gemini",
         "antigravity": "Antigravity",
-        "grok": "Grok"
+        "grok": "Grok",
+        "kimi": "Kimi",
+        "zhipu": "Zhipu GLM",
+        "deepseek": "DeepSeek"
+      },
+      "cnProviders": {
+        "accountMode": {
+          "title": "Тип аккаунта",
+          "payg": "Pay-as-you-go",
+          "paygDesc": "Расходует баланс аккаунта и тарифицируется по токенам. При низком балансе автоматически уходит в cooldown и восстанавливается после пополнения.",
+          "coding": "Coding Plan",
+          "codingDesc": "Подписочный coding-пакет с ограничениями по скользящим окнам расхода 5 часов / неделя."
+        },
+        "apiProtocol": {
+          "title": "API Protocol",
+          "chatCompletions": "Chat Completions",
+          "chatCompletionsDesc": "Стандартный OpenAI-compatible endpoint; запросы в других форматах конвертируются.",
+          "anthropic": "Anthropic",
+          "anthropicDesc": "Native passthrough в Anthropic endpoint провайдера — оптимально для Claude Code.",
+          "responses": "Responses",
+          "responsesDesc": "Native Responses endpoint провайдера — оптимально для Codex."
+        },
+        "balance": "Баланс --",
+        "window5h": "Окно 5 часов",
+        "windowWeekly": "Недельное окно",
+        "probeTooltip": "Запросить quota endpoint провайдера для расхода в скользящих окнах 5 часов / неделя",
+        "balanceLow": "Недостаточно баланса",
+        "noBalanceEndpoint": "У этой платформы нет endpoint для запроса баланса",
+        "resetSoon": "скоро сброс"
       },
       "types": {
         "oauth": "OAuth",
@@ -4031,6 +4142,7 @@ export const ruOverrides = {
       "status": {
         "active": "Активен",
         "inactive": "Неактивен",
+        "expired": "Истёк",
         "error": "Ошибка",
         "cooldown": "Ожидание",
         "paused": "Пауза",
@@ -4331,6 +4443,10 @@ export const ruOverrides = {
         "updating": "Обновление...",
         "success": "Обновлено аккаунтов: {count}",
         "partialSuccess": "Обновлено частично: успешно {success}, ошибок {failed}",
+        "successWithInherited": "Обновлено аккаунтов: {count}. Выбранные shadow-аккаунты, унаследовавшие настройки: {inherited}; они продолжают следовать родительскому аккаунту.",
+        "partialSuccessWithInherited": "Обновлено частично: успешно {success}, ошибок {failed}. Выбранные shadow-аккаунты, унаследовавшие настройки: {inherited}; они продолжают следовать родительскому аккаунту.",
+        "longContextShadowHint": "Long-context billing задаётся на родительском аккаунте. Выбранные shadow-аккаунты продолжают следовать родителю, включая случаи, когда цели выбраны фильтром.",
+        "longContextParentRequired": "Все выбранные аккаунты являются shadow. Выберите родительский аккаунт, чтобы изменить long-context billing.",
         "failed": "Массовое обновление не удалось",
         "noSelection": "Выберите аккаунты для редактирования",
         "noFieldsSelected": "Выберите хотя бы одно поле для обновления",
@@ -5743,7 +5859,8 @@ export const ruOverrides = {
       "failedToUpdate": "Не удалось обновить объявление",
       "failedToDelete": "Не удалось удалить объявление",
       "failedToLoadReadStatus": "Не удалось загрузить статус прочтения",
-      "deleteConfirm": "Удалить это объявление? Это действие нельзя отменить."
+      "deleteConfirm": "Удалить это объявление? Это действие нельзя отменить.",
+      "createFirstAnnouncement": "Объявлений пока нет. Создайте первое."
     },
     "promo": {
       "title": "Управление промокодами",
@@ -6719,7 +6836,9 @@ export const ruOverrides = {
           "modeV2Hint": "Опционально: агрегирует метрики работоспособности из реального трафика gateway без тестовых запросов к upstream. В режиме V2 проверки V1 остановлены.",
           "modeV1Hint": "По умолчанию: запускает плановые проверки работоспособности upstream для настроенных мониторов каналов (создаётся тестовый трафик).",
           "hideThroughput": "Скрывать от пользователей показатели пропускной способности (RPM / TPM)",
-          "hideThroughputHint": "Когда включено, пользовательская страница Монитора каналов и пользовательские API не возвращают RPM и TPM, чтобы объём парка нельзя было оценить по rates × window. Администраторы по-прежнему видят полные метрики. Доли ошибок, задержка и доли кэша остаются видимыми."
+          "hideThroughputHint": "Когда включено, пользовательская страница Монитора каналов и пользовательские API не возвращают RPM и TPM, чтобы объём парка нельзя было оценить по rates × window. Администраторы по-прежнему видят полные метрики. Доли ошибок, задержка и доли кэша остаются видимыми.",
+          "showQuota": "Показывать пользователям usage (расход) и balance (баланс) каналов",
+          "showQuotaHint": "Когда включено, мониторы каналов (channel monitors) в режиме quota mode (проверка квот) показывают на странице Статус каналов окна usage (расхода) и balance (баланс) связанного аккаунта. По умолчанию выключено; администраторы видят эти данные всегда."
         },
         "availableChannels": {
           "title": "Доступные каналы",
@@ -7837,7 +7956,7 @@ export const ruOverrides = {
         "addRule": "Добавить правило",
         "saveHint": "Сохраняется вместе с настройками системы (нажмите глобальную кнопку сохранения внизу страницы).",
         "serviceTier": "совпадение service_tier",
-        "tierAll": "Все tiers",
+        "tierAll": "Все значения tier",
         "tierPriority": "priority (fast)",
         "tierFlex": "flex",
         "action": "Действие",
@@ -7860,13 +7979,22 @@ export const ruOverrides = {
         "errorMessage": "Сообщение об ошибке",
         "errorMessagePlaceholder": "Пользовательское сообщение об ошибке при блокировке",
         "errorMessageHint": "Оставьте пустым для сообщения по умолчанию.",
-        "modelWhitelist": "Белый список моделей",
-        "modelWhitelistHint": "Оставьте пустым, чтобы применить ко всем моделям. Поддерживает точное совпадение и wildcard-префикс (например, gpt-5.5*).",
-        "modelPatternPlaceholder": "e.g., gpt-5.5 or gpt-5.5*",
-        "addModelPattern": "Добавить pattern модели",
-        "fallbackAction": "Fallback-действие",
-        "fallbackActionHint": "Действие для моделей, не совпадающих с белым списком.",
-        "fallbackErrorMessagePlaceholder": "Пользовательское сообщение об ошибке при блокировке моделей вне белого списка"
+        "modelWhitelist": "Целевые модели",
+        "modelWhitelistHint": "Модели из этого списка используют основное Действие; модели вне списка используют Действие для других моделей. Оставьте пустым, чтобы применять основное Действие ко всем моделям. Поддерживает точные совпадения и wildcard-префиксы (например, gpt-5.6*).",
+        "modelPatternPlaceholder": "e.g., gpt-5.6-sol or gpt-5.6*",
+        "addModelPattern": "Добавить целевую модель",
+        "fallbackAction": "Действие для других моделей",
+        "fallbackActionHint": "Применяется только к моделям вне целевого списка.",
+        "fallbackErrorMessagePlaceholder": "Пользовательское сообщение об ошибке при блокировке других моделей",
+        "summaryAction": {
+          "pass": "Пропуск",
+          "filter": "Фильтр",
+          "force_priority": "Принудительно priority",
+          "block": "Блокировка"
+        },
+        "summaryAllModels": "Все модели",
+        "summaryTargetModels": "Целевые модели",
+        "summaryOtherModels": "Другие модели"
       },
       "wechatConnect": {
         "title": "WeChat Connect",

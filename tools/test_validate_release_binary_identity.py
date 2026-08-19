@@ -10,7 +10,7 @@ from validate_release_binary_identity import validate_binary, validate_identity
 
 
 class ReleaseBinaryIdentityTests(unittest.TestCase):
-    VERSION = "0.1.177-ru.1"
+    VERSION = "0.1.178-ru.1"
     COMMIT = "a" * 40
     VALID = (
         "2026-08-18T05:25:44.123+03:00\tINFO\tstdlog\t"
@@ -25,7 +25,7 @@ class ReleaseBinaryIdentityTests(unittest.TestCase):
         mutations = (
             "prefix " + self.VALID,
             self.VALID + " suffix",
-            self.VALID.replace(self.VERSION, "0.1.177-ru.2"),
+            self.VALID.replace(self.VERSION, "0.1.178-ru.2"),
             self.VALID.replace(self.COMMIT, "b" * 40),
             self.VALID.replace("2026-08-18T02:20:01Z", "2026-08-18T02:20:01"),
             self.VALID.replace("2026-08-18T02:20:01Z", "2026-02-30T02:20:01Z"),
@@ -67,7 +67,7 @@ class ReleaseBinaryIdentityTests(unittest.TestCase):
 
     def test_rejects_malformed_expectations(self) -> None:
         with self.assertRaises(ValueError):
-            validate_identity(self.VALID, "0.1.177-ru.01", self.COMMIT)
+            validate_identity(self.VALID, "0.1.178-ru.01", self.COMMIT)
         with self.assertRaises(ValueError):
             validate_identity(self.VALID, self.VERSION, "A" * 40)
 

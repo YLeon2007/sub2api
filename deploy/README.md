@@ -28,7 +28,7 @@ This directory contains Linux Docker/systemd deployment assets and an Apple-sili
 | `config.example.yaml` | Full configuration reference |
 | `EDGE_SECURITY.md` | Reverse proxy/CDN/WAF and trusted-proxy hardening |
 
-All fork deployment defaults use the immutable image `ghcr.io/yleon2007/sub2api:0.1.177-ru.1`. Future releases must update the image tag deliberately; do not switch production to a mutable third-party `latest` tag.
+All fork deployment defaults use the immutable image `ghcr.io/yleon2007/sub2api:0.1.178-ru.1`. Future releases must update the image tag deliberately; do not switch production to a mutable third-party `latest` tag.
 
 ## Docker: preparation script
 
@@ -39,7 +39,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/docker-deploy.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.177-ru.1/deploy/docker-deploy.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.178-ru.1/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -123,7 +123,7 @@ Migrations are tracked by filename/checksum in `schema_migrations`. There is no 
 
 ## Safe immutable upgrade
 
-Replace `<NEW_RU_VERSION>` only with a published immutable tag from [fork Releases](https://github.com/YLeon2007/sub2api/releases), for example `0.1.177-ru.1`.
+Replace `<NEW_RU_VERSION>` only with a published immutable tag from [fork Releases](https://github.com/YLeon2007/sub2api/releases), for example `0.1.178-ru.1`.
 
 1. Update the `image:` field in the selected Compose file:
 
@@ -209,7 +209,7 @@ The Apple helper validates `SERVER_PORT` in the non-privileged range `1025-65535
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/install.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.177-ru.1/deploy/install.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.178-ru.1/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in

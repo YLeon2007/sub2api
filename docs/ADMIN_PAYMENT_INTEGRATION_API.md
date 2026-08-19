@@ -110,8 +110,8 @@ https://pay.example.com/pay?user_id=123&token=<jwt>&theme=light&lang=zh-CN&ui_mo
 
 ### 6. `doc_url`
 
-- 当前文档：`https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API.md`
-- 俄语文档：`https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md`
+- 当前文档：`https://github.com/YLeon2007/sub2api/blob/v0.1.178-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API.md`
+- 俄语文档：`https://github.com/YLeon2007/sub2api/blob/v0.1.178-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md`
 
 ---
 
@@ -165,5 +165,5 @@ Persist payment success separately from recharge success, verify callback signat
 
 ### 6. Documentation URLs
 
-- This document: `https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API.md`
-- Russian: `https://github.com/YLeon2007/sub2api/blob/v0.1.177-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md`
+- This document: `https://github.com/YLeon2007/sub2api/blob/v0.1.178-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API.md`
+- Russian: `https://github.com/YLeon2007/sub2api/blob/v0.1.178-ru.1/docs/ADMIN_PAYMENT_INTEGRATION_API_RU.md`

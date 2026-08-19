@@ -446,6 +446,34 @@ describe('Russian locale key coverage', () => {
     )
   })
 
+  it('preserves the added v0.1.178 CN provider, quota monitor, time pricing, and Fast/Flex semantics in Russian', () => {
+    expect(ru.admin.accounts.platforms.kimi).toBe('Kimi')
+    expect(ru.admin.accounts.platforms.zhipu).toBe('Zhipu GLM')
+    expect(ru.admin.accounts.platforms.deepseek).toBe('DeepSeek')
+    expect(ru.admin.accounts.cnProviders.accountMode.paygDesc).toContain('тарифицируется по токенам')
+    expect(ru.admin.accounts.cnProviders.accountMode.codingDesc).toContain('скользящим окнам расхода 5 часов / неделя')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.anthropicDesc).toContain('Native passthrough')
+    expect(ru.admin.accounts.bulkEdit.longContextShadowHint).toContain('Long-context billing задаётся на родительском аккаунте')
+    expect(ru.admin.accounts.status.expired).toBe('Истёк')
+
+    expect(ru.admin.channelMonitor.form.checkModeQuotaHint).toContain('без probe-запросов')
+    expect(ru.admin.channelMonitor.form.openAIQuotaProbeHint).toContain('Codex probe')
+    expect(ru.admin.channelMonitor.form.openAIQuotaProbeHint).toContain('не чаще одного раза в 10 минут')
+    expect(ru.admin.channelMonitor.linkedAccountRequired).toBe('Выберите связанный аккаунт')
+    expect(ru.monitorCommon.quota.unavailable).toBe('Квота недоступна')
+    expect(ru.monitorCommon.quota.windows['7dSonnet']).toBe('7 д Sonnet')
+
+    expect(ru.admin.channels.form.timePricing).toBe('Цены по времени (time-based pricing, необязательно)')
+    expect(ru.admin.channels.timePricingValidation.overlap).toBe('Периоды времени не должны пересекаться')
+    expect(ru.admin.settings.features.channelMonitor.showQuotaHint).toContain('По умолчанию выключено')
+
+    expect(ru.admin.settings.openaiFastPolicy.modelWhitelist).toBe('Целевые модели')
+    expect(ru.admin.settings.openaiFastPolicy.modelWhitelistHint).toContain('Действие для других моделей')
+    expect(ru.admin.settings.openaiFastPolicy.modelPatternPlaceholder).toBe('e.g., gpt-5.6-sol or gpt-5.6*')
+    expect(ru.admin.settings.openaiFastPolicy.fallbackAction).toBe('Действие для других моделей')
+    expect(ru.admin.settings.openaiFastPolicy.summaryTargetModels).toBe('Целевые модели')
+  })
+
   it('does not expose source-language labels on Russian admin surfaces', () => {
     expect(ru.admin.availableChannels.description).toBe(
       'Сводный вид каждого канала, связанных групп и поддерживаемых моделей с раскрытыми шаблонами'

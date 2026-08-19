@@ -430,7 +430,61 @@ export default {
       openai: 'OpenAI',
       anthropic: 'Anthropic',
       gemini: 'Gemini',
-      grok: 'Grok'
+      grok: 'Grok',
+      antigravity: 'Antigravity',
+      kimi: 'Kimi',
+      zhipu: 'Zhipu GLM',
+      deepseek: 'DeepSeek'
+    },
+    // Check modes (how a monitor performs its checks)
+    checkMode: {
+      probe: 'Probe',
+      quota: 'Quota',
+      quota_probe: 'Probe + Quota'
+    },
+    // Quota snapshot rendering (MonitorQuotaView, shared by admin + user views)
+    quota: {
+      unavailable: 'Quota unavailable',
+      resetSoon: 'resetting',
+      windows: {
+        '5h': '5h',
+        '7d': '7d',
+        '7dSonnet': '7d Sonnet',
+        '7dFable': '7d Fable',
+        weekly: 'Weekly',
+        daily: 'Daily',
+        '30d': '30d',
+        total: 'Total'
+      },
+      labels: {
+        requests: 'Requests',
+        tokens: 'Tokens',
+        shared: 'Shared',
+        pro: 'Pro',
+        flash: 'Flash'
+      },
+      errors: {
+        authenticationFailed: 'Authentication failed',
+        authenticationFailedHttp: 'Authentication failed (HTTP {status})',
+        apiError: 'API error',
+        apiErrorHttp: 'API error (HTTP {status})',
+        linkedAccountNotFound: 'Linked account not found',
+        snapshotMissing: 'Quota snapshot missing',
+        quotaHigh: 'Quota high: {window} at {percent}%',
+        balanceDepleted: 'Balance depleted ({currency})',
+        noBalanceEndpoint: 'Account provider has no balance endpoint',
+        codingPlanNoBalanceEndpoint: 'Coding Plan accounts use quota probe, not balance endpoint',
+        apiKeyEmpty: 'Account api_key is empty',
+        accountNotFound: 'Account not found',
+        invalidPlatform: 'Account is not a CN provider account',
+        notCodingPlan: 'Account is not a coding plan account',
+        serviceNotConfigured: 'Quota service is not configured',
+        requestBuildFailed: 'Failed to build quota request',
+        upstreamRequestFailed: 'Upstream request failed',
+        noData: 'Quota service returned no data',
+        probeFailed: 'Quota probe failed',
+        generic: 'Quota diagnostic unavailable'
+      }
     },
     extraModelsHeader: 'Extra Models',
     extraModelsEmpty: 'No extra models',
