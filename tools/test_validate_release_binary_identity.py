@@ -10,7 +10,7 @@ from validate_release_binary_identity import validate_binary, validate_identity
 
 
 class ReleaseBinaryIdentityTests(unittest.TestCase):
-    VERSION = "0.1.178-ru.1"
+    VERSION = "0.1.179-ru.1"
     COMMIT = "a" * 40
     VALID = (
         "2026-08-18T05:25:44.123+03:00\tINFO\tstdlog\t"

@@ -422,7 +422,7 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.groups.modelPricing.title).toBe('Цены группы по моделям')
     expect(ru.admin.groups.modelPricing.description).toContain('Переопределяют цены канала')
     expect(ru.admin.groups.modelPricing.longContext).toContain('длинного контекста')
-    expect(ru.admin.groups.modelPricing.longContextHint).toContain('базовую цену первой ступени')
+    expect(ru.admin.groups.modelPricing.longContextHint).toContain('первая ступень')
     expect(ru.admin.groups.modelPricing.add).toBe('Добавить цену модели')
     expect(ru.admin.channels.billingMode.video).toBe('Видео (за секунду)')
     expect(ru.admin.channels.form.videoTiers).toContain('за секунду')
@@ -472,6 +472,25 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.settings.openaiFastPolicy.modelPatternPlaceholder).toBe('e.g., gpt-5.6-sol or gpt-5.6*')
     expect(ru.admin.settings.openaiFastPolicy.fallbackAction).toBe('Действие для других моделей')
     expect(ru.admin.settings.openaiFastPolicy.summaryTargetModels).toBe('Целевые модели')
+  })
+
+  it('preserves the added v0.1.179 adaptive API protocol and multiplier pricing semantics in Russian', () => {
+    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptive).toBe('Adaptive (автовыбор protocol)')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptiveDesc).toContain('родной endpoint провайдера')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptiveDesc).toContain('конвертирует только если endpoint недоступен')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.endpoints).toContain('endpoint-ы протоколов')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.responsesFallbackDesc).toContain('Responses-запросы')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.responsesFallbackDesc).toContain('Chat Completions')
+
+    expect(ru.admin.channels.form.fastMultiplier).toContain('множитель быстрого tier')
+    expect(ru.admin.channels.form.flexMultiplier).toContain('множитель экономичного tier')
+    expect(ru.admin.channels.form.multiplierPositive).toContain('множители tier-ов')
+    expect(ru.admin.channels.form.inputMultiplier).toContain('вход')
+    expect(ru.admin.channels.form.outputMultiplier).toContain('выход')
+    expect(ru.admin.channels.intervalValidation.multiplierPositive).toContain('должен быть больше 0')
+    expect(ru.admin.channels.intervalValidation.price.inputMultiplier).toContain('входных токенов')
+    expect(ru.admin.groups.modelPricing.longContextHint).toContain('интервалы канала')
+    expect(ru.admin.groups.modelPricing.longContextHint).toContain('long-context billing явно включён на аккаунте')
   })
 
   it('does not expose source-language labels on Russian admin surfaces', () => {

@@ -1162,10 +1162,10 @@ describe("admin SettingsView payment visible method controls", () => {
 
     expect(paymentLinks).toHaveLength(2);
     expect(paymentLinks[0]?.attributes("href")).toBe(
-      "https://github.com/YLeon2007/sub2api/blob/v0.1.178-ru.1/docs/PAYMENT_RU.md",
+      "https://github.com/YLeon2007/sub2api/blob/v0.1.179-ru.1/docs/PAYMENT_RU.md",
     );
     expect(paymentLinks[1]?.attributes("href")).toBe(
-      "https://github.com/YLeon2007/sub2api/blob/v0.1.178-ru.1/docs/PAYMENT_RU.md#поддерживаемые-провайдеры",
+      "https://github.com/YLeon2007/sub2api/blob/v0.1.179-ru.1/docs/PAYMENT_RU.md#поддерживаемые-провайдеры",
     );
   });
 

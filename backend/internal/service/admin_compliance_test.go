@@ -108,7 +108,7 @@ func TestAcceptAdminComplianceAcceptsRussianPhrase(t *testing.T) {
 		AdminComplianceAckPhraseRU,
 	)
 	require.Equal(t,
-		"https://github.com/YLeon2007/sub2api/blob/v0.1.178-ru.1/docs/legal/admin-compliance.ru.md",
+		"https://github.com/YLeon2007/sub2api/blob/v0.1.179-ru.1/docs/legal/admin-compliance.ru.md",
 		AdminComplianceDocumentURLRU,
 	)
 
