@@ -45,6 +45,24 @@ export default {
     fileRequired: 'Select a .s2plugin file',
     bridgeRejected: 'Plugin UI message validation failed',
     onlyOpenAI: 'Initial capability: OpenAI OAuth outbound transport only',
-    noAccountCoupling: 'The scope is platform and account type. Account records are not changed and no per-account toggle is required.'
+    noAccountCoupling: 'The scope is platform and account type. Account records are not changed and no per-account toggle is required.',
+    messages: {
+      compatibleTested: 'This plugin declares the current Sub2API version as tested.',
+      compatibleUntested: 'The version range is compatible, but the plugin has not declared this Sub2API version as tested.',
+      incompatibleProtocol: 'The plugin protocol version is incompatible with this Sub2API host.',
+      incompatibleVersion: 'Current Sub2API {current} does not satisfy the plugin requirement {required}.',
+      runtimeRunning: 'Plugin process is running.',
+      runtimeStateUnavailable: 'Plugin enablement state is temporarily unavailable.',
+      runtimeStartingElsewhere: 'Plugin is starting on another instance.',
+      multipleOpenAIEnabled: 'Multiple OpenAI OAuth outbound plugins are enabled at the same time.',
+      startupTimedOutDisabled: 'Plugin startup timed out and was automatically restored to disabled.',
+      disableBeforeReplace: 'Disable the current plugin before uploading a new version with the same ID.',
+      installationMissing: 'Plugin installation record is empty.',
+      artifactMissing: 'Original plugin package is missing; upload the plugin again.',
+      artifactMismatch: 'Database plugin package does not match the installation record.',
+      installPathRejected: 'Plugin installation directory is outside the managed directory.',
+      runtimeNotDeclared: 'Plugin does not declare a runtime for the current platform.',
+      backendDiagnostic: 'Backend diagnostic: {message}'
+    }
   }
 }

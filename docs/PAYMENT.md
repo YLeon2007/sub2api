@@ -1,287 +1,190 @@
 # Payment System Configuration Guide
 
-Sub2API has a built-in payment system that enables user self-service top-up without deploying a separate payment service.
+English | [中文](PAYMENT_CN.md) | [Русский](PAYMENT_RU.md)
 
----
+Sub2API includes balance top-ups and subscription purchases. No separate payment service is required.
 
-## Table of Contents
+## Supported providers
 
-- [Supported Payment Methods](#supported-payment-methods)
-- [Quick Start](#quick-start)
-- [System Settings](#system-settings)
-- [Provider Configuration](#provider-configuration)
-- [Provider Instance Management](#provider-instance-management)
-- [Webhook Configuration](#webhook-configuration)
-- [Payment Flow](#payment-flow)
-- [Migrating from Sub2ApiPay](#migrating-from-sub2apipay)
+| Provider | Typical methods | Notes |
+|---|---|---|
+| **EasyPay** | Alipay, WeChat Pay | Third-party EasyPay-compatible aggregation |
+| **Alipay (Direct)** | Desktop QR, mobile redirect | Alipay Open Platform |
+| **WeChat Pay (Direct)** | Native QR, H5, MP/JSAPI | WeChat Pay API v3 |
+| **Stripe** | Card, Link and account-enabled methods | Multi-currency checkout |
+| **Airwallex** | Airwallex Drop-in checkout methods | Demo and production API environments |
 
----
+Alipay and WeChat are unified customer-facing methods: an administrator selects either the direct provider or an EasyPay source for each one. Stripe and Airwallex are independent visible methods when enabled.
 
-## Supported Payment Methods
+Internal provider keys are `easypay`, `alipay_direct`, `wxpay_direct`, `stripe`, and `airwallex`; visible payment-type keys also include `alipay`, `wxpay`, `card`, and `link`.
 
-| Provider | Payment Methods | Description |
-|----------|----------------|-------------|
-| **EasyPay** | Alipay, WeChat Pay | Third-party aggregation via EasyPay protocol |
-| **Alipay (Direct)** | Desktop QR code, mobile Alipay redirect | Direct integration with Alipay Open Platform, returning desktop QR codes and mobile WAP/app launch links |
-| **WeChat Pay (Direct)** | Native QR, H5, MP/JSAPI Pay | Direct integration with WeChat Pay APIv3 with environment-aware routing |
-| **Stripe** | Card, Alipay, WeChat Pay, Link, etc. | International payments, multi-currency support |
+Third-party fees, eligibility and settlement terms change outside this repository. Verify current contracts, compliance, callback requirements and production readiness directly with the provider; Sub2API does not endorse or guarantee an aggregator.
 
-> Alipay/WeChat Pay direct and EasyPay can both exist as backend provider instances, but the frontend always exposes only two visible buttons: `Alipay` and `WeChat Pay`. Admins choose exactly one source for each visible method: direct or EasyPay. Direct channels connect to payment APIs directly with lower fees; EasyPay aggregates through third-party platforms with easier setup.
+## Quick start
 
-> **EasyPay Provider Recommendations**: Both options below are third-party aggregators compatible with the EasyPay protocol. Pick based on the funding channel and settlement currency you need:
->
-> - **Domestic channel / CNY settlement** — [ZPay](https://z-pay.cn/?uid=23808) (`https://z-pay.cn/?uid=23808`): direct integration with official Alipay / WeChat Pay APIs, fee **1.6%**; funds go straight to the merchant account with **T+1 automatic settlement**. Supports **individual users** (no business license required) with up to 10,000 CNY daily transactions; business-licensed accounts have no limit. Link contains the referral code of [Sub2ApiPay](https://github.com/touwaeriol/sub2apipay) original author [@touwaeriol](https://github.com/touwaeriol) — feel free to remove it.
-> - **International channel / USDT or USD settlement** — [Kyren Topup](https://kyrenpay.com/?code=SUB2API) (`https://kyrenpay.com/?code=SUB2API`): a ready-to-launch global payment stack for AI startups with WeChat Pay and Alipay support, local-currency checkout, and USD settlement. Fees: WeChat 2.5%, Alipay 2.5%; Multiple withdrawal methods are available. Withdrawals to overseas company accounts incur a $20 fee, while USDT withdrawals incur a $30 fee plus a 0.4% transaction fee, settled in **USDT or USD**. No qualification review required — sign up and use immediately, making it the lowest barrier to entry. Withdrawal threshold is relatively high, recommended for users **who do not use domestic Chinese payment channels, cannot tolerate Stripe's 6%+ fees, have high transaction volume, and have USD or USDT channels to receive withdrawn funds**. Kyren Topup charges a $200 account opening fee; signing up via this link (which contains Sub2Api author [@Wei-Shaw](https://github.com/Wei-Shaw)'s referral code) **waives the opening fee**. Feel free to remove it if you prefer.
->
-> Please evaluate the security, reliability, and compliance of any third-party payment provider on your own — this project does not endorse or guarantee any of them.
+1. Open **Admin → Settings → Payment Settings**.
+2. Enable Payment and select visible payment types.
+3. Configure amount, timeout, pending-order and cancellation limits.
+4. Add at least one enabled provider instance.
+5. For subscription sales, create a payment plan bound to a subscription group.
+6. Complete a low-value sandbox/test payment and verify the signed webhook, fulfillment and refund path before production.
 
----
+## System settings
 
-## Quick Start
+| Setting | Meaning | Typical default |
+|---|---|---|
+| Enable Payment | Global payment switch | Off |
+| Product Name Prefix/Suffix | Checkout product description | Empty |
+| Minimum Amount | Minimum top-up/order amount | 1 |
+| Maximum Amount | Empty means unlimited | Empty |
+| Daily Limit | Per-user daily amount; empty means unlimited | Empty |
+| Order Timeout | Minutes before reconciliation/expiry | 30 |
+| Max Pending Orders | Concurrent pending orders per user | 3 |
+| Load Balance Strategy | `round-robin` or `least_amount` | Round robin |
 
-1. Go to Admin Dashboard → **Settings** → **Payment Settings** tab
-2. Enable **Payment**
-3. Configure basic parameters (amount range, timeout, etc.)
-4. Add at least one provider instance in **Provider Management**
-5. Users can now top up from the frontend
+Cancellation rate limits, help text/image and visible-method source routing are configured in the same admin section. The admin UI/API is the source of truth for defaults because they can change between releases.
 
----
+## Provider credentials
 
-## System Settings
-
-Configure the following in Admin Dashboard **Settings → Payment Settings**:
-
-### Basic Settings
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Enable Payment** | Enable or disable the payment system | Off |
-| **Product Name Prefix** | Prefix shown on payment page | - |
-| **Product Name Suffix** | Suffix (e.g., "Credits") | - |
-| **Minimum Amount** | Minimum single top-up amount | 1 |
-| **Maximum Amount** | Maximum single top-up amount (empty = unlimited) | - |
-| **Daily Limit** | Per-user daily cumulative limit (empty = unlimited) | - |
-| **Order Timeout** | Order timeout in minutes (minimum 1) | 30 |
-| **Max Pending Orders** | Maximum concurrent pending orders per user | 3 |
-| **Load Balance Strategy** | Strategy for selecting provider instances | Round Robin |
-
-### Frontend Visible Method Routing
-
-The current payment UX keeps the frontend method list unified and does not expose provider brands directly:
-
-- **Alipay**: when enabled, this button must be routed to either `Alipay (Direct)` or `EasyPay Alipay`
-- **WeChat Pay**: when enabled, this button must be routed to either `WeChat Pay (Direct)` or `EasyPay WeChat`
-- Each visible method can route to only one source at a time
-- If a visible method is enabled without a selected source, the frontend will not expose that method
-
-### Load Balance Strategies
-
-| Strategy | Description |
-|----------|-------------|
-| **Round Robin** | Distribute orders to instances in rotation |
-| **Least Amount** | Prefer instances with the lowest daily cumulative amount |
-
-### Cancel Rate Limiting
-
-Prevents users from repeatedly creating and canceling orders:
-
-| Setting | Description |
-|---------|-------------|
-| **Enable Limit** | Toggle |
-| **Window Mode** | Sliding / Fixed window |
-| **Time Window** | Window duration |
-| **Window Unit** | Minutes / Hours |
-| **Max Cancels** | Maximum cancellations allowed within the window |
-
-### Help Information
-
-| Setting | Description |
-|---------|-------------|
-| **Help Image** | Customer service QR code or help image (supports upload) |
-| **Help Text** | Instructions displayed on the payment page |
-
----
-
-## Provider Configuration
-
-Each provider type requires different credentials. Select the type when adding a new provider instance in **Provider Management → Add Provider**.
-
-> **Callback URLs are auto-generated**: When adding a provider, the Notify URL and Return URL are automatically constructed from your site domain. You only need to confirm the domain is correct.
+Provider secrets are encrypted at rest by the application. Do not put real credentials in documentation, tickets, screenshots or Git.
 
 ### EasyPay
 
-Compatible with any payment service that implements the EasyPay protocol.
+| Field | Required |
+|---|---|
+| Merchant ID (`pid`) | Yes |
+| Merchant key (`pkey`) | Yes |
+| API base URL | Yes |
+| Optional Alipay/WeChat channel IDs | No |
 
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| **Merchant ID (PID)** | EasyPay merchant ID | Yes |
-| **Merchant Key (PKey)** | EasyPay merchant secret key | Yes |
-| **API Base URL** | EasyPay API base address | Yes |
-| **Alipay Channel ID** | Specify Alipay channel (optional) | No |
-| **WeChat Channel ID** | Specify WeChat channel (optional) | No |
+Use only an HTTPS endpoint you trust. Confirm the EasyPay implementation's signing algorithm and callback behavior before enabling it.
 
 ### Alipay (Direct)
 
-Direct integration with Alipay Open Platform. Mobile flows return an Alipay WAP/app redirect URL. Desktop flows prefer Face-to-Face Precreate QR payloads; if the merchant has not enabled that product, the provider falls back to Computer Website Pay and also returns the cashier URL so the frontend can render a QR code or open the hosted checkout page directly.
+| Field | Required |
+|---|---|
+| AppID | Yes |
+| RSA2 application private key | Yes |
+| Alipay public key | Yes |
 
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| **AppID** | Alipay application AppID | Yes |
-| **Private Key** | RSA2 application private key | Yes |
-| **Alipay Public Key** | Alipay public key | Yes |
+Desktop checkout prefers Face-to-Face Precreate QR and can fall back to Computer Website Pay. Mobile checkout uses the supported Alipay redirect flow.
 
 ### WeChat Pay (Direct)
 
-Direct integration with WeChat Pay APIv3. Supports Native QR code payment, H5 payment, and MP/JSAPI payment inside the WeChat environment.
+| Field | Required |
+|---|---|
+| AppID | Yes |
+| Merchant ID (MchID) | Yes |
+| Merchant API private key | Yes |
+| API v3 key (32 bytes) | Yes |
+| WeChat Pay public key and key ID | Yes |
+| Merchant certificate serial number | Yes |
 
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| **AppID** | WeChat Pay AppID | Yes |
-| **Merchant ID (MchID)** | WeChat Pay merchant ID | Yes |
-| **Merchant API Private Key** | Merchant API private key (PEM format) | Yes |
-| **APIv3 Key** | 32-byte APIv3 key | Yes |
-| **WeChat Pay Public Key** | WeChat Pay public key (PEM format) | Yes |
-| **WeChat Pay Public Key ID** | WeChat Pay public key ID | Yes |
-| **Certificate Serial Number** | Merchant certificate serial number | Yes |
+The provider supports Native QR, H5 and MP/JSAPI flows. Configure only the modes enabled for the merchant account.
 
 ### Stripe
 
-International payment platform supporting multiple payment methods and currencies.
+| Field | Required |
+|---|---|
+| Secret key | Yes |
+| Publishable key | Yes |
+| Webhook signing secret | Yes |
 
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| **Secret Key** | Stripe secret key (`sk_live_...` or `sk_test_...`) | Yes |
-| **Publishable Key** | Stripe publishable key (`pk_live_...` or `pk_test_...`) | Yes |
-| **Webhook Secret** | Stripe Webhook signing secret (`whsec_...`) | Yes |
+The Webhook endpoint API version must match the integrated Stripe SDK version shown in the admin UI.
 
----
+### Airwallex
 
-## Provider Instance Management
+| Field | Required |
+|---|---|
+| Client ID (`clientId`) | Yes |
+| API key (`apiKey`) | Yes |
+| Webhook secret (`webhookSecret`) | Yes |
+| API base (`apiBase`) | Yes |
+| Currency | No (defaults to configured payment currency) |
+| Two-letter country code | No (defaults to `CN`) |
+| Account ID | No; use for organization/multi-account scenarios |
 
-You can create **multiple instances** of the same provider type for load balancing and risk control:
+Use `https://api-demo.airwallex.com/api/v1` with demo keys and `https://api.airwallex.com/api/v1` with production keys. Environment mixing is rejected. Grant only the required Payment Acceptance permissions.
 
-- **Multi-instance load balancing** — Distribute orders via round-robin or least-amount strategy
-- **Independent limits** — Each instance can have its own min/max amount and daily limit
-- **Independent toggle** — Enable/disable individual instances without affecting others
-- **Refund control** — Enable or disable refunds per instance
-- **Payment methods** — Each instance can support a subset of payment methods
-- **Ordering** — Drag to reorder instances
+## Provider instances and routing
 
-### Instance Limit Configuration
+Multiple instances of one provider can be used for availability and limits. Each instance has its own enabled flag, supported methods, single-order limits, daily limit, refund capability and sort order.
 
-Each instance supports these limits:
+Selection filters incompatible/over-limit instances, then applies round-robin or least-amount routing. Monitor each provider independently; multiple instances do not replace external reconciliation.
 
-| Limit | Description |
-|-------|-------------|
-| **Minimum Amount** | Minimum order amount accepted by this instance |
-| **Maximum Amount** | Maximum order amount accepted by this instance |
-| **Daily Limit** | Daily cumulative transaction limit for this instance |
+## Webhooks
 
-> During load balancing, instances that exceed their limits are automatically skipped.
+The application generates callback URLs from the configured site origin:
 
----
+| Provider | Path |
+|---|---|
+| EasyPay | `/api/v1/payment/webhook/easypay` |
+| Alipay | `/api/v1/payment/webhook/alipay` |
+| WeChat Pay | `/api/v1/payment/webhook/wxpay` |
+| Stripe | `/api/v1/payment/webhook/stripe` |
+| Airwallex | `/api/v1/payment/webhook/airwallex` |
 
-## Webhook Configuration
+Requirements:
 
-Payment callbacks are essential for the payment system to work correctly.
+- use a public HTTPS origin;
+- configure the exact URL in the provider dashboard when required;
+- allow provider callback traffic through the reverse proxy/WAF;
+- never bypass signature verification;
+- for Airwallex select at least `payment_intent.succeeded`, preferably also `payment_intent.cancelled`;
+- test duplicate and delayed callbacks because processing is idempotent.
 
-### Callback URL Format
+## Order lifecycle
 
-When adding a provider, the system auto-generates callback URLs from your site domain:
-
-| Provider | Callback Path |
-|----------|-------------|
-| **EasyPay** | `https://your-domain.com/api/v1/payment/webhook/easypay` |
-| **Alipay (Direct)** | `https://your-domain.com/api/v1/payment/webhook/alipay` |
-| **WeChat Pay (Direct)** | `https://your-domain.com/api/v1/payment/webhook/wxpay` |
-| **Stripe** | `https://your-domain.com/api/v1/payment/webhook/stripe` |
-
-> Replace `your-domain.com` with your actual domain. For EasyPay / Alipay / WeChat Pay, the callback URL is auto-filled when adding the provider — no manual configuration needed.
-
-### Stripe Webhook Setup
-
-1. Log in to [Stripe Dashboard](https://dashboard.stripe.com/)
-2. Go to **Developers → Webhooks**
-3. Add an endpoint with the callback URL
-4. Subscribe to events: `payment_intent.succeeded`, `payment_intent.payment_failed`
-5. Copy the generated Webhook Secret (`whsec_...`) to your provider configuration
-
-### Important Notes
-
-- Callback URLs must use **HTTPS** (required by Stripe, strongly recommended for others)
-- Ensure your firewall allows callback requests from payment platforms
-- The system automatically verifies callback signatures to prevent forgery
-- Balance top-up is processed automatically upon successful payment — no manual intervention needed
-
----
-
-## Payment Flow
-
-```
-User selects amount and payment method
-       │
-       ▼
-  Create Order (PENDING)
-  ├─ Validate amount range, pending order count, daily limit
-  ├─ Load balance to select provider instance
-  └─ Call provider to get payment info
-       │
-       ▼
-  User completes payment
-  ├─ EasyPay     → QR code / H5 redirect
-  ├─ Alipay      → Desktop QR payload (Face-to-Face preferred, Website Pay fallback) / mobile Alipay redirect
-  ├─ WeChat Pay  → Desktop Native QR / non-WeChat H5 / in-WeChat JSAPI
-  └─ Stripe      → Payment Element (card/Alipay/WeChat/etc.)
-       │
-       ▼
-  Webhook callback verified → Order PAID
-       │
-       ▼
-  Auto top-up to user balance → Order COMPLETED
+```text
+Create order (PENDING)
+  -> provider checkout
+  -> verified callback / reconciliation (PAID or RECHARGING)
+  -> balance credit or subscription activation (COMPLETED)
 ```
 
-### Order Status Reference
+Current order statuses:
 
-| Status | Description |
-|--------|-------------|
-| `PENDING` | Waiting for user to complete payment |
-| `PAID` | Payment confirmed, awaiting balance credit |
-| `COMPLETED` | Balance credited successfully |
-| `EXPIRED` | Timed out without payment |
-| `CANCELLED` | Cancelled by user |
-| `FAILED` | Balance credit failed, admin can retry |
+| Status | Meaning |
+|---|---|
+| `PENDING` | Waiting for payment |
+| `PAID` | Payment confirmed, fulfillment pending |
+| `RECHARGING` | Fulfillment in progress |
+| `COMPLETED` | Balance/subscription fulfilled |
+| `EXPIRED` | Timeout reached without confirmed payment |
+| `CANCELLED` | Cancelled |
+| `FAILED` | Payment or fulfillment failed |
 | `REFUND_REQUESTED` | Refund requested |
-| `REFUNDING` | Refund in progress |
-| `REFUNDED` | Refund completed |
+| `REFUNDING` | Refund request in progress |
+| `REFUND_PENDING` | Provider accepted; settlement pending |
+| `PARTIALLY_REFUNDED` | Partial refund completed |
+| `REFUNDED` | Full refund completed |
+| `REFUND_FAILED` | Refund failed |
 
-### Timeout and Fallback
+Before expiring eligible orders, the service can query the upstream provider to recover a delayed/missed callback. Operators must still reconcile provider statements with Sub2API orders.
 
-- Before marking an order as expired, the background job queries the upstream payment status first
-- If the user has actually paid but the callback was delayed, the system will reconcile automatically
-- The background job runs every 60 seconds to check for timed-out orders
+## Subscription plans
 
----
+The built-in payment system supports subscription plans. Admin routes under `/api/v1/admin/payment/plans` create, update and delete plans. A plan binds to a group whose `subscription_type` is `subscription`; successful fulfillment activates or extends the user's subscription.
+
+Test renewal, refund and expiry behavior for every plan before publishing it.
 
 ## Migrating from Sub2ApiPay
 
-If you previously used [Sub2ApiPay](https://github.com/touwaeriol/sub2apipay) as an external payment system, you can migrate to the built-in payment system:
+1. Configure equivalent providers in Sub2API without disabling the old service.
+2. Create plans/routing and test low-value orders.
+3. Change provider webhook URLs to Sub2API.
+4. Confirm new orders, fulfillment, reconciliation and refunds.
+5. Keep the old service/read-only database for historical records until retention requirements are met.
+6. Revoke old credentials and decommission only after the observation period.
 
-### Key Differences
+Historical Sub2ApiPay orders are not imported automatically.
 
-| Aspect | Sub2ApiPay | Built-in Payment |
-|--------|-----------|-----------------|
-| Deployment | Separate service (Next.js + PostgreSQL) | Built into Sub2API, no extra deployment |
-| Payment Methods | EasyPay, Alipay, WeChat, Stripe | Same |
-| Configuration | Environment variables + separate admin UI | Unified in Sub2API admin dashboard |
-| Top-up Integration | Via Admin API callback | Internal processing, more reliable |
-| Subscription Plans | Supported | Not yet (planned) |
-| Order Management | Separate admin interface | Integrated in Sub2API admin dashboard |
+## Operational checklist
 
-### Migration Steps
-
-1. Enable payment in Sub2API admin dashboard and configure providers (use the same payment credentials)
-2. Update webhook callback URLs to Sub2API's callback endpoints
-3. Verify that new orders are processed correctly via built-in payment
-4. Decommission the Sub2ApiPay service
-
-> **Note**: Historical order data from Sub2ApiPay will not be automatically migrated. Keep Sub2ApiPay running for a while to access historical records.
+- Back up the database before enabling or changing payment configuration.
+- Use sandbox/demo credentials first.
+- Keep server time synchronized.
+- Restrict admin access and require step-up authentication where available.
+- Monitor callback failures, pending/recharging orders and refund states.
+- Document provider-side API versions and credential rotation.
+- Never test production webhooks with fabricated unsigned callbacks.
