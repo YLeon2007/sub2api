@@ -2381,7 +2381,7 @@ function friendlyItemError(error: BatchImageItem['error']) {
   if (!error) return '-'
   if (error.code === 'EMPTY_IMAGE_OUTPUT') return t('batchImage.itemResult.emptyImageOutput')
   if (error.code === 'PROVIDER_ITEM_FAILED') return t('batchImage.itemResult.providerItemFailed')
-  return error.message || error.code || '-'
+  return t('batchImage.itemResult.errorReference')
 }
 
 function formatMoney(value: number | null | undefined) {
@@ -2582,11 +2582,8 @@ function batchImageErrorMessage(error: any, fallback: string) {
   if (code === 'INTERNAL_ERROR' || code === '500') {
     return batchImageAdminError(fallback, error)
   }
-  if (isZhLocale()) {
-    const detail = message ? `${batchImageText('errorReference')}：${message}` : batchImageText('adminReference')
-    return `${fallback}。${detail} ${batchImageErrorReference(error)}`
-  }
-  return message || fallback
+  const detail = message ? `${batchImageText('errorReference')}：${message}` : batchImageText('adminReference')
+  return `${fallback}。${detail} ${batchImageErrorReference(error)}`
 }
 
 function formatDate(timestamp: number) {
