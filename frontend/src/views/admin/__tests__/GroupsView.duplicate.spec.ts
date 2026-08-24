@@ -236,7 +236,7 @@ describe('GroupsView duplicate action', () => {
     wrapper.unmount()
   })
 
-  it('shows the API error and restores the action when duplication fails', async () => {
+  it('shows the localized primary error and restores the action when duplication fails', async () => {
     duplicateGroup.mockRejectedValueOnce(new Error('duplicate failed'))
     const wrapper = mountView()
     await flushPromises()
@@ -244,7 +244,8 @@ describe('GroupsView duplicate action', () => {
     await wrapper.get('[data-testid="group-duplicate"]').trigger('click')
     await flushPromises()
 
-    expect(showError).toHaveBeenCalledWith('duplicate failed')
+    expect(showError).toHaveBeenCalledWith('admin.groups.duplicateFailed')
+    expect(showError).not.toHaveBeenCalledWith('duplicate failed')
     expect(wrapper.get('[data-testid="group-duplicate"]').attributes('disabled')).toBeUndefined()
     wrapper.unmount()
   })

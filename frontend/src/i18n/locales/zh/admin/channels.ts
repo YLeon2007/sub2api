@@ -78,7 +78,11 @@ export default {
           outputPrice: '输出价格',
           cacheWritePrice: '缓存写入价格',
           cacheReadPrice: '缓存读取价格',
-          perRequestPrice: '单次价格'
+          perRequestPrice: '单次价格',
+          inputMultiplier: '输入倍率',
+          outputMultiplier: '输出倍率',
+          cacheWriteMultiplier: '缓存写倍率',
+          cacheReadMultiplier: '缓存读倍率'
         }
       },
       timePricingValidation: {

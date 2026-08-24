@@ -144,7 +144,7 @@
                   {{ t(`admin.plugins.${plugin.compatibility.status}`) }}
                 </span>
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{
-                  plugin.compatibility.message
+                  localizedCompatibilityMessage(plugin)
                 }}</span>
               </div>
               <dl
@@ -201,13 +201,13 @@
                 v-if="plugin.last_error"
                 class="mt-3 break-words text-xs text-red-600 dark:text-red-400"
               >
-                {{ plugin.last_error }}
+                {{ localizedPluginBackendMessage(plugin.last_error) }}
               </p>
               <p
                 v-else-if="plugin.runtime_message"
                 class="mt-3 break-words text-xs text-gray-500"
               >
-                {{ plugin.runtime_message }}
+                {{ localizedPluginBackendMessage(plugin.runtime_message) }}
               </p>
             </div>
 
@@ -443,6 +443,51 @@ function currentRollout(plugin: PluginInstallation): number {
       (binding) => binding.capability === "openai.oauth.outbound_transport.v1",
     )?.rollout_percent || 100
   );
+}
+
+const pluginBackendMessageKeys: Record<string, string> = {
+  "插件协议版本与当前 Sub2API 不兼容": "admin.plugins.messages.incompatibleProtocol",
+  "当前 Sub2API 版本已由插件声明测试": "admin.plugins.messages.compatibleTested",
+  "版本范围兼容，但插件未声明已测试当前 Sub2API 版本": "admin.plugins.messages.compatibleUntested",
+  "插件进程运行中": "admin.plugins.messages.runtimeRunning",
+  "插件启用状态暂时无法读取": "admin.plugins.messages.runtimeStateUnavailable",
+  "插件正在其他实例中启动": "admin.plugins.messages.runtimeStartingElsewhere",
+  "检测到多个 OpenAI OAuth 出站插件同时启用": "admin.plugins.messages.multipleOpenAIEnabled",
+  "插件启动超时，已自动恢复为停用状态": "admin.plugins.messages.startupTimedOutDisabled",
+  "请先停用当前插件，再上传同 ID 的新版本": "admin.plugins.messages.disableBeforeReplace",
+  "插件安装记录为空": "admin.plugins.messages.installationMissing",
+  "插件包原件缺失，请重新上传插件": "admin.plugins.messages.artifactMissing",
+  "数据库插件包与安装记录不一致": "admin.plugins.messages.artifactMismatch",
+  "插件安装目录不在受管目录内": "admin.plugins.messages.installPathRejected",
+  "插件未声明当前平台运行时": "admin.plugins.messages.runtimeNotDeclared",
+};
+
+function localizedPluginBackendMessage(message?: string | null): string {
+  const normalized = (message || "").trim();
+  if (!normalized) return "";
+  const key = pluginBackendMessageKeys[normalized];
+  if (key) return t(key);
+  return t("admin.plugins.messages.backendDiagnostic", { message: normalized });
+}
+
+function localizedCompatibilityMessage(plugin: PluginInstallation): string {
+  const compatibility = plugin.compatibility;
+  switch (compatibility.status) {
+    case "compatible":
+      return t("admin.plugins.messages.compatibleTested");
+    case "untested":
+      return t("admin.plugins.messages.compatibleUntested");
+    case "incompatible":
+      if (compatibility.message in pluginBackendMessageKeys) {
+        return localizedPluginBackendMessage(compatibility.message);
+      }
+      return t("admin.plugins.messages.incompatibleVersion", {
+        current: compatibility.current_sub2api_version || "-",
+        required: compatibility.required_sub2api_version || "-",
+      });
+    default:
+      return localizedPluginBackendMessage(compatibility.message);
+  }
 }
 
 function hasEnabledBinding(plugin: PluginInstallation): boolean {

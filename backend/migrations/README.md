@@ -1,184 +1,111 @@
-# Database Migrations
+# Database migrations
 
-## Overview
+English | [Русский](README_RU.md)
 
-This directory contains SQL migration files for database schema changes. The migration system uses SHA256 checksums to ensure migration immutability and consistency across environments.
+This directory contains the forward-only SQL migrations embedded in the Sub2API backend. The application applies them automatically at startup under a PostgreSQL advisory lock.
 
-## Migration File Naming
+## Naming and order
 
-Format: `NNN_description.sql`
-- `NNN`: Sequential number (e.g., 001, 002, 003)
-- `description`: Brief description in snake_case
+Use a zero-padded numeric prefix and `snake_case` description. Existing history also uses an optional letter suffix for ordered follow-up/hotfix migrations (`006b_*`, `108a_*`, and similar). The runner's actual order is lexicographic.
 
-Example: `017_add_gemini_tier_id.sql`
+```text
+192_group_profit_control.sql
+193_group_profit_control_auth_cache_invalidation.sql
+193a_group_profit_control_follow_up.sql
+```
 
-### `_notx.sql` 命名与执行语义（并发索引专用）
+Never reuse, rename or reorder a published filename. Prefer the next unused numeric prefix for normal work; use a letter suffix only when a reviewed follow-up must remain adjacent in the lexicographic sequence.
 
-当迁移包含 `CREATE INDEX CONCURRENTLY` 或 `DROP INDEX CONCURRENTLY` 时，必须使用 `_notx.sql` 后缀，例如：
+## Execution modes
 
-- `062_add_accounts_priority_indexes_notx.sql`
-- `063_drop_legacy_indexes_notx.sql`
+The custom runner is [`internal/repository/migrations_runner.go`](../internal/repository/migrations_runner.go).
 
-运行规则：
+- Regular `*.sql` files execute as one transaction.
+- `*_notx.sql` files execute without a transaction and are reserved for `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY`.
+- The runner executes the whole regular file. It does **not** parse Goose `Up`/`Down` sections.
+- A SHA-256 of the trimmed file content is stored in `schema_migrations` with filename and `applied_at`.
+- Already-applied files are skipped only when their checksum matches (except narrow historical compatibility rules in the runner).
 
-1. `*.sql`（不带 `_notx`）按事务执行。
-2. `*_notx.sql` 按非事务执行，不会包裹在 `BEGIN/COMMIT` 中。
-3. `*_notx.sql` 仅允许并发索引语句，不允许混入事务控制语句或其他 DDL/DML。
-
-幂等要求（必须）：
-
-- 创建索引：`CREATE INDEX CONCURRENTLY IF NOT EXISTS ...`
-- 删除索引：`DROP INDEX CONCURRENTLY IF EXISTS ...`
-
-这样可以保证灾备重放、重复执行时不会因对象已存在/不存在而失败。
-
-## Migration File Structure
-
-This project uses a custom migration runner (`internal/repository/migrations_runner.go`) that executes the full SQL file content as-is.
-
-- Regular migrations (`*.sql`): executed in a transaction.
-- Non-transactional migrations (`*_notx.sql`): split by statement and executed without transaction (for `CONCURRENTLY`).
+A `_notx.sql` migration must contain only supported concurrent-index statements, without `BEGIN`, `COMMIT`, unrelated DDL or DML. Make it idempotent:
 
 ```sql
--- Forward-only migration (recommended)
-ALTER TABLE usage_logs ADD COLUMN IF NOT EXISTS example_column VARCHAR(100);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_example ON example_table (example_column);
+DROP INDEX CONCURRENTLY IF EXISTS idx_old_example;
 ```
 
-> ⚠️ Do **not** place executable "Down" SQL in the same file. The runner does not parse goose Up/Down sections and will execute all SQL statements in the file.
+## Immutability rule
 
-## Important Rules
+**After a migration has been applied in any shared environment, never modify, delete, rename or reorder it.** A checksum mismatch intentionally prevents application startup because environments would otherwise diverge.
 
-### ⚠️ Immutability Principle
+For a correction, add a new migration. If a release must be rolled back, restore a compatible database backup or add a reviewed compensating migration; there is no generic `migrate-down` target.
 
-**Once a migration is applied to ANY environment (dev, staging, production), it MUST NOT be modified.**
+## Workflow
 
-Why?
-- Each migration has a SHA256 checksum stored in the `schema_migrations` table
-- Modifying an applied migration causes checksum mismatch errors
-- Different environments would have inconsistent database states
-- Breaks audit trail and reproducibility
+Commands below assume the current directory is `backend/`.
 
-### ✅ Correct Workflow
+1. Update local trusted refs and determine the next unused number.
+2. Create one focused migration:
 
-1. **Create new migration**
    ```bash
-   # Create new file with next sequential number
-   touch migrations/018_your_change.sql
+   $EDITOR migrations/NNN_short_description.sql
    ```
 
-2. **Write forward-only migration SQL**
-   - Put only the intended schema change in the file
-   - If rollback is needed, create a new migration file to revert
+3. Prefer idempotent operations such as `ADD COLUMN IF NOT EXISTS` when semantics allow it.
+4. Review lock/table-rewrite/index impact and test with realistic data volume.
+5. Run the migration runner tests and backend tests:
 
-3. **Test locally**
    ```bash
-   # Apply migration
-   make migrate-up
-
-   # Test rollback
-   make migrate-down
+   go test ./internal/repository -run 'Migration|Migrations'
+   go test ./...
    ```
 
-4. **Commit and deploy**
-   ```bash
-   git add migrations/018_your_change.sql
-   git commit -m "feat(db): add your change"
-   ```
+6. Start the backend against a disposable PostgreSQL database and verify startup, schema, data invariants and a second idempotent startup.
+7. Before production deployment, create and verify a fresh database backup and a rollback/restore procedure.
 
-### ❌ What NOT to Do
-
-- ❌ Modify an already-applied migration file
-- ❌ Delete migration files
-- ❌ Change migration file names
-- ❌ Reorder migration numbers
-
-### 🔧 If You Accidentally Modified an Applied Migration
-
-**Error message:**
-```
-migration 017_add_gemini_tier_id.sql checksum mismatch (db=abc123... file=def456...)
-```
-
-**Solution:**
-```bash
-# 1. Find the original version
-git log --oneline -- migrations/017_add_gemini_tier_id.sql
-
-# 2. Revert to the commit when it was first applied
-git checkout <commit-hash> -- migrations/017_add_gemini_tier_id.sql
-
-# 3. Create a NEW migration for your changes
-touch migrations/018_your_new_change.sql
-```
-
-## Migration System Details
-
-- **Checksum Algorithm**: SHA256 of trimmed file content
-- **Tracking Table**: `schema_migrations` (filename, checksum, applied_at)
-- **Runner**: `internal/repository/migrations_runner.go`
-- **Auto-run**: Migrations run automatically on service startup
-
-## Best Practices
-
-1. **Keep migrations small and focused**
-   - One logical change per migration
-   - Easier to review and rollback
-
-2. **Write reversible migrations**
-   - Always provide a working Down migration
-   - Test rollback before committing
-
-3. **Use transactions**
-   - Wrap DDL statements in transactions when possible
-   - Ensures atomicity
-
-4. **Add comments**
-   - Explain WHY the change is needed
-   - Document any special considerations
-
-5. **Test in development first**
-   - Apply migration locally
-   - Verify data integrity
-   - Test rollback
-
-## Example Migration
+## Example
 
 ```sql
--- Add tier_id field to Gemini OAuth accounts for quota tracking
-UPDATE accounts
-SET credentials = jsonb_set(
-    credentials,
-    '{tier_id}',
-    '"LEGACY"',
-    true
-)
-WHERE platform = 'gemini'
-  AND type = 'oauth'
-  AND credentials->>'tier_id' IS NULL;
+-- Forward-only migration. Explain why the change is needed.
+ALTER TABLE usage_logs
+  ADD COLUMN IF NOT EXISTS example_column VARCHAR(100);
 ```
+
+Do not put executable rollback SQL later in the same file: the runner will execute it as part of the forward migration.
 
 ## Troubleshooting
 
-### Checksum Mismatch
-See "If You Accidentally Modified an Applied Migration" above.
+### Checksum mismatch
 
-### Migration Failed
+```text
+migration NNN_name.sql checksum mismatch (db=abc123... file=def456...)
+```
+
+Restore the exact published file, then add a new migration for the intended change:
+
 ```bash
-# Check migration status
-psql -d sub2api -c "SELECT * FROM schema_migrations ORDER BY applied_at DESC;"
-
-# Manually rollback if needed (use with caution)
-# Better to fix the migration and create a new one
+git log --oneline -- migrations/NNN_name.sql
+git checkout <original-commit> -- migrations/NNN_name.sql
+$EDITOR migrations/NEW_description.sql
 ```
 
-### Need to Skip a Migration (Emergency Only)
-```sql
--- DANGEROUS: Only use in development or with extreme caution
-INSERT INTO schema_migrations (filename, checksum, applied_at)
-VALUES ('NNN_migration.sql', 'calculated_checksum', NOW());
+Never update `schema_migrations.checksum` to conceal an unreviewed file change.
+
+### Migration failed
+
+- Regular migrations roll back their transaction.
+- Concurrent index migrations may leave an invalid index; inspect PostgreSQL state and the runner's preflight/recovery logic before retrying.
+- Fix the migration only if it has never been applied to any shared environment; otherwise add a new migration.
+
+Inspect state read-only:
+
+```bash
+psql "$DATABASE_URL" -c \
+  "SELECT filename, checksum, applied_at FROM schema_migrations ORDER BY applied_at DESC;"
 ```
+
+Do not manually insert a fake `schema_migrations` row in staging/production. That bypasses schema execution and checksum verification.
 
 ## References
 
-- Migration runner: `internal/repository/migrations_runner.go`
-- PostgreSQL docs: https://www.postgresql.org/docs/
+- [Migration runner](../internal/repository/migrations_runner.go)
+- [PostgreSQL documentation](https://www.postgresql.org/docs/)

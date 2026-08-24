@@ -11,6 +11,8 @@ const { showInfo, showSuccess, showError, fetchPublicSettings } = vi.hoisted(() 
   fetchPublicSettings: vi.fn(),
 }))
 
+const localeRef = vi.hoisted(() => ({ value: 'en' }))
+
 const messages: Record<string, string> = {
   'keyUsage.title': 'API Key Usage',
   'keyUsage.subtitle': 'Usage status',
@@ -63,6 +65,9 @@ const messages: Record<string, string> = {
   'keyUsage.totalCacheRead': 'Total Cache Read',
   'keyUsage.totalCost': 'Total Cost',
   'keyUsage.avgDuration': 'Avg Duration',
+  'keyUsage.daysLeft': '{days} days left',
+  'keyUsage.todayExpires': 'expires today',
+  'keyUsage.subscriptionExpires': 'Subscription Expires',
   'keyUsage.querySuccess': 'Query successful',
   'keyUsage.queryFailed': 'Query failed',
   'keyUsage.queryFailedRetry': 'Query failed, please try again later',
@@ -77,8 +82,9 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => messages[key] ?? key,
-      locale: { value: 'en' },
+      t: (key: string, params?: Record<string, string | number>) =>
+        (messages[key] ?? key).replace(/\{(\w+)\}/g, (_, token) => String(params?.[token] ?? `{${token}}`)),
+      locale: localeRef,
     }),
   }
 })
@@ -103,6 +109,7 @@ describe('KeyUsageView daily detail', () => {
     showSuccess.mockReset()
     showError.mockReset()
     fetchPublicSettings.mockReset()
+    localeRef.value = 'en'
     localStorage.clear()
 
     Object.defineProperty(window, 'matchMedia', {
@@ -228,6 +235,81 @@ describe('KeyUsageView daily detail', () => {
     const requestUrl = String(vi.mocked(fetch).mock.calls[0][0])
     expect(requestUrl).toContain('start_date=2026-07-13')
     expect(requestUrl).toContain('end_date=2026-07-13')
+
+    wrapper.unmount()
+  })
+
+  it('uses ru-RU date formatting and Russian short period labels for ru locale', async () => {
+    localeRef.value = 'ru'
+    vi.useFakeTimers()
+    const systemNow = new Date(2026, 4, 15, 12, 0, 0)
+    vi.setSystemTime(systemNow)
+    const expiresAt = new Date(2026, 4, 20, 12, 0, 0).toISOString()
+    const resetAt = new Date(systemNow.getTime() + 2 * 3600000 + 5 * 60000).toISOString()
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        mode: 'quota_limited',
+        isValid: true,
+        status: 'active',
+        quota: {
+          limit: 10,
+          used: 1,
+          remaining: 9,
+          unit: 'USD',
+        },
+        expires_at: expiresAt,
+        days_until_expiry: 5,
+        rate_limits: [
+          { window: '5h', limit: 5, used: 1, reset_at: resetAt },
+          { window: '1d', limit: 10, used: 2, reset_at: resetAt },
+          { window: '7d', limit: 20, used: 3, reset_at: resetAt },
+        ],
+        usage: {
+          today: {},
+          total: {},
+          rpm: 0,
+          tpm: 0,
+        },
+        daily_usage: [],
+      }),
+    } as Response)
+
+    const wrapper = mount(KeyUsageView, {
+      global: {
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: true,
+          Icon: true,
+        },
+      },
+    })
+
+    await wrapper.find('input').setValue('sk-test-key')
+    await wrapper.find('input').trigger('keydown.enter')
+    await flushPromises()
+    await nextTick()
+
+    const expectedRussianDate = new Date(expiresAt).toLocaleDateString('ru-RU', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    const englishDate = new Date(expiresAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    const text = wrapper.text()
+
+    expect(text).toContain(expectedRussianDate)
+    expect(text).not.toContain(englishDate)
+    expect(text).toContain('Used Quota (5 ч)')
+    expect(text).toContain('Used Quota (д)')
+    expect(text).toContain('Used Quota (7 д)')
+    expect(text).toContain('2 ч 5 мин')
+    expect(String(vi.mocked(fetch).mock.calls.at(-1)?.[0])).toContain('days=30')
 
     wrapper.unmount()
   })
