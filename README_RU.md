@@ -28,7 +28,7 @@
 - [Сообщить о проблеме](https://github.com/YLeon2007/sub2api/issues)
 - [Оригинальный upstream](https://github.com/Wei-Shaw/sub2api)
 
-Текущий русифицированный релиз: `v0.1.182-ru.1`.
+Текущий русифицированный релиз: `v0.1.183-ru.1`.
 
 ## Партнёры
 
@@ -113,7 +113,7 @@ underscores_in_headers on;
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.182-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in
@@ -146,7 +146,7 @@ sudo journalctl -u sub2api -f
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.182-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected uninstaller? [y/N] " confirm
 case "$confirm" in
@@ -170,7 +170,7 @@ mkdir -p sub2api-deploy
 cd sub2api-deploy
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.182-ru.1/deploy/docker-deploy.sh
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -188,7 +188,7 @@ docker compose logs -f sub2api
 По умолчанию используется immutable образ:
 
 ```text
-ghcr.io/yleon2007/sub2api:0.1.182-ru.1
+ghcr.io/yleon2007/sub2api:0.1.183-ru.1
 ```
 
 #### Ручная установка
@@ -263,7 +263,7 @@ go build -tags embed -ldflags="-X main.Version=${VERSION}" -o sub2api ./cmd/serv
 Используйте только конкретный immutable тег:
 
 ```bash
-docker pull ghcr.io/yleon2007/sub2api:0.1.182-ru.1
+docker pull ghcr.io/yleon2007/sub2api:0.1.183-ru.1
 docker compose up -d --no-deps --force-recreate sub2api
 ```
 
