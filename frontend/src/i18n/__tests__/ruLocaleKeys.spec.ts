@@ -493,6 +493,29 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.groups.modelPricing.longContextHint).toContain('long-context billing явно включён на аккаунте')
   })
 
+  it('preserves the added v0.1.180 reset-credit, plugin, diagnostic, and time-pricing semantics in Russian', () => {
+    expect(ru.admin.accounts.autoResetCredit.title).toContain('reset-кредиты')
+    expect(ru.admin.accounts.autoResetCredit.hint).toContain('По умолчанию отключено')
+    expect(ru.admin.accounts.autoResetCredit.thresholdInvalid).toContain('0,1%')
+    expect(ru.admin.accounts.openaiQuotaReset.autoStatus.noCredit).toBe('Нет кредита')
+    expect(ru.admin.accounts.cnProviders.probe).toBe('Запросить')
+
+    expect(ru.admin.channels.form.timePricingWeekdaysOnly).toContain('будни')
+    expect(ru.admin.channels.form.timePricingEveryDay).toContain('включая выходные')
+    expect(ru.modelPlaza.table.tierHintMarginal).toContain('Только часть сверх порога')
+    expect(ru.modelPlaza.table.timePricingRowHintWeekdays).toContain('будням')
+
+    expect(ru.admin.ops.errorDetail.diagnosticPayloads).toBe('Диагностические payload-ы')
+    expect(ru.admin.ops.errorDetail.payloads.upstream_detail).toBe('Детали upstream')
+    expect(ru.admin.users.concurrencyNonNegative).toContain('0 = без лимита')
+    expect(ru.admin.users).not.toHaveProperty('concurrencyMin')
+
+    expect(ru.nav.plugins).toBe('Плагины')
+    expect(ru.admin.plugins.description).toContain('изолированными OAuth-плагинами')
+    expect(ru.admin.plugins.runtimeNotice).toContain('обычно не требуют перезапуска host')
+    expect(ru.admin.settings.features.pluginManagement.enabledHint).toContain('не останавливаются')
+  })
+
   it('does not expose source-language labels on Russian admin surfaces', () => {
     expect(ru.admin.availableChannels.description).toBe(
       'Сводный вид каждого канала, связанных групп и поддерживаемых моделей с раскрытыми шаблонами'

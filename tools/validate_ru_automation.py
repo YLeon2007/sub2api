@@ -31,7 +31,7 @@ SECRET_REF_RE = re.compile(r"secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 WRITE_PERMISSION_RE = re.compile(r"^\s*(actions|checks|contents|deployments|id-token|issues|packages|pages|pull-requests|security-events|statuses)\s*:\s*write\s*$", re.M)
 ACTION_REF_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*[^@\s]+@([^\s#]+)", re.M)
 APPROVED_GORELEASER_DOCKERFILE_SHA256 = "761adda9fccae39a4c07b16c938f640818e561cf782f71ea5116aa70ef1e24e8"
-APPROVED_DEPLOY_COMPOSE_SHA256 = "aac4fc88bf1e0b111a6689b17dd184737b717b5a744f4928fcfa94f66ddd71c8"
+APPROVED_DEPLOY_COMPOSE_SHA256 = "e2c61f49d31f1e241d14834e3497d692fb8110646d3c4a99389297d1d210be16"
 RU_VERSION_RE = re.compile(
     r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-ru\.[1-9]\d*"
 )
@@ -1287,25 +1287,25 @@ def validate_dompurify_security_texts(
     dependencies = package.get("dependencies") or {}
     overrides = (package.get("pnpm") or {}).get("overrides") or {}
     require(
-        dependencies.get("dompurify") == "^3.4.13",
-        "frontend/package.json: direct DOMPurify security boundary must start at 3.4.13",
+        dependencies.get("dompurify") == "^3.4.14",
+        "frontend/package.json: direct DOMPurify security boundary must start at 3.4.14",
         errors,
     )
     require(
-        overrides.get("dompurify@<3.4.13") == "3.4.13",
-        "frontend/package.json: transitive DOMPurify instances below 3.4.13 must be overridden",
+        overrides.get("dompurify@<3.4.14") == ">=3.4.14",
+        "frontend/package.json: transitive DOMPurify instances below 3.4.14 must be overridden",
         errors,
     )
     versions = re.findall(r"(?m)^  dompurify@(\d+)\.(\d+)\.(\d+):$", lockfile)
     require(bool(versions), "frontend/pnpm-lock.yaml: missing DOMPurify resolution", errors)
     require(
-        bool(versions) and all(tuple(map(int, version)) >= (3, 4, 13) for version in versions),
-        "frontend/pnpm-lock.yaml: vulnerable DOMPurify resolution below 3.4.13",
+        bool(versions) and all(tuple(map(int, version)) >= (3, 4, 14) for version in versions),
+        "frontend/pnpm-lock.yaml: vulnerable DOMPurify resolution below 3.4.14",
         errors,
     )
     require(
         "pins every direct and transitive runtime instance" in regression_test
-        and "dompurify@<3.4.13" in regression_test
+        and "dompurify@<3.4.14" in regression_test
         and "does not enable the DOM-object IN_PLACE sanitization mode" in regression_test,
         "dompurifyResolution.spec.ts: missing sanitizer version/IN_PLACE regressions",
         errors,
@@ -1662,7 +1662,7 @@ def self_test() -> None:
         "",
         "",
         "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md",
-        "0.1.179-ru.1",
+        "0.1.180-ru.1",
         unsafe_integrity_errors,
     )
     assert any("substring selection" in error for error in unsafe_integrity_errors)
@@ -1677,7 +1677,7 @@ def self_test() -> None:
     assert any("immutable fork release" in error for error in unsafe_integrity_errors)
 
     safe_integrity_errors: list[str] = []
-    safe_ru_payment = "https://github.com/YLeon2007/sub2api/blob/v0.1.179-ru.1/docs/PAYMENT_RU.md"
+    safe_ru_payment = "https://github.com/YLeon2007/sub2api/blob/v0.1.180-ru.1/docs/PAYMENT_RU.md"
     validate_updater_installer_integrity_texts(
         "selectReleaseAssets(version\nexpected exactly one checksums.txt\n",
         "checksum_match_count\nExpected exactly one checksum\n"
@@ -1701,7 +1701,7 @@ def self_test() -> None:
         "https://user@github.com\nhttps://github.com:443\nhttps://github.com.evil.example\nhttps://evil.githubusercontent.com\n"
         "TRAP_PWNED\nORIGINAL\n",
         safe_ru_payment + "\n" + safe_ru_payment + "#поддерживаемые-провайдеры\n",
-        "0.1.179-ru.1",
+        "0.1.180-ru.1",
         safe_integrity_errors,
     )
     assert not safe_integrity_errors
@@ -1722,13 +1722,13 @@ def self_test() -> None:
     validate_dompurify_security_texts(
         json.dumps(
             {
-                "dependencies": {"dompurify": "^3.4.13"},
-                "pnpm": {"overrides": {"dompurify@<3.4.13": "3.4.13"}},
+                "dependencies": {"dompurify": "^3.4.14"},
+                "pnpm": {"overrides": {"dompurify@<3.4.14": ">=3.4.14"}},
             }
         ),
-        "  dompurify@3.4.13:\n",
+        "  dompurify@3.4.14:\n",
         "pins every direct and transitive runtime instance\n"
-        "dompurify@<3.4.13\n"
+        "dompurify@<3.4.14\n"
         "does not enable the DOM-object IN_PLACE sanitization mode\n",
         safe_dompurify_errors,
     )
@@ -2611,14 +2611,14 @@ jobs:
             ),
             "frontend/package.json": json.dumps(
                 {
-                    "dependencies": {"dompurify": "^3.4.13"},
-                    "pnpm": {"overrides": {"dompurify@<3.4.13": "3.4.13"}},
+                    "dependencies": {"dompurify": "^3.4.14"},
+                    "pnpm": {"overrides": {"dompurify@<3.4.14": ">=3.4.14"}},
                 }
             ),
-            "frontend/pnpm-lock.yaml": "  dompurify@3.4.13:\n",
+            "frontend/pnpm-lock.yaml": "  dompurify@3.4.14:\n",
             "frontend/src/security/__tests__/dompurifyResolution.spec.ts": (
                 "pins every direct and transitive runtime instance\n"
-                "dompurify@<3.4.13\n"
+                "dompurify@<3.4.14\n"
                 "does not enable the DOM-object IN_PLACE sanitization mode\n"
             ),
             "docs/ADMIN_PAYMENT_INTEGRATION_API.md": (

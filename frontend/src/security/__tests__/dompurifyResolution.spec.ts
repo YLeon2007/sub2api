@@ -29,16 +29,16 @@ function sourceFiles(root: string): string[] {
 }
 
 describe('DOMPurify security boundary', () => {
-  it('pins every direct and transitive runtime instance to 3.4.13 or newer', () => {
-    expect(packageJson.dependencies.dompurify).toBe('^3.4.13')
-    expect(packageJson.pnpm.overrides['dompurify@<3.4.13']).toBe('3.4.13')
+  it('pins every direct and transitive runtime instance to 3.4.14 or newer', () => {
+    expect(packageJson.dependencies.dompurify).toBe('^3.4.14')
+    expect(packageJson.pnpm.overrides['dompurify@<3.4.14']).toBe('>=3.4.14')
 
     const resolvedVersions = Array.from(
       lockfile.matchAll(/^ {2}dompurify@(\d+\.\d+\.\d+):$/gm),
       (match) => match[1],
     )
     expect(resolvedVersions.length).toBeGreaterThan(0)
-    expect(resolvedVersions.every((version) => atLeast(version, [3, 4, 13]))).toBe(true)
+    expect(resolvedVersions.every((version) => atLeast(version, [3, 4, 14]))).toBe(true)
   })
 
   it('does not enable the DOM-object IN_PLACE sanitization mode', () => {

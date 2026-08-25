@@ -441,7 +441,8 @@ export const ruOverrides = {
     "securityAudit": "Аудит безопасности",
     "contentModeration": "Модерация контента",
     "promptAudit": "Аудит промптов",
-    "auditLogs": "Журнал аудита"
+    "auditLogs": "Журнал аудита",
+    "plugins": "Плагины"
   },
   "auth": {
     "welcomeBack": "С возвращением",
@@ -1137,8 +1138,8 @@ export const ruOverrides = {
         "total": "Всего",
         "7dSonnet": "7 д Sonnet",
         "7dFable": "7 д Fable"
-        },
-        "errors": {
+      },
+      "errors": {
         "authenticationFailed": "Ошибка аутентификации",
         "authenticationFailedHttp": "Ошибка аутентификации (HTTP {status})",
         "apiError": "Ошибка API",
@@ -1159,8 +1160,8 @@ export const ruOverrides = {
         "noData": "Сервис usage (расхода) не вернул данные",
         "probeFailed": "Quota probe (проверка квоты) завершился ошибкой",
         "generic": "Диагностика quota (квоты) недоступна"
-        }
-        },
+      }
+    },
     "extraModelsHeader": "Дополнительные модели",
     "extraModelsEmpty": "Нет дополнительных моделей",
     "latencyEmpty": "-",
@@ -1504,7 +1505,8 @@ export const ruOverrides = {
     "detail": {
       "noModels": "Для этой группы модели не настроены",
       "noPricing": "Цены не настроены",
-      "peakNote": "Пиковые часы {window}: тариф ×{multiplier}"
+      "peakNote": "Пиковые часы {window}: тариф ×{multiplier}",
+      "longContextDisabledNote": "Цены tier-ов long-context отключены для этой группы: запросы выше порога тарифицируются по базовому tier; официальные tier-ы приведены только для справки"
     },
     "table": {
       "model": "Модель",
@@ -1520,7 +1522,17 @@ export const ruOverrides = {
       "perUnitRequest": "/ запрос",
       "perUnitImage": "/ изображение",
       "perRequest": "За запрос",
-      "perImage": "За изображение"
+      "perImage": "За изображение",
+      "cacheReadShort": "Ч",
+      "cacheWriteShort": "З",
+      "marginalBadge": "tier-ы только на превышение",
+      "tierHint": "Весь запрос тарифицируется по tier-у, соответствующему его общему контексту (input + cache write + cache read)",
+      "tierHintMarginal": "Только часть сверх порога тарифицируется по этому tier-у; output не меняется",
+      "timePricingRateHint": "Эффективный тариф {rate} × множитель периода {multiplier}",
+      "timePricingRowHint": "Запросы в этот период (время {timezone}) тарифицируются по ценам этой строки",
+      "timePricingRowHintPeak": "; цены в этой строке не включают пиковый тариф — там, где период пересекается с пиковыми часами {window}, пересекающаяся часть дополнительно умножается на ×{multiplier}",
+      "timePricingRowHintWeekdays": "Только по будням (пн–пт): запросы в этот период (время {timezone}) тарифицируются по ценам этой строки; в выходные действуют стандартные цены",
+      "timePricingWeekdays": "Будни"
     },
     "nav": {
       "login": "Войти",
@@ -2573,7 +2585,9 @@ export const ruOverrides = {
         "selectStatus": "Выберите статус",
         "rpmLimit": "Запросов в минуту (RPM)",
         "rpmLimitPlaceholder": "0 = без лимита",
-        "rpmLimitHint": "Максимум запросов в минуту для пользователя; 0 = без лимита. Используется как резерв, если у группы не задан rpm_limit."
+        "rpmLimitHint": "Максимум запросов в минуту для пользователя; 0 = без лимита. Используется как резерв, если у группы не задан rpm_limit.",
+        "concurrencyHint": "Максимальное число одновременных запросов для этого пользователя; 0 = без лимита.",
+        "concurrencyPlaceholder": "0 = без лимита"
       },
       "columns": {
         "user": "Пользователь",
@@ -2636,7 +2650,6 @@ export const ruOverrides = {
       "failedToToggle": "Не удалось обновить статус пользователя",
       "failedToLoadApiKeys": "Не удалось загрузить API-ключи пользователя",
       "emailRequired": "Введите email",
-      "concurrencyMin": "Параллелизм должен быть не меньше 1",
       "amountRequired": "Введите корректную сумму",
       "insufficientBalance": "Недостаточно баланса",
       "adjustBalance": "Изменить баланс",
@@ -2818,7 +2831,8 @@ export const ruOverrides = {
         "cellColumnTooltip": "Показаны только платформы с лимитом",
         "subscriptionWarning": "У пользователя активная подписка. Квоты платформ применяются только к запросам в режиме баланса (standard); запросы по подписке этими лимитами не ограничены.",
         "invalidNumber": "В этих полях некорректные числа. Исправьте перед сохранением: {fields}"
-      }
+      },
+      "concurrencyNonNegative": "Параллелизм не может быть отрицательным; 0 = без лимита"
     },
     "groups": {
       "title": "Управление группами",
@@ -3456,7 +3470,10 @@ export const ruOverrides = {
         "syncingModels": "Синхронизация...",
         "syncModelsSuccess": "Синхронизировано новых моделей: {count}",
         "syncModelsAlreadyUpToDate": "Модели уже актуальны",
-        "syncModelsError": "Не удалось синхронизировать модели"
+        "syncModelsError": "Не удалось синхронизировать модели",
+        "timePricingDayScope": "Дни действия",
+        "timePricingWeekdaysOnly": "Только будни (понедельник–пятница)",
+        "timePricingEveryDay": "Каждый день (понедельник–воскресенье, включая выходные)"
       }
     },
     "riskControl": {
@@ -4133,7 +4150,9 @@ export const ruOverrides = {
         "probeTooltip": "Запросить quota endpoint провайдера для расхода в скользящих окнах 5 часов / неделя",
         "balanceLow": "Недостаточно баланса",
         "noBalanceEndpoint": "У этой платформы нет endpoint для запроса баланса",
-        "resetSoon": "скоро сброс"
+        "resetSoon": "скоро сброс",
+        "balanceProbeTooltip": "Запросить endpoint баланса провайдера для баланса аккаунта",
+        "probe": "Запросить"
       },
       "types": {
         "oauth": "OAuth",
@@ -5409,7 +5428,15 @@ export const ruOverrides = {
         "resetAccountRefreshFailed": "Окно, состояние аккаунта и кэш reset-кредитов обновлены, но загрузить актуальные данные аккаунта не удалось.",
         "refreshCachePersistFailed": "Показано актуальное число, но сведения о сроках действия недоступны, поэтому сохранены прежние данные кэша.",
         "confirmTitle": "Подтвердите сброс недельного лимита",
-        "confirmMessage": "Будет потрачен 1 reset-кредит для немедленного восстановления текущего окна (осталось {count}). Это действие нельзя отменить. Продолжить?"
+        "confirmMessage": "Будет потрачен 1 reset-кредит для немедленного восстановления текущего окна (осталось {count}). Это действие нельзя отменить. Продолжить?",
+        "autoStatus": {
+          "checking": "Проверка",
+          "available": "Кредит доступен",
+          "resetting": "Автосброс выполняется",
+          "success": "Автосброс выполнен",
+          "noCredit": "Нет кредита",
+          "failed": "Автосброс не удался"
+        }
       },
       "tier": {
         "free": "Free",
@@ -5443,7 +5470,15 @@ export const ruOverrides = {
       "audioPreview": "Сгенерированное аудио:",
       "audioReceived": "Получено тестовое аудио #{count}",
       "videoPreview": "Сгенерированное видео:",
-      "videoReceived": "Получено тестовое видео #{count}"
+      "videoReceived": "Получено тестовое видео #{count}",
+      "autoResetCredit": {
+        "title": "Автоматически использовать reset-кредиты",
+        "hint": "Использует доступный кредит с самым ранним сроком только когда фактическое использование достигает порога. По умолчанию отключено; аккаунт остаётся на паузе, если кредит недоступен или сброс не удался.",
+        "threshold5h": "Порог автосброса 5 ч (%)",
+        "threshold7d": "Порог автосброса 7 д (%)",
+        "thresholdHint": "Каждое окно оценивается независимо. Введите 0,1–100; по умолчанию оба — 100.",
+        "thresholdInvalid": "Пороги автоматического использования reset-кредитов должны быть от 0,1% до 100%."
+      }
     },
     "scheduledTests": {
       "title": "Плановые проверки",
@@ -6400,7 +6435,17 @@ export const ruOverrides = {
         "suggestPlatform": "Ошибка платформы: приоритизируйте расследование и исправление",
         "suggestGeneric": "Смотрите детали для дополнительного контекста",
         "apiKeyPrefix": "Префикс ключа",
-        "keyDeletedBadge": "Ключ удалён"
+        "keyDeletedBadge": "Ключ удалён",
+        "backToList": "Назад к списку",
+        "upstreamStatus": "Статус upstream",
+        "rootCause": "Первопричина",
+        "diagnosticPayloads": "Диагностические payload-ы",
+        "payloads": {
+          "client": "Ответ клиенту",
+          "upstream_message": "Сообщение upstream",
+          "upstream_detail": "Детали upstream",
+          "upstream_events": "События upstream"
+        }
       },
       "requestDetails": {
         "title": "Детали запроса",
@@ -6938,6 +6983,12 @@ export const ruOverrides = {
             "placeholder": "e.g. 30",
             "clearHint": "Отправка пустого значения очистит эксклюзивную ставку для выбранных пользователей."
           }
+        },
+        "pluginManagement": {
+          "title": "Управление плагинами",
+          "description": "Управляет тем, показывается ли пункт управления плагинами в боковой панели администратора. Этот переключатель не управляет runtime-состоянием плагинов.",
+          "enabled": "Показывать управление плагинами",
+          "enabledHint": "Отключение только скрывает пункт боковой панели; загруженные или запущенные плагины не останавливаются."
         }
       },
       "emailTabDisabledTitle": "Подтверждение email не включено",
@@ -8444,6 +8495,72 @@ export const ruOverrides = {
         "prompt_audit_endpoint_required": "Включите хотя бы один узел аудита.",
         "prompt_audit_groups_required": "Выберите хотя бы одну группу.",
         "prompt_audit_scanners_required": "Включите хотя бы одну категорию риска."
+      }
+    },
+    "plugins": {
+      "title": "Управление плагинами",
+      "description": "Устанавливайте и управляйте изолированными OAuth-плагинами исходящего транспорта. Потоки API Key не меняются.",
+      "upload": "Установить плагин",
+      "uploadHint": "Принимаются только пакеты .s2plugin; по умолчанию требуются подписи доверенного издателя.",
+      "runtimeNotice": "Установка, включение/отключение и настройка плагинов обрабатываются динамически host-ом Sub2API и обычно не требуют перезапуска host. Перезапускайте только когда меняется версия host или его конфигурация по вашему процессу развёртывания.",
+      "menuNotice": "Переключатель «Управление плагинами» в системных настройках управляет только видимостью в боковой панели; он не останавливает загруженные или запущенные плагины.",
+      "empty": "Плагины не установлены",
+      "emptyHint": "Выберите локальный пакет .s2plugin. Sub2API никогда не скачивает сторонние плагины автоматически.",
+      "configure": "Настроить",
+      "enable": "Включить",
+      "disable": "Отключить",
+      "test": "Проверить",
+      "uninstall": "Удалить",
+      "rollout": "Процент OAuth-трафика",
+      "compatibility": "Совместимость версий",
+      "currentVersion": "Текущий Sub2API",
+      "requiredVersion": "Требуемый диапазон",
+      "recommendedVersion": "Рекомендуемая версия",
+      "signature": "Подпись пакета",
+      "trusted": "Проверен",
+      "unsigned": "Без подписи",
+      "runtime": "Runtime",
+      "healthy": "Исправен",
+      "unhealthy": "Не запущен",
+      "compatible": "Совместим",
+      "untested": "Непроверенная версия",
+      "incompatible": "Несовместим",
+      "enabled": "Включён",
+      "disabled": "Отключён",
+      "error": "Ошибка",
+      "starting": "Запускается",
+      "configTitle": "Конфигурация {name}",
+      "loadingUI": "Загрузка UI конфигурации плагина...",
+      "uiUnavailable": "Не удалось загрузить UI конфигурации плагина",
+      "uploadSuccess": "Плагин установлен и оставлен отключённым",
+      "enableSuccess": "Плагин включён",
+      "disableSuccess": "Плагин отключён",
+      "uninstallSuccess": "Плагин удалён",
+      "testSuccess": "Проверка плагина пройдена",
+      "confirmDisable": "Отключить этот плагин? Новые OAuth-запросы сразу вернутся на встроенный путь Sub2API.",
+      "confirmUninstall": "Удалить этот плагин? Сначала его нужно отключить. Установленные файлы и конфигурация будут удалены.",
+      "confirmUntested": "Плагин совместим, но не объявил текущую версию Sub2API как протестированную. Всё равно включить?",
+      "fileRequired": "Выберите файл .s2plugin",
+      "bridgeRejected": "Проверка сообщения UI плагина не пройдена",
+      "onlyOpenAI": "Начальная возможность: только исходящий транспорт OpenAI OAuth",
+      "noAccountCoupling": "Область действия — платформа и тип аккаунта. Записи аккаунтов не меняются, отдельный переключатель на аккаунте не требуется.",
+      "messages": {
+        "compatibleTested": "Плагин объявил текущую версию Sub2API как протестированную.",
+        "compatibleUntested": "Диапазон версий совместим, но плагин не объявил текущую версию Sub2API как протестированную.",
+        "incompatibleProtocol": "Версия протокола плагина несовместима с этим host Sub2API.",
+        "incompatibleVersion": "Текущий Sub2API {current} не удовлетворяет требованию плагина {required}.",
+        "runtimeRunning": "Процесс плагина запущен.",
+        "runtimeStateUnavailable": "Состояние включения плагина временно недоступно.",
+        "runtimeStartingElsewhere": "Плагин запускается на другом инстансе.",
+        "multipleOpenAIEnabled": "Одновременно включено несколько исходящих плагинов OpenAI OAuth.",
+        "startupTimedOutDisabled": "Запуск плагина превысил timeout; плагин автоматически возвращён в отключённое состояние.",
+        "disableBeforeReplace": "Сначала отключите текущий плагин, затем загрузите новую версию с тем же ID.",
+        "installationMissing": "Запись установки плагина пуста.",
+        "artifactMissing": "Исходный пакет плагина отсутствует; загрузите плагин повторно.",
+        "artifactMismatch": "Пакет плагина в базе данных не совпадает с записью установки.",
+        "installPathRejected": "Каталог установки плагина находится вне управляемого каталога.",
+        "runtimeNotDeclared": "Плагин не объявил runtime для текущей платформы.",
+        "backendDiagnostic": "Диагностика backend: {message}"
       }
     }
   },
