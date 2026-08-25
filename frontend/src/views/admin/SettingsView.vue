@@ -8844,7 +8844,7 @@ const paymentGuideHref = computed(() => {
     return "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md";
   }
   if (isRuLocale.value) {
-    return "https://github.com/YLeon2007/sub2api/blob/v0.1.181-ru.1/docs/PAYMENT_RU.md";
+    return "https://github.com/YLeon2007/sub2api/blob/v0.1.182-ru.1/docs/PAYMENT_RU.md";
   }
   return "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md";
 });
@@ -8854,7 +8854,7 @@ const paymentMethodsHref = computed(() => {
     return "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式";
   }
   if (isRuLocale.value) {
-    return "https://github.com/YLeon2007/sub2api/blob/v0.1.181-ru.1/docs/PAYMENT_RU.md#поддерживаемые-провайдеры";
+    return "https://github.com/YLeon2007/sub2api/blob/v0.1.182-ru.1/docs/PAYMENT_RU.md#поддерживаемые-провайдеры";
   }
   return "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md#supported-payment-methods";
 });

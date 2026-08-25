@@ -121,9 +121,9 @@ UI 是插件包内的静态页面，不需要修改 Sub2API 前端源码。宿�
   "name": "Example OpenAI Transport",
   "version": "0.1.0",
   "requires": {
-    "sub2api": ">=0.1.181-ru.1 <0.2.0",
-    "recommended_sub2api_version": "0.1.181-ru.1",
-    "tested_sub2api_versions": ["0.1.181-ru.1"],
+    "sub2api": ">=0.1.182-ru.1 <0.2.0",
+    "recommended_sub2api_version": "0.1.182-ru.1",
+    "tested_sub2api_versions": ["0.1.182-ru.1"],
     "plugin_protocol": 1,
     "transport_api": 1,
     "ui_bridge": 1
