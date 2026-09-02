@@ -7,6 +7,7 @@ import GroupsView from '@/views/admin/GroupsView.vue'
 
 const {
   listGroups,
+  createGroup,
   duplicateGroup,
   updateGroup,
   getModelsListCandidates,
@@ -17,6 +18,7 @@ const {
   showError
 } = vi.hoisted(() => ({
   listGroups: vi.fn(),
+  createGroup: vi.fn(),
   duplicateGroup: vi.fn(),
   updateGroup: vi.fn(),
   getModelsListCandidates: vi.fn(),
@@ -37,7 +39,7 @@ vi.mock('@/api/admin', () => ({
       getCapacitySummary,
       getLiveCapability,
       getAll: vi.fn(),
-      create: vi.fn(),
+      create: createGroup,
       update: updateGroup,
       delete: vi.fn(),
       updateSortOrder: vi.fn()
@@ -130,7 +132,7 @@ const AppLayoutStub = defineComponent({
 })
 
 const TablePageLayoutStub = defineComponent({
-  template: '<section><slot name="filters" /><slot name="table" /><slot name="pagination" /></section>'
+  template: '<section><slot name="header-actions" /><slot name="filters" /><slot name="table" /><slot name="pagination" /></section>'
 })
 
 const DataTableStub = defineComponent({
@@ -178,6 +180,7 @@ describe('GroupsView duplicate action', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     for (const fn of [
       listGroups,
+      createGroup,
       duplicateGroup,
       updateGroup,
       getModelsListCandidates,
@@ -304,6 +307,29 @@ describe('GroupsView duplicate action', () => {
     await flushPromises()
 
     expect(updateGroup).toHaveBeenCalledTimes(1)
+    expect(showError).toHaveBeenCalledWith('localized group name conflict')
+    wrapper.unmount()
+  })
+
+  it('shows the localized standardized API reason when creating a group fails', async () => {
+    createGroup.mockRejectedValueOnce({
+      status: 409,
+      code: 409,
+      message: 'group name already exists',
+      reason: 'GROUP_EXISTS'
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    const createButton = wrapper.findAll('button').find((button) => button.text() === 'admin.groups.createGroup')
+    expect(createButton).toBeTruthy()
+    await createButton!.trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-tour="group-form-name"]').setValue('Primary')
+    await wrapper.get('#create-group-form').trigger('submit')
+    await flushPromises()
+
+    expect(createGroup).toHaveBeenCalledTimes(1)
     expect(showError).toHaveBeenCalledWith('localized group name conflict')
     wrapper.unmount()
   })

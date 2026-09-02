@@ -34,8 +34,18 @@
 
 <table>
 <tr>
+<td width="180"><a href="https://codex-everywhere.com"><img src="assets/partners/logos/codex-everywhere.jpg" alt="CodexEverywhere" width="150"></a></td>
+<td>Серия GPT-5.6 по цене 3% от тарифа OpenAI — <a href="https://codex-everywhere.com">CodexEverywhere</a> делает frontier models (передовые модели) доступнее разработчикам по всему миру. Сервис заявляет transparency (прозрачность) и honesty (честность), а качество моделей в течение нескольких месяцев проверяется active community oversight (активным контролем сообщества). Поддерживаются USD и crypto (криптовалюта). Начать можно с бесплатного trial (пробного баланса) $20 на <a href="https://codex-everywhere.com">codex-everywhere.com</a>.</td>
+</tr>
+
+<tr>
 <td width="180"><a href="https://go.apimart.ai/gh-sub2api"><img src="assets/partners/logos/apimart.jpg" alt="APIMart" width="150"></a></td>
 <td>Спасибо APIMart за поддержку проекта. <a href="https://go.apimart.ai/gh-sub2api">APIMart</a> — низкозатратная API platform (платформа API) для генерации AI image/video (изображений и видео): GPT-Image-2 от $0.006 за изображение, более 160 изображений за $1. Один async API (асинхронный API) покрывает изображения и видео: отправьте task (задачу), получите ID и заберите результат через polling (опрос) или callback (обратный вызов). Подходит для batch (пакетной) генерации десятков тысяч изображений без timeout (тайм-аута), переключение моделей не требует изменения кода. Pay as you go (оплата по факту использования), без ежемесячной платы — <a href="https://go.apimart.ai/gh-sub2api">зарегистрироваться можно здесь</a>.</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://www.axisnow.io/"><img src="assets/partners/logos/axisnow.jpg" alt="AxisNow" width="150"></a></td>
+<td>Спасибо AxisNow за поддержку проекта. <a href="https://www.axisnow.io/">AxisNow</a> защищает и ускоряет websites и API (сайты и программные интерфейсы), улучшая доступ из материкового Китая и других регионов. Через client SDK (клиентский комплект разработки) сервис распространяет acceleration/security (ускорение и защиту) на native/mobile apps (нативные и мобильные приложения): <strong>self-hosted private-deployment CDN</strong> (частная CDN в собственной инфраструктуре) | <strong>subscription-based DDoS-protected CDN</strong> (подписная CDN с DDoS-защитой) | <strong>autonomous, flexibly composable CDN network</strong> (автономно управляемая и гибко составляемая CDN-сеть).</td>
 </tr>
 </table>
 

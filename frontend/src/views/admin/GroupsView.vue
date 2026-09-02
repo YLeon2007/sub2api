@@ -6250,7 +6250,14 @@ const handleCreateGroup = async () => {
       onboardingStore.nextStep(500);
     }
   } catch (error: any) {
-    appStore.showError(t("admin.groups.failedToCreate"));
+    appStore.showError(
+      extractI18nErrorMessage(
+        error,
+        t,
+        "admin.groups.errors",
+        t("admin.groups.failedToCreate"),
+      ),
+    );
     console.error("Error creating group:", error);
     // Don't advance tour on error
   } finally {
