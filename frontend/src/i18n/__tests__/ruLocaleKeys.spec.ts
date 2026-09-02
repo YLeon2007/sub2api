@@ -233,8 +233,31 @@ describe('Russian locale key coverage', () => {
       'Сброшено окон: {windows}; reset-кредиты и состояние аккаунта обновлены'
     )
     expect(ru.admin.groups.form.maxReasoningEffortHint).toBe(
-      'Ограничивает только явно заданный OpenAI reasoning effort. Для Composite-групп применяется только к запросам, направленным в OpenAI. Более высокие значения уменьшаются; отсутствующее значение не добавляется. Ограничение имеет приоритет над сопоставлениями.'
+      'Ограничивает только явно заданный OpenAI reasoning effort. Для Composite-групп применяется только к запросам, направленным в OpenAI. Отсутствующее значение не добавляется. Ограничение имеет приоритет над сопоставлениями.'
     )
+  })
+
+  it('localizes the reviewed v0.2.0 routing, billing, usage, and setup controls', () => {
+    expect(ru.admin.groups.openaiFast.force).toContain('Fast')
+    expect(ru.admin.groups.openaiFast.hint).toContain('service_tier=priority')
+    expect(ru.admin.groups.openaiFast.freeHint).toContain('Standard')
+    expect(ru.admin.groups.form.maxReasoningEffortOverLimitDowngrade).toContain('понижать')
+    expect(ru.admin.groups.form.maxReasoningEffortOverLimitDeny).toContain('Запрещать')
+    expect([
+      ru.admin.groups.form.reasoningEffortMatchExact,
+      ru.admin.groups.form.reasoningEffortMatchPrefix,
+      ru.admin.groups.form.reasoningEffortMatchSuffix,
+    ]).toEqual(['Точное совпадение', 'Префикс', 'Суффикс'])
+    expect(ru.keys.useKeyModal.deepseek.codexNote).toContain('SUB2API_API_KEY')
+    expect(ru.keys.useKeyModal.composite.codexDescription).toContain('Composite')
+    expect(ru.keys.useKeyModal.routedCodex.configTomlHint).toContain('Codex')
+    expect(ru.keys.useKeyModal.codexModelCatalog.modelsCount).toContain('{count}')
+    expect(ru.usage.nativeCompactionV2).toContain('Compaction')
+    expect(ru.usage.requestedReasoningEffort).toBe('Запрошенный уровень рассуждения')
+    expect(ru.admin.users.restrictPublicGroupsHint).toContain('публичным группам')
+    expect(ru.admin.channels.form.cacheWrite1hPrice).toContain('1 ч')
+    expect(ru.admin.settings.gatewayForwarding.openaiTTFTModeHint).toContain('first_token_ms')
+    expect(ru.admin.accounts.cnProviders.zhipuTeam.help.step3).toContain('/api/biz/v1/organization')
   })
 
   it('preserves the updated v0.1.172 model-audit, Tencent site, and Codex identity semantics in Russian', () => {

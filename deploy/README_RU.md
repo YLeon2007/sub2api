@@ -28,7 +28,7 @@
 | `config.example.yaml` | Полный config reference |
 | `EDGE_SECURITY.md` | Reverse proxy/CDN/WAF/trusted proxy hardening |
 
-Fork defaults используют immutable image `ghcr.io/yleon2007/sub2api:0.1.183-ru.1`. Новые releases требуют явной смены tag; не переводите production на чужой mutable `latest`.
+Fork defaults используют immutable image `ghcr.io/yleon2007/sub2api:0.2.0-ru.1`. Новые releases требуют явной смены tag; не переводите production на чужой mutable `latest`.
 
 ## Docker: preparation script
 
@@ -39,7 +39,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/docker-deploy.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/docker-deploy.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.0-ru.1/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -112,6 +112,14 @@ Image tag остаётся reproducible source of truth. После web UI updat
 ## Первый запуск и migrations
 
 При `AUTO_SETUP=true` приложение подключается к PostgreSQL/Redis, применяет forward-only migrations, создаёт initial admin и записывает config в data directory.
+
+### Запуск и восстановление базы данных
+
+Во время запуска Sub2API применяет migrations базы данных. После перезапуска host-системы или Docker daemon PostgreSQL может некоторое время оставаться в режиме recovery/startup. Приложение повторяет временно неудачные подключения и ошибки запуска PostgreSQL с ограниченной экспоненциальной задержкой, а затем автоматически продолжает запуск, когда база данных становится доступна. Ошибки аутентификации, несовпадения checksum migrations, ошибки SQL и другие постоянные проблемы конфигурации или данных приводят к немедленному завершению.
+
+В Compose-примерах readiness PostgreSQL проверяется и через `pg_isready`, и простым SQL-запросом. `depends_on: condition: service_healthy` задаёт порядок зависимостей при новом запуске Compose, но не заменяет повторы на уровне приложения, когда Docker восстанавливает уже существующие контейнеры после перезапуска host-системы.
+
+Для systemd сохраняйте `Restart=always` и `RestartSec` в `sub2api.service`: повторы приложения покрывают временный запуск базы данных, а systemd остаётся supervisor для постоянных завершений процесса. В Kubernetes используйте readiness probe PostgreSQL и сохраняйте механизм повторов запуска Sub2API; liveness probe приложения настраивайте отдельно, чтобы период восстановления базы данных не считался постоянным отказом процесса.
 
 `schema_migrations` хранит filename/checksum. Автоматического down migration нет. До version change:
 
@@ -207,7 +215,7 @@ Apple helper принимает `SERVER_PORT` только в непривиле
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/install.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/install.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.0-ru.1/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in

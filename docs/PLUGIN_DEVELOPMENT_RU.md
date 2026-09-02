@@ -121,9 +121,9 @@ UI — это статическая страница внутри пакета,
   "name": "Example OpenAI Transport",
   "version": "0.1.0",
   "requires": {
-    "sub2api": ">=0.1.183-ru.1 <0.2.0",
-    "recommended_sub2api_version": "0.1.183-ru.1",
-    "tested_sub2api_versions": ["0.1.183-ru.1"],
+    "sub2api": ">=0.2.0-ru.1 <0.3.0",
+    "recommended_sub2api_version": "0.2.0-ru.1",
+    "tested_sub2api_versions": ["0.2.0-ru.1"],
     "plugin_protocol": 1,
     "transport_api": 1,
     "ui_bridge": 1

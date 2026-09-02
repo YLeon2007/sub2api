@@ -28,7 +28,7 @@ This directory contains Linux Docker/systemd deployment assets and an Apple-sili
 | `config.example.yaml` | Full configuration reference |
 | `EDGE_SECURITY.md` | Reverse proxy/CDN/WAF and trusted-proxy hardening |
 
-All fork deployment defaults use the immutable image `ghcr.io/yleon2007/sub2api:0.1.183-ru.1`. Future releases must update the image tag deliberately; do not switch production to a mutable third-party `latest` tag.
+All fork deployment defaults use the immutable image `ghcr.io/yleon2007/sub2api:0.2.0-ru.1`. Future releases must update the image tag deliberately; do not switch production to a mutable third-party `latest` tag.
 
 ## Docker: preparation script
 
@@ -39,7 +39,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/docker-deploy.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/docker-deploy.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.0-ru.1/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -113,6 +113,14 @@ The image tag remains the reproducible source of truth. If a binary was updated 
 
 With `AUTO_SETUP=true`, the application connects to PostgreSQL/Redis, applies forward-only migrations, creates the initial admin when needed and writes configuration under the data directory.
 
+### Startup and database recovery
+
+Sub2API applies database migrations during application startup. PostgreSQL can remain in its recovery/startup phase briefly after a host or Docker daemon restart. The application retries transient PostgreSQL startup and connection errors with bounded exponential backoff, then starts automatically when the database becomes ready. Authentication errors, migration checksum mismatches, SQL errors, and other permanent configuration or data errors fail immediately.
+
+The Compose examples also use a PostgreSQL health check that verifies both server readiness and a simple SQL query. `depends_on: condition: service_healthy` controls dependency ordering for a fresh Compose start, but it does not replace application-level retries when Docker restores existing containers after a host restart.
+
+For systemd deployments, keep `Restart=always` and `RestartSec` configured in `sub2api.service`; the application retries cover transient database startup, while systemd remains the supervisor for permanent process exits. For Kubernetes, use a PostgreSQL readiness probe and retain the Sub2API startup retry behavior; configure the application liveness probe separately so a database recovery period is not treated as a permanent process failure.
+
 Migrations are tracked by filename/checksum in `schema_migrations`. There is no automatic down migration. Before any version change:
 
 1. read release notes and migration delta;
@@ -123,7 +131,7 @@ Migrations are tracked by filename/checksum in `schema_migrations`. There is no 
 
 ## Safe immutable upgrade
 
-Replace `<NEW_RU_VERSION>` only with a published immutable tag from [fork Releases](https://github.com/YLeon2007/sub2api/releases), for example `0.1.183-ru.1`.
+Replace `<NEW_RU_VERSION>` only with a published immutable tag from [fork Releases](https://github.com/YLeon2007/sub2api/releases), for example `0.2.0-ru.1`.
 
 1. Update the `image:` field in the selected Compose file:
 
@@ -209,7 +217,7 @@ The Apple helper validates `SERVER_PORT` in the non-privileged range `1025-65535
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/install.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/install.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.0-ru.1/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in

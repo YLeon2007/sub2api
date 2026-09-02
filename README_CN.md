@@ -62,6 +62,11 @@
 </tr>
 
 <tr>
+<td width="180"><a href="https://codex-everywhere.com"><img src="assets/partners/logos/codex-everywhere.jpg" alt="CodexEverywhere" width="150"></a></td>
+<td>Real GPT-5.6 series at 3% of OpenAI pricing — <a href="https://codex-everywhere.com">CodexEverywhere</a> is democratizing access to frontier models for developers worldwide. We believe in transparency and honesty, with model quality verified by active community oversight for months. USD and crypto friendly. Start with a free $20 trial at <a href="https://codex-everywhere.com">codex-everywhere.com</a>.</td>
+</tr>
+
+<tr>
 <td width="180"><a href="https://shop.bmoplus.com/?utm_source=github"><img src="assets/partners/logos/bmoplus.jpg" alt="bmoplus" width="150"></a></td>
 <td>感谢 BmoPlus 赞助了本项目！BmoPlus 是一家专为AI订阅重度用户打造的可靠 AI 账号代充服务商，提供稳定的 ChatGPT Plus / ChatGPT Pro(全程质保) / Claude Pro / Super Grok / Gemini Pro 的官方代充&成品账号。 通过<a href="https://shop.bmoplus.com/?utm_source=github">BmoPlus AI成品号专卖/代充</a>注册下单的用户，可享GPT 官网订阅一折 的震撼价格！</td>
 </tr>
@@ -172,6 +177,11 @@
 <td>感谢 APIMart 赞助了本项目！<a href="https://go.apimart.ai/gh-sub2api">APIMart</a> 是专注于 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低至 $0.006/张，1 美元可生成 160+ 张图片。图片、视频一套异步 API 通吃：提交任务获取 ID，通过轮询或回调获取结果；批量生成上万张图片也不会超时，切换模型无需修改代码。按量付费、无月费，通过<a href="https://go.apimart.ai/gh-sub2api">此注册链接</a>注册即可开始使用。</td>
 </tr>
 
+<tr>
+<td width="180"><a href="https://www.axisnow.io/"><img src="assets/partners/logos/axisnow.jpg" alt="AxisNow" width="150"></a></td>
+<td>感谢 AxisNow 赞助了本项目！<a href="https://www.axisnow.io/">AxisNow</a> 保护并加速网站与 API，兼顾中国大陆及全球的访问体验，并通过客户端 SDK，将加速与安全能力延伸至原生/移动 App — <strong>自建私有部署 CDN</strong>｜<strong>订阅式高防 CDN</strong>｜<strong>自主可控、灵活组合的 CDN 网络</strong>。</td>
+</tr>
+
 </table>
 
 ## 项目概述
@@ -240,7 +250,7 @@ Nginx 默认会丢弃名称中含下划线的请求头（如 `session_id`），�
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.0-ru.1/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in
@@ -299,7 +309,7 @@ sudo systemctl restart sub2api
 # 卸载
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.0-ru.1/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected uninstaller? [y/N] " confirm
 case "$confirm" in
@@ -331,7 +341,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 # 下载、检查并运行部署准备脚本
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.1.183-ru.1/deploy/docker-deploy.sh
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.0-ru.1/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
