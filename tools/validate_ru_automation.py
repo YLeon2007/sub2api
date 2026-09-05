@@ -134,6 +134,7 @@ def validate_ci(text: str, errors: list[str]) -> None:
     for installer_test in (
         "deploy/tests/install-github-token-test.sh",
         "deploy/tests/install-checksum-integrity-test.sh",
+        "deploy/tests/install-version-identity-test.sh",
     ):
         require(
             text.count(installer_test) == 1,
@@ -231,6 +232,7 @@ def validate_release_workflow(text: str, errors: list[str]) -> None:
     for installer_test in (
         "deploy/tests/install-github-token-test.sh",
         "deploy/tests/install-checksum-integrity-test.sh",
+        "deploy/tests/install-version-identity-test.sh",
     ):
         require(
             text.count(installer_test) == 1,
@@ -1389,6 +1391,36 @@ def validate_russian_document_pairs(repo_root: Path, errors: list[str]) -> None:
         )
 
 
+def validate_go_toolchain_badges(
+    go_mod_text: str,
+    readme_texts: dict[str, str],
+    errors: list[str],
+) -> None:
+    """Require EN/RU Go badges to match the exact backend go directive."""
+    directives = re.findall(
+        r"(?m)^go[ \t]+((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))[ \t]*$",
+        go_mod_text,
+    )
+    require(
+        len(directives) == 1,
+        "backend/go.mod: expected exactly one canonical Go version directive",
+        errors,
+    )
+    if len(directives) != 1:
+        return
+    expected = directives[0]
+    badge_re = re.compile(
+        r"https://img\.shields\.io/badge/Go-([0-9]+\.[0-9]+\.[0-9]+)-00ADD8\.svg"
+    )
+    for name in ("README.md", "README_RU.md"):
+        badges = badge_re.findall(readme_texts.get(name, ""))
+        require(
+            badges == [expected],
+            f"{name}: Go badge must exactly match backend/go.mod version {expected}",
+            errors,
+        )
+
+
 def validate_release_identity(
     repo_root: Path,
     errors: list[str],
@@ -1430,6 +1462,14 @@ def validate_repo(
         errors,
         approved_dockerfile_sha256,
     )
+    validate_go_toolchain_badges(
+        read_text(repo_root / "backend/go.mod"),
+        {
+            "README.md": read_text(repo_root / "README.md"),
+            "README_RU.md": read_text(repo_root / "README_RU.md"),
+        },
+        errors,
+    )
     validate_release_identity(repo_root, errors, approved_compose_sha256)
     validate_fork_documentation(repo_root, errors)
     validate_operator_execution_surfaces(repo_root, errors)
@@ -1452,6 +1492,25 @@ def self_test() -> None:
     from validate_release_binary_identity import self_test as binary_identity_self_test
 
     binary_identity_self_test()
+
+    valid_go_badge = "https://img.shields.io/badge/Go-1.27.0-00ADD8.svg"
+    go_badge_errors: list[str] = []
+    validate_go_toolchain_badges(
+        "module example.invalid/test\n\ngo 1.27.0\n",
+        {"README.md": valid_go_badge, "README_RU.md": valid_go_badge},
+        go_badge_errors,
+    )
+    assert not go_badge_errors
+    stale_go_badge_errors: list[str] = []
+    validate_go_toolchain_badges(
+        "module example.invalid/test\n\ngo 1.27.0\n",
+        {
+            "README.md": valid_go_badge,
+            "README_RU.md": "https://img.shields.io/badge/Go-1.26.5-00ADD8.svg",
+        },
+        stale_go_badge_errors,
+    )
+    assert any("README_RU.md: Go badge" in error for error in stale_go_badge_errors)
 
     def test_compose(version: str) -> str:
         return f"services:\n  sub2api:\n    image: ghcr.io/yleon2007/sub2api:{version}\n"
@@ -2185,6 +2244,7 @@ jobs:
       - run: python tools/validate_ru_automation.py --repo-root .
       - run: bash deploy/tests/install-github-token-test.sh
       - run: bash deploy/tests/install-checksum-integrity-test.sh
+      - run: bash deploy/tests/install-version-identity-test.sh
       - run: |
           {automation_assignment}
           {automation_command}
@@ -2258,6 +2318,7 @@ jobs:
       - run: python tools/validate_ru_automation.py --repo-root .
       - run: bash deploy/tests/install-github-token-test.sh
       - run: bash deploy/tests/install-checksum-integrity-test.sh
+      - run: bash deploy/tests/install-version-identity-test.sh
       - run: |
           version="$(tr -d '\\r\\n' < backend/cmd/server/VERSION)"
           python tools/ru_release_guard.py --tag "v${version}" --skip-git
@@ -2313,6 +2374,7 @@ jobs:
       - run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0 && govulncheck ./... && make test-unit
       - run: bash deploy/tests/install-github-token-test.sh
       - run: bash deploy/tests/install-checksum-integrity-test.sh
+      - run: bash deploy/tests/install-version-identity-test.sh
       - run: python tools/validate_release_binary_identity.py --self-test
       - run: echo tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
       - run: echo moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
@@ -2543,6 +2605,7 @@ jobs:
         fixture_legal_urls = test_legal_urls(fixture_version)
         identity_files = {
             "backend/cmd/server/VERSION": f"{fixture_version}\n",
+            "backend/go.mod": "module example.invalid/sub2api\n\ngo 1.27.0\n",
             "backend/internal/service/update_service.go": (
                 "selectReleaseAssets(version\nexpected exactly one checksums.txt\n"
             ),
@@ -2555,10 +2618,14 @@ jobs:
             "backend/internal/service/admin_compliance.go": fixture_legal_urls,
             "frontend/src/stores/adminCompliance.ts": fixture_legal_urls,
             "frontend/src/components/admin/AdminComplianceDialog.vue": fixture_legal_urls,
-            "README.md": "English | [中文](README_CN.md) | [日本語](README_JA.md) | [Русский](README_RU.md)\n",
+            "README.md": (
+                "https://img.shields.io/badge/Go-1.27.0-00ADD8.svg\n"
+                "English | [中文](README_CN.md) | [日本語](README_JA.md) | [Русский](README_RU.md)\n"
+            ),
             "README_CN.md": "[English](README.md) | 中文 | [日本語](README_JA.md) | [Русский](README_RU.md)\n",
             "README_JA.md": "[English](README.md) | [中文](README_CN.md) | 日本語 | [Русский](README_RU.md)\n",
             "README_RU.md": (
+                "https://img.shields.io/badge/Go-1.27.0-00ADD8.svg\n"
                 "[English](README.md) | [中文](README_CN.md) | [日本語](README_JA.md) | Русский\n"
                 f"Текущий русифицированный релиз: `v{fixture_version}`.\n{fixture_image}\n"
                 + secure_backup_fixture
