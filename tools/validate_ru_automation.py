@@ -31,7 +31,7 @@ SECRET_REF_RE = re.compile(r"secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 WRITE_PERMISSION_RE = re.compile(r"^\s*(actions|checks|contents|deployments|id-token|issues|packages|pages|pull-requests|security-events|statuses)\s*:\s*write\s*$", re.M)
 ACTION_REF_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*[^@\s]+@([^\s#]+)", re.M)
 APPROVED_GORELEASER_DOCKERFILE_SHA256 = "761adda9fccae39a4c07b16c938f640818e561cf782f71ea5116aa70ef1e24e8"
-APPROVED_DEPLOY_COMPOSE_SHA256 = "258837c2515c01fec6dfbff7c8930326fd1814c4d4acf6ebd309786038cbe36a"
+APPROVED_DEPLOY_COMPOSE_SHA256 = "5b916ac4db2f4d908cf2bf7acd187e87367587136fca61c8d443b829513ce47f"
 RU_VERSION_RE = re.compile(
     r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-ru\.[1-9]\d*"
 )
@@ -1721,7 +1721,7 @@ def self_test() -> None:
         "",
         "",
         "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md",
-        "0.2.1-ru.1",
+        "0.2.1-ru.2",
         unsafe_integrity_errors,
     )
     assert any("substring selection" in error for error in unsafe_integrity_errors)
@@ -1736,7 +1736,7 @@ def self_test() -> None:
     assert any("immutable fork release" in error for error in unsafe_integrity_errors)
 
     safe_integrity_errors: list[str] = []
-    safe_ru_payment = "https://github.com/YLeon2007/sub2api/blob/v0.2.1-ru.1/docs/PAYMENT_RU.md"
+    safe_ru_payment = "https://github.com/YLeon2007/sub2api/blob/v0.2.1-ru.2/docs/PAYMENT_RU.md"
     validate_updater_installer_integrity_texts(
         "selectReleaseAssets(version\nexpected exactly one checksums.txt\n",
         "checksum_match_count\nExpected exactly one checksum\n"
@@ -1760,7 +1760,7 @@ def self_test() -> None:
         "https://user@github.com\nhttps://github.com:443\nhttps://github.com.evil.example\nhttps://evil.githubusercontent.com\n"
         "TRAP_PWNED\nORIGINAL\n",
         safe_ru_payment + "\n" + safe_ru_payment + "#поддерживаемые-провайдеры\n",
-        "0.2.1-ru.1",
+        "0.2.1-ru.2",
         safe_integrity_errors,
     )
     assert not safe_integrity_errors

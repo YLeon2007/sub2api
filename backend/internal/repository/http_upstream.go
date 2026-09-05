@@ -198,6 +198,9 @@ func NewHTTPUpstream(cfg *config.Config) service.HTTPUpstream {
 //   - inFlight > 0 的客户端不会被淘汰，确保活跃请求不被中断
 func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID int64, accountConcurrency int) (*http.Response, error) {
 	applyGrokCLIProxyHeaders(req)
+	if err := rejectPublicHostsOnlyProxy(req, proxyURL); err != nil {
+		return nil, err
+	}
 	if err := s.validateRequestHost(req); err != nil {
 		return nil, err
 	}
@@ -245,6 +248,12 @@ func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID i
 func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, accountID int64, accountConcurrency int, profile *tlsfingerprint.Profile) (*http.Response, error) {
 	if profile == nil {
 		return s.Do(req, proxyURL, accountID, accountConcurrency)
+	}
+	if req != nil && service.HTTPUpstreamPublicHostsOnly(req.Context()) {
+		if strings.TrimSpace(proxyURL) != "" {
+			return nil, errors.New("public-host-only request cannot verify a destination through a proxy")
+		}
+		return nil, errors.New("public-host-only request cannot verify a destination with a custom TLS dialer")
 	}
 	// Plain HTTP has no TLS handshake to fingerprint. Reuse the normal transport
 	// so a configured HTTP or SOCKS proxy is not bypassed.
@@ -298,25 +307,106 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 }
 
 // httpClientForUpstreamRequest 按请求上下文的标记派生客户端：禁用重定向，或对重定向的每一跳做主机校验。
-// 派生的克隆与缓存客户端共享 Transport；未打标记时原样返回。
+// PublicHostsOnly 请求使用独立 Transport，在实际 socket dial 中解析、校验并固定目标 IP；未打标记时原样返回。
 func (s *httpUpstreamService) httpClientForUpstreamRequest(client *http.Client, req *http.Request) *http.Client {
 	if client == nil || req == nil {
 		return client
 	}
 	ctx := req.Context()
-	switch {
-	case service.HTTPUpstreamRedirectsDisabled(ctx):
-		clone := *client
+	disableRedirects := service.HTTPUpstreamRedirectsDisabled(ctx)
+	publicHostsOnly := service.HTTPUpstreamPublicHostsOnly(ctx)
+	if !disableRedirects && !publicHostsOnly {
+		return client
+	}
+
+	clone := *client
+	if publicHostsOnly {
+		clone.Transport = newPublicHostsOnlyTransport(client.Transport)
+	}
+	if disableRedirects {
 		clone.CheckRedirect = func(*http.Request, []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
-		return &clone
-	case service.HTTPUpstreamPublicHostsOnly(ctx) && client.CheckRedirect == nil:
-		clone := *client
+	} else {
 		clone.CheckRedirect = s.redirectChecker
-		return &clone
-	default:
-		return client
+	}
+	return &clone
+}
+
+type errorRoundTripper struct {
+	err error
+}
+
+func (t *errorRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, t.err
+}
+
+func rejectPublicHostsOnlyProxy(req *http.Request, proxyURL string) error {
+	if req != nil && service.HTTPUpstreamPublicHostsOnly(req.Context()) && strings.TrimSpace(proxyURL) != "" {
+		return errors.New("public-host-only request cannot verify a destination through a proxy")
+	}
+	return nil
+}
+
+func newPublicHostsOnlyTransport(base http.RoundTripper) http.RoundTripper {
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	transport, ok := base.(*http.Transport)
+	if !ok {
+		return &errorRoundTripper{err: errors.New("public-host-only request requires an HTTP transport with a verifiable dial path")}
+	}
+	if transport.DialTLSContext != nil || transport.DialTLS != nil {
+		return &errorRoundTripper{err: errors.New("public-host-only request cannot verify a destination with a custom TLS dialer")}
+	}
+
+	clone := transport.Clone()
+	clone.Proxy = nil
+	clone.DisableKeepAlives = true
+	dialer := newUpstreamDialer()
+	clone.DialContext = newPublicHostsOnlyDialContext(net.DefaultResolver.LookupIPAddr, dialer.DialContext)
+	return clone
+}
+
+func newPublicHostsOnlyDialContext(
+	resolve func(context.Context, string) ([]net.IPAddr, error),
+	dial func(context.Context, string, string) (net.Conn, error),
+) func(context.Context, string, string) (net.Conn, error) {
+	return func(ctx context.Context, network, address string) (net.Conn, error) {
+		if resolve == nil || dial == nil {
+			return nil, errors.New("public-host-only dial path is not configured")
+		}
+		host, port, err := net.SplitHostPort(address)
+		if err != nil {
+			return nil, fmt.Errorf("split destination address: %w", err)
+		}
+		addresses, err := resolve(ctx, host)
+		if err != nil {
+			return nil, fmt.Errorf("dns resolution failed: %w", err)
+		}
+		if len(addresses) == 0 {
+			return nil, errors.New("dns resolution returned no addresses")
+		}
+
+		for _, candidate := range addresses {
+			if candidate.IP == nil || urlvalidator.IsBlockedHost(candidate.IP.String()) {
+				return nil, fmt.Errorf("resolved ip %s is not allowed", candidate.IP.String())
+			}
+		}
+
+		var lastErr error
+		for _, candidate := range addresses {
+			target := net.JoinHostPort(candidate.IP.String(), port)
+			conn, dialErr := dial(ctx, network, target)
+			if dialErr == nil {
+				return conn, nil
+			}
+			lastErr = dialErr
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, ctxErr
+			}
+		}
+		return nil, lastErr
 	}
 }
 

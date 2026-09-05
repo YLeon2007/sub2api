@@ -298,6 +298,12 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.groups.codexModelsManifest.fallbackHint).toBe(
       'Выключено: вернуть 503 / ошибку upstream. Включено: использовать существующий путь планировщика.'
     )
+    expect(en.admin.groups.codexModelsManifest.removeAccount).toBe(
+      'Remove account {id}'
+    )
+    expect(ru.admin.groups.codexModelsManifest.removeAccount).toBe(
+      'Удалить аккаунт {id}'
+    )
 
     expect(ru.admin.groups.form.maxReasoningEffortHint).toBe(
       'Ограничивает явно заданный reasoning effort в запросах Anthropic и OpenAI. Для Composite-групп применяется к целевой платформе, выбранной маршрутизацией. Отсутствующее значение не добавляется. Ограничение имеет приоритет над сопоставлениями.'
