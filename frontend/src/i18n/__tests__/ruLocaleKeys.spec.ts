@@ -228,12 +228,9 @@ describe('Russian locale key coverage', () => {
     )
   })
 
-  it('preserves the updated v0.1.171 quota and composite semantics in Russian', () => {
+  it('preserves the updated v0.1.171 quota semantics in Russian', () => {
     expect(ru.admin.accounts.openaiQuotaReset.resetSuccess).toBe(
       'Сброшено окон: {windows}; reset-кредиты и состояние аккаунта обновлены'
-    )
-    expect(ru.admin.groups.form.maxReasoningEffortHint).toBe(
-      'Ограничивает только явно заданный OpenAI reasoning effort. Для Composite-групп применяется только к запросам, направленным в OpenAI. Отсутствующее значение не добавляется. Ограничение имеет приоритет над сопоставлениями.'
     )
   })
 
@@ -258,6 +255,70 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.channels.form.cacheWrite1hPrice).toContain('1 ч')
     expect(ru.admin.settings.gatewayForwarding.openaiTTFTModeHint).toContain('first_token_ms')
     expect(ru.admin.accounts.cnProviders.zhipuTeam.help.step3).toContain('/api/biz/v1/organization')
+  })
+
+  it('preserves critical v0.2.1 request, routing, reasoning, and tier semantics', () => {
+    expect(ru.admin.accounts.upstreamRequestIdHeader).toBe('ID запроса upstream')
+    expect(ru.admin.accounts.upstreamRequestIdHeaderHelp.intro).toBe(
+      'Имя заголовка ответа, в котором непосредственный upstream передаёт ID своего запроса. Значение записывается в столбец «ID запроса upstream» журнала расхода; оставьте поле пустым, чтобы ничего не записывать.'
+    )
+    expect(ru.admin.usage.upstreamRequestId).toBe('ID запроса upstream')
+    expect(ru.admin.usage.upstreamRequestIdCopied).toBe('ID запроса upstream скопирован')
+
+    expect(ru.admin.accounts.openai.imagesUrlToB64Json).toBe(
+      'Преобразовывать URL результата изображения в base64'
+    )
+    expect(ru.admin.accounts.openai.imagesUrlToB64JsonDesc).toBe(
+      'Применяется только к непотоковым ответам Images аккаунтов OpenAI API Key. Если элемент изображения upstream содержит url, но не содержит b64_json, шлюз скачивает данные по url и заполняет b64_json их содержимым в base64 (url сохраняется) для клиентов на основе официального API; при ошибке скачивания ответ возвращается без изменений.'
+    )
+
+    expect(ru.admin.channels.form.maxReasoningEffortMultiplier).toBe(
+      'Множитель для reasoning effort=max'
+    )
+    expect(ru.admin.channels.form.fable51DefaultMaxReasoningMultiplier).toBe(
+      'По умолчанию: 3'
+    )
+    expect(ru.admin.channels.form.multiplierPositive).toBe(
+      'Fast/Flex/max effort multipliers (множители tier-ов) должны быть больше 0'
+    )
+    expect(ru.modelPlaza.table.maxReasoningMultiplierBadge).toBe('Max ×{multiplier}')
+    expect(ru.modelPlaza.table.maxReasoningMultiplierHint).toBe(
+      'Если передаваемый reasoning effort равен max, тарификация и расход квоты для запроса умножаются на {multiplier}'
+    )
+
+    expect(ru.admin.groups.codexModelsManifest.title).toBe(
+      'Закреплённые аккаунты для Codex Model Manifest'
+    )
+    expect(ru.admin.groups.codexModelsManifest.hint).toBe(
+      'При включении запросы клиента Codex к /models для этой группы выполняются только через закреплённые аккаунты, а результаты объединяются по slug в обход планировщика. Закреплённые аккаунты продолжают использоваться в окнах rate limit или перегрузки.'
+    )
+    expect(ru.admin.groups.codexModelsManifest.fallback).toBe(
+      'Fallback на планировщик, если все закреплённые аккаунты недоступны'
+    )
+    expect(ru.admin.groups.codexModelsManifest.fallbackHint).toBe(
+      'Выключено: вернуть 503 / ошибку upstream. Включено: использовать существующий путь планировщика.'
+    )
+
+    expect(ru.admin.groups.form.maxReasoningEffortHint).toBe(
+      'Ограничивает явно заданный reasoning effort в запросах Anthropic и OpenAI. Для Composite-групп применяется к целевой платформе, выбранной маршрутизацией. Отсутствующее значение не добавляется. Ограничение имеет приоритет над сопоставлениями.'
+    )
+    expect(ru.admin.groups.modelsList.title).toBe('Свой список моделей {endpoint}')
+    expect(ru.admin.groups.modelsList.hint).toBe(
+      'Меняет только ответ {endpoint}. Белый список вызовов моделей и маршрутизация аккаунтов не меняются.'
+    )
+
+    expect(ru.admin.accounts.syncUpstreamModelsMetadataIncomplete).toBe(
+      'ID моделей синхронизированы, но обновить метаданные возможностей не удалось ни для одной модели.'
+    )
+    expect(ru.admin.accounts.syncUpstreamModelsMetadataPartial).toBe(
+      'Данные о возможностях некоторых моделей обновлены; для остальных моделей они по-прежнему неполны.'
+    )
+
+    expect(ru.admin.settings.openaiFastPolicy.description).toBe(
+      'Перехватывает, фильтрует или пропускает запросы OpenAI fast(priority), ultrafast или flex на основе поля service_tier в теле запроса. Применяется только к шлюзу OpenAI.'
+    )
+    expect(ru.admin.settings.openaiFastPolicy.tierUltrafast).toBe('ultrafast')
+    expect(ru.usage.serviceTierUltrafast).toBe('Ultrafast')
   })
 
   it('preserves the updated v0.1.172 model-audit, Tencent site, and Codex identity semantics in Russian', () => {
