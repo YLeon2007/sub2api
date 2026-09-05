@@ -3,6 +3,7 @@ package repository
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -1123,4 +1124,38 @@ func TestPublicHostsOnlyTransportRejectsLegacyCustomTLSDialer(t *testing.T) {
 	rejected, ok := transport.(*errorRoundTripper)
 	require.True(t, ok, "legacy custom TLS dialers must fail closed")
 	require.Contains(t, rejected.err.Error(), "custom TLS dialer")
+}
+
+func TestPublicHostsOnlyTransportDropsInheritedHTTP2Adapters(t *testing.T) {
+	var inheritedCallbackCalled atomic.Bool
+	baseProtocols := new(http.Protocols)
+	baseProtocols.SetHTTP1(true)
+	baseProtocols.SetHTTP2(true)
+	base := &http.Transport{
+		ForceAttemptHTTP2: true,
+		Protocols:         baseProtocols,
+		TLSClientConfig:   &tls.Config{NextProtos: []string{"h2", "http/1.1"}},
+		TLSNextProto: map[string]func(string, *tls.Conn) http.RoundTripper{
+			"h2": func(string, *tls.Conn) http.RoundTripper {
+				inheritedCallbackCalled.Store(true)
+				return http.DefaultTransport
+			},
+		},
+	}
+
+	transport := newPublicHostsOnlyTransport(base)
+	protected, ok := transport.(*http.Transport)
+	require.True(t, ok)
+	require.False(t, protected.ForceAttemptHTTP2, "guarded transport must not auto-enable HTTP/2")
+	require.NotNil(t, protected.TLSNextProto, "an empty non-nil map disables alternate protocols")
+	require.Empty(t, protected.TLSNextProto, "guarded transport must not inherit callbacks that close over shared pools")
+	require.NotNil(t, protected.Protocols)
+	require.True(t, protected.Protocols.HTTP1())
+	require.False(t, protected.Protocols.HTTP2())
+	require.False(t, protected.Protocols.UnencryptedHTTP2())
+	require.Equal(t, []string{"http/1.1"}, protected.TLSClientConfig.NextProtos)
+	require.False(t, inheritedCallbackCalled.Load())
+	require.Len(t, base.TLSNextProto, 1, "the shared base transport must remain unchanged")
+	require.True(t, base.Protocols.HTTP2(), "the shared base transport must remain HTTP/2-capable")
+	require.Equal(t, []string{"h2", "http/1.1"}, base.TLSClientConfig.NextProtos)
 }

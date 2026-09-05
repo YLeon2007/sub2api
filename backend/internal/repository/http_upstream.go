@@ -363,6 +363,17 @@ func newPublicHostsOnlyTransport(base http.RoundTripper) http.RoundTripper {
 	clone := transport.Clone()
 	clone.Proxy = nil
 	clone.DisableKeepAlives = true
+	clone.ForceAttemptHTTP2 = false
+	clone.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	clone.Protocols = protocols
+	if clone.TLSClientConfig == nil {
+		clone.TLSClientConfig = &tls.Config{}
+	} else {
+		clone.TLSClientConfig = clone.TLSClientConfig.Clone()
+	}
+	clone.TLSClientConfig.NextProtos = []string{"http/1.1"}
 	dialer := newUpstreamDialer()
 	clone.DialContext = newPublicHostsOnlyDialContext(net.DefaultResolver.LookupIPAddr, dialer.DialContext)
 	return clone
