@@ -195,7 +195,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// Grok compatibility defaults: cross-client mapping stays enabled unless
 		// operators explicitly disable it.
 		SettingKeyGrokDefaultTextModel:           "grok-4.6",
-		SettingKeyGrokCrossClientModelMapEnabled: "true",
+		SettingKeyGrokCrossClientModelMapEnabled: "false",
 		SettingKeyGrokDefaultBaseURLMode:         GrokDefaultBaseURLModeCLI,
 
 		// Available channels feature (default disabled; opt-in)
@@ -810,9 +810,8 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	if result.GrokDefaultTextModel == "" {
 		result.GrokDefaultTextModel = "grok-4.6"
 	}
-	// Default true (missing/empty → enabled) so Claude/Codex→Grok mapping keeps working.
-	// Operators can set false to disable silent cross-client rewrite.
-	result.GrokCrossClientModelMapEnabled = !isFalseSettingValue(settings[SettingKeyGrokCrossClientModelMapEnabled])
+	// Opt-in: missing/empty values must not silently rewrite Claude/Codex model IDs.
+	result.GrokCrossClientModelMapEnabled = settings[SettingKeyGrokCrossClientModelMapEnabled] == "true"
 	result.GrokDefaultBaseURLMode = normalizeGrokDefaultBaseURLMode(settings[SettingKeyGrokDefaultBaseURLMode])
 
 	// Available channels feature (default: disabled; strict true)

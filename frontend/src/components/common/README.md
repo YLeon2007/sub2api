@@ -1,271 +1,115 @@
-# Common Components
+# Common Vue components
 
-This directory contains reusable Vue 3 components built with Composition API, TypeScript, and TailwindCSS.
+English | [Русский](README_RU.md)
 
-## Components
+This directory contains shared Vue 3 + TypeScript UI components. The public barrel API is [`index.ts`](index.ts); components not exported there are internal/direct-import building blocks and may change independently.
 
-### DataTable.vue
+## Barrel exports
 
-A generic data table component with sorting, loading states, and custom cell rendering.
+| Export | Purpose |
+|---|---|
+| `DataTable` | Responsive table/card view with client/server sorting, sticky columns, virtualization, row clicks and controlled selection |
+| `Pagination` | Page navigation, configurable page size and optional page jump |
+| `BaseDialog` | Teleported accessible dialog with focus/scroll handling |
+| `ConfirmDialog` | Confirmation prompt built on `BaseDialog` |
+| `StatCard` | Metric card with optional icon and change indicator |
+| `Toast` | Renderer for notifications stored in `useAppStore` |
+| `LoadingSpinner` | Size/color variants of a loading indicator |
+| `EmptyState` | Empty-result placeholder with optional action |
+| `LocaleSwitcher` | Application locale selector |
+| `ExportProgressDialog` | Export progress/result dialog |
+| `Column` | Type exported from `types.ts` for `DataTable` columns |
 
-**Props:**
+The directory also contains specialized components such as form controls, selectors, badges and image/announcement helpers. Import one directly only when it is not part of the barrel API.
 
-- `columns: Column[]` - Array of column definitions with key, label, sortable, and formatter
-- `data: any[]` - Array of data objects to display
-- `loading?: boolean` - Show loading skeleton
-- `defaultSortKey?: string` - Default sort key (only used if no persisted sort state)
-- `defaultSortOrder?: 'asc' | 'desc'` - Default sort order (default: `asc`)
-- `sortStorageKey?: string` - Persist sort state (key + order) to localStorage
-- `rowKey?: string | (row: any) => string | number` - Row key field or resolver (defaults to `row.id`, falls back to index)
+## DataTable
 
-**Slots:**
+Required props:
 
-- `empty` - Custom empty state content
-- `cell-{key}` - Custom cell renderer for specific column (receives `row` and `value`)
+- `columns: Column[]`
+- `data: any[]`
 
-**Usage:**
+Important optional props include `loading`, sticky/action behavior, `rowKey`, persisted/default sorting, `serverSideSort`, row clicks, virtualization and controlled selection. Read the `Props` interface in [`DataTable.vue`](DataTable.vue) before adding a new usage.
+
+Events:
+
+- `sort(key, order)` in server-side mode;
+- `rowClick(row)` when `clickableRows` is enabled;
+- `update:selectedKeys` and `selectionChange` for selection.
+
+Slots include `empty`, `header-{column.key}`, `cell-{column.key}` and the specialized `cell-actions`; cell slots receive the row/value context exposed by the component.
 
 ```vue
-<DataTable
-  :columns="[
-    { key: 'name', label: 'Name', sortable: true },
-    { key: 'email', label: 'Email' },
-    { key: 'status', label: 'Status', formatter: (val) => val.toUpperCase() }
-  ]"
-  :data="users"
-  :loading="isLoading"
->
-  <template #cell-actions="{ row }">
-    <button @click="editUser(row)">Edit</button>
-  </template>
-</DataTable>
+<script setup lang="ts">
+import { ref } from 'vue'
+import { DataTable, type Column } from '@/components/common'
+
+const selected = ref<Array<string | number>>([])
+const columns: Column[] = [
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'email', label: 'Email' },
+  { key: 'actions', label: 'Actions', class: 'text-right' }
+]
+const users = ref([{ id: 1, name: 'Ada', email: 'ada@example.com' }])
+</script>
+
+<template>
+  <DataTable
+    v-model:selected-keys="selected"
+    :columns="columns"
+    :data="users"
+    row-key="id"
+    selectable
+  >
+    <template #cell-actions="{ row }">
+      <button @click.stop="editUser(row)">Edit</button>
+    </template>
+  </DataTable>
+</template>
 ```
 
----
+## Pagination
 
-### Pagination.vue
-
-Pagination component with page numbers, navigation, and page size selector.
-
-**Props:**
-
-- `total: number` - Total number of items
-- `page: number` - Current page (1-indexed)
-- `pageSize: number` - Items per page
-- `pageSizeOptions?: number[]` - Available page size options (default: [10, 20, 50, 100])
-
-**Events:**
-
-- `update:page` - Emitted when page changes
-- `update:pageSize` - Emitted when page size changes
-
-**Usage:**
+Props are `total`, `page`, `pageSize`, optional `pageSizeOptions`, `showPageSizeSelector` and `showJump`. It emits `update:page` and `update:pageSize`.
 
 ```vue
 <Pagination
-  :total="totalUsers"
-  :page="currentPage"
-  :pageSize="pageSize"
-  @update:page="currentPage = $event"
-  @update:pageSize="pageSize = $event"
+  :total="total"
+  :page="page"
+  :page-size="pageSize"
+  show-jump
+  @update:page="page = $event"
+  @update:page-size="pageSize = $event"
 />
 ```
 
----
+## Dialogs
 
-### Modal.vue
-
-Modal dialog with customizable size and close behavior.
-
-**Props:**
-
-- `show: boolean` - Control modal visibility
-- `title: string` - Modal title
-- `size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'` - Modal size (default: 'md')
-- `closeOnEscape?: boolean` - Close on Escape key (default: true)
-- `closeOnClickOutside?: boolean` - Close on backdrop click (default: true)
-
-**Events:**
-
-- `close` - Emitted when modal should close
-
-**Slots:**
-
-- `default` - Modal body content
-- `footer` - Modal footer content
-
-**Usage:**
+`BaseDialog` uses `show`, `title`, `width` (`narrow`, `normal`, `wide`, `extra-wide`, `full`), close behavior and optional `zIndex`. It emits `close` and exposes default/footer slots.
 
 ```vue
-<Modal :show="showModal" title="Edit User" size="lg" @close="showModal = false">
-  <form @submit.prevent="saveUser">
-    <!-- Form content -->
-  </form>
-
-  <template #footer>
-    <button @click="showModal = false">Cancel</button>
-    <button @click="saveUser">Save</button>
-  </template>
-</Modal>
+<BaseDialog :show="open" title="Edit user" width="wide" @close="open = false">
+  <UserForm />
+  <template #footer><button @click="open = false">Close</button></template>
+</BaseDialog>
 ```
 
----
+Use `ConfirmDialog` when only confirm/cancel behavior is needed.
 
-### ConfirmDialog.vue
+## Toasts
 
-Confirmation dialog built on top of Modal component.
+Render `<Toast />` once near the app/layout root. Create notifications through `useAppStore`:
 
-**Props:**
-
-- `show: boolean` - Control dialog visibility
-- `title: string` - Dialog title
-- `message: string` - Confirmation message
-- `confirmText?: string` - Confirm button text (default: 'Confirm')
-- `cancelText?: string` - Cancel button text (default: 'Cancel')
-- `danger?: boolean` - Use danger/red styling (default: false)
-
-**Events:**
-
-- `confirm` - Emitted when user confirms
-- `cancel` - Emitted when user cancels
-
-**Usage:**
-
-```vue
-<ConfirmDialog
-  :show="showDeleteConfirm"
-  title="Delete User"
-  message="Are you sure you want to delete this user? This action cannot be undone."
-  confirm-text="Delete"
-  cancel-text="Cancel"
-  danger
-  @confirm="deleteUser"
-  @cancel="showDeleteConfirm = false"
-/>
-```
-
----
-
-### StatCard.vue
-
-Statistics card component for displaying metrics with optional change indicators.
-
-**Props:**
-
-- `title: string` - Card title
-- `value: number | string` - Main value to display
-- `icon?: Component` - Icon component
-- `change?: number` - Percentage change value
-- `changeType?: 'up' | 'down' | 'neutral'` - Change direction (default: 'neutral')
-- `formatValue?: (value) => string` - Custom value formatter
-
-**Usage:**
-
-```vue
-<StatCard title="Total Users" :value="1234" :icon="UserIcon" :change="12.5" change-type="up" />
-```
-
----
-
-### Toast.vue
-
-Toast notification component that automatically displays toasts from the app store.
-
-**Usage:**
-
-```vue
-<!-- Add once in App.vue or layout -->
-<Toast />
-```
-
-```typescript
-// Trigger toasts from anywhere using the app store
-import { useAppStore } from '@/stores/app'
-
+```ts
 const appStore = useAppStore()
-
-appStore.addToast({
-  type: 'success',
-  title: 'Success!',
-  message: 'User created successfully',
-  duration: 3000
-})
-
-appStore.addToast({
-  type: 'error',
-  message: 'Failed to delete user'
-})
+appStore.showSuccess('Saved')
+appStore.showError('Save failed')
 ```
 
----
+The old `addToast({ title, ... })` API is not part of the current store.
 
-### LoadingSpinner.vue
+## Maintenance
 
-Simple animated loading spinner.
-
-**Props:**
-
-- `size?: 'sm' | 'md' | 'lg' | 'xl'` - Spinner size (default: 'md')
-- `color?: 'primary' | 'secondary' | 'white' | 'gray'` - Spinner color (default: 'primary')
-
-**Usage:**
-
-```vue
-<LoadingSpinner size="lg" color="primary" />
-```
-
----
-
-### EmptyState.vue
-
-Empty state placeholder with icon, message, and optional action button.
-
-**Props:**
-
-- `icon?: Component` - Icon component
-- `title: string` - Empty state title
-- `description: string` - Empty state description
-- `actionText?: string` - Action button text
-- `actionTo?: string | object` - Router link destination
-- `actionIcon?: boolean` - Show plus icon in button (default: true)
-
-**Slots:**
-
-- `icon` - Custom icon content
-- `action` - Custom action button/link
-
-**Usage:**
-
-```vue
-<EmptyState
-  title="No users found"
-  description="Get started by creating your first user account."
-  action-text="Add User"
-  :action-to="{ name: 'users-create' }"
-/>
-```
-
-## Import
-
-You can import components individually:
-
-```typescript
-import { DataTable, Pagination, Modal } from '@/components/common'
-```
-
-Or import specific components:
-
-```typescript
-import DataTable from '@/components/common/DataTable.vue'
-```
-
-## Features
-
-All components include:
-
-- **TypeScript support** with proper type definitions
-- **Accessibility** with ARIA attributes and keyboard navigation
-- **Responsive design** with mobile-friendly layouts
-- **TailwindCSS styling** for consistent design
-- **Vue 3 Composition API** with `<script setup>`
-- **Slot support** for customization
+- Preserve code identifiers and slot/event names in translations.
+- Update `index.ts`, tests and both README languages together when changing a public export.
+- Do not claim accessibility behavior that is not covered by the component implementation/tests.

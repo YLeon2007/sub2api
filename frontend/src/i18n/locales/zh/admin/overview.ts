@@ -951,6 +951,9 @@ export default {
       groupDeleted: '分组删除成功',
       failedToCreate: '创建分组失败',
       failedToUpdate: '更新分组失败',
+      errors: {
+        GROUP_EXISTS: '已存在同名分组',
+      },
       nameRequired: '请输入分组名称',
       rateMultipliers: '专属倍率',
       rateMultipliersTitle: '分组专属倍率管理',
@@ -1095,6 +1098,7 @@ export default {
         accounts: '选定账号',
         searchPlaceholder: '搜索账号（当前分组内 OpenAI 账号）',
         searchEmpty: '未找到匹配账号',
+        removeAccount: '移除账号 {id}',
         fallback: '选定账号全部不可用时回退调度器',
         fallbackHint: '关闭时返回 503 / 上游错误；开启时回退到现有调度器选账路径。',
         selectAtLeastOne: '开启固定账号后至少选择一个账号'

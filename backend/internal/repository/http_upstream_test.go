@@ -2,6 +2,8 @@ package repository
 
 import (
 	"bytes"
+	"context"
+	"crypto/tls"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -991,7 +993,8 @@ func TestHTTPUpstreamDoPublicHostsOnlyRejectsPrivateDestinationBeforeConnecting(
 func TestHTTPUpstreamPublicHostsOnlyValidatesEveryRedirectHop(t *testing.T) {
 	upstream, ok := NewHTTPUpstream(nil).(*httpUpstreamService)
 	require.True(t, ok)
-	base := &http.Client{}
+	baseTransport := &http.Transport{}
+	base := &http.Client{Transport: baseTransport}
 
 	plain, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://cdn.example.com/a.png", nil)
 	require.NoError(t, err)
@@ -1001,6 +1004,7 @@ func TestHTTPUpstreamPublicHostsOnlyValidatesEveryRedirectHop(t *testing.T) {
 	require.NoError(t, err)
 	client := upstream.httpClientForUpstreamRequest(base, guarded)
 	require.NotSame(t, base, client)
+	require.NotSame(t, baseTransport, client.Transport, "public-host-only requests need an isolated dial path")
 	require.NotNil(t, client.CheckRedirect)
 	require.Nil(t, base.CheckRedirect, "the cached client must stay untouched")
 
@@ -1020,4 +1024,138 @@ func TestHTTPUpstreamPublicHostsOnlyValidatesEveryRedirectHop(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, client.CheckRedirect(publicHop, via))
 	require.Error(t, client.CheckRedirect(publicHop, make([]*http.Request, 10)), "redirect chain stays capped")
+}
+
+func TestPublicHostsOnlyDialContextPinsValidatedAddress(t *testing.T) {
+	wantErr := errors.New("dial stopped after address capture")
+	dialedAddress := ""
+	dial := newPublicHostsOnlyDialContext(
+		func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{{IP: net.ParseIP("93.184.216.34")}}, nil
+		},
+		func(_ context.Context, _, address string) (net.Conn, error) {
+			dialedAddress = address
+			return nil, wantErr
+		},
+	)
+
+	conn, err := dial(t.Context(), "tcp", "cdn.example.com:443")
+	require.Nil(t, conn)
+	require.ErrorIs(t, err, wantErr)
+	require.Equal(t, "93.184.216.34:443", dialedAddress, "the socket must dial the exact validated IP, not re-resolve the hostname")
+}
+
+func TestPublicHostsOnlyDialContextRetriesValidatedAddresses(t *testing.T) {
+	wantErr := errors.New("first address is unreachable")
+	var dialedAddresses []string
+	var peer net.Conn
+	dial := newPublicHostsOnlyDialContext(
+		func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{
+				{IP: net.ParseIP("93.184.216.34")},
+				{IP: net.ParseIP("93.184.216.35")},
+			}, nil
+		},
+		func(_ context.Context, _, address string) (net.Conn, error) {
+			dialedAddresses = append(dialedAddresses, address)
+			if len(dialedAddresses) == 1 {
+				return nil, wantErr
+			}
+			conn, other := net.Pipe()
+			peer = other
+			return conn, nil
+		},
+	)
+
+	conn, err := dial(t.Context(), "tcp", "cdn.example.com:443")
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.Equal(t, []string{"93.184.216.34:443", "93.184.216.35:443"}, dialedAddresses)
+	require.NoError(t, conn.Close())
+	require.NoError(t, peer.Close())
+}
+
+func TestPublicHostsOnlyDialContextRejectsMixedPrivateAnswersBeforeDial(t *testing.T) {
+	var dialCalls atomic.Int64
+	dial := newPublicHostsOnlyDialContext(
+		func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{
+				{IP: net.ParseIP("93.184.216.34")},
+				{IP: net.ParseIP("127.0.0.1")},
+			}, nil
+		},
+		func(context.Context, string, string) (net.Conn, error) {
+			dialCalls.Add(1)
+			return nil, errors.New("must not dial")
+		},
+	)
+
+	conn, err := dial(t.Context(), "tcp", "cdn.example.com:443")
+	require.Nil(t, conn)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not allowed")
+	require.Zero(t, dialCalls.Load(), "a mixed public/private answer must fail closed before any connection")
+}
+
+func TestHTTPUpstreamDoPublicHostsOnlyRejectsAccountProxy(t *testing.T) {
+	upstream := NewHTTPUpstream(nil)
+	req, err := http.NewRequestWithContext(
+		service.WithHTTPUpstreamPublicHostsOnly(t.Context()),
+		http.MethodGet,
+		"https://93.184.216.34/image.png",
+		nil,
+	)
+	require.NoError(t, err)
+
+	resp, err := upstream.Do(req, "http://127.0.0.1:7890", 1, 1)
+	require.Nil(t, resp)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "public-host-only request cannot verify a destination through a proxy")
+}
+
+func TestPublicHostsOnlyTransportRejectsLegacyCustomTLSDialer(t *testing.T) {
+	base := &http.Transport{
+		DialTLS: func(string, string) (net.Conn, error) {
+			return nil, errors.New("must not be called")
+		},
+	}
+
+	transport := newPublicHostsOnlyTransport(base)
+	rejected, ok := transport.(*errorRoundTripper)
+	require.True(t, ok, "legacy custom TLS dialers must fail closed")
+	require.Contains(t, rejected.err.Error(), "custom TLS dialer")
+}
+
+func TestPublicHostsOnlyTransportDropsInheritedHTTP2Adapters(t *testing.T) {
+	var inheritedCallbackCalled atomic.Bool
+	baseProtocols := new(http.Protocols)
+	baseProtocols.SetHTTP1(true)
+	baseProtocols.SetHTTP2(true)
+	base := &http.Transport{
+		ForceAttemptHTTP2: true,
+		Protocols:         baseProtocols,
+		TLSClientConfig:   &tls.Config{NextProtos: []string{"h2", "http/1.1"}},
+		TLSNextProto: map[string]func(string, *tls.Conn) http.RoundTripper{
+			"h2": func(string, *tls.Conn) http.RoundTripper {
+				inheritedCallbackCalled.Store(true)
+				return http.DefaultTransport
+			},
+		},
+	}
+
+	transport := newPublicHostsOnlyTransport(base)
+	protected, ok := transport.(*http.Transport)
+	require.True(t, ok)
+	require.False(t, protected.ForceAttemptHTTP2, "guarded transport must not auto-enable HTTP/2")
+	require.NotNil(t, protected.TLSNextProto, "an empty non-nil map disables alternate protocols")
+	require.Empty(t, protected.TLSNextProto, "guarded transport must not inherit callbacks that close over shared pools")
+	require.NotNil(t, protected.Protocols)
+	require.True(t, protected.Protocols.HTTP1())
+	require.False(t, protected.Protocols.HTTP2())
+	require.False(t, protected.Protocols.UnencryptedHTTP2())
+	require.Equal(t, []string{"http/1.1"}, protected.TLSClientConfig.NextProtos)
+	require.False(t, inheritedCallbackCalled.Load())
+	require.Len(t, base.TLSNextProto, 1, "the shared base transport must remain unchanged")
+	require.True(t, base.Protocols.HTTP2(), "the shared base transport must remain HTTP/2-capable")
+	require.Equal(t, []string{"h2", "http/1.1"}, base.TLSClientConfig.NextProtos)
 }
