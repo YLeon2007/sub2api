@@ -5,6 +5,13 @@
 import { config } from '@vue/test-utils'
 import { vi } from 'vitest'
 
+// Keep locale-sensitive formatting deterministic across developer machines and CI.
+// Locale-specific tests may override this because the property stays configurable.
+Object.defineProperty(window.navigator, 'language', {
+  configurable: true,
+  value: 'en-US'
+})
+
 function createMemoryStorage(): Storage {
   const values = new Map<string, string>()
 

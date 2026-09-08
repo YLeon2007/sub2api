@@ -428,6 +428,10 @@ export default {
         loading: '加载中...',
         empty: '暂无告警事件',
         loadFailed: '加载告警事件失败',
+        generated: {
+          description: '{metric} {operator} {threshold}（当前值 {current}），最近 {minutes} 分钟（{scope}）',
+          overall: '整体'
+        },
         status: {
           firing: '告警中',
           resolved: '已恢复',
@@ -486,6 +490,40 @@ export default {
         deleteConfirmTitle: '确认删除该规则？',
         deleteConfirmMessage: '将删除该规则及其关联的告警事件，是否继续？',
         manage: '预警规则',
+        seeded: {
+          highErrorRate: {
+            name: '错误率过高',
+            description: '当错误率超过 5% 且持续 5 分钟时触发告警'
+          },
+          lowSuccessRate: {
+            name: '成功率过低',
+            description: '当成功率低于 95% 且持续 5 分钟时触发告警（服务可用性下降）'
+          },
+          highP99Latency: {
+            name: 'P99延迟过高',
+            description: '当 P99 延迟超过 3000ms 且持续 10 分钟时触发告警'
+          },
+          highP95Latency: {
+            name: 'P95延迟过高',
+            description: '当 P95 延迟超过 2000ms 且持续 10 分钟时触发告警'
+          },
+          highCpuUsage: {
+            name: 'CPU使用率过高',
+            description: '当 CPU 使用率超过 85% 且持续 10 分钟时触发告警'
+          },
+          highMemoryUsage: {
+            name: '内存使用率过高',
+            description: '当内存使用率超过 90% 且持续 10 分钟时触发告警（可能导致 OOM）'
+          },
+          concurrencyQueueBacklog: {
+            name: '并发队列积压',
+            description: '当并发队列深度超过 100 且持续 5 分钟时触发告警（系统处理能力不足）'
+          },
+          criticalErrorRate: {
+            name: '错误率极高',
+            description: '当错误率超过 20% 且持续 1 分钟时触发告警（服务严重异常）'
+          }
+        },
         metricGroups: {
           system: '系统指标',
           group: '分组级别指标（需 group_id）',
