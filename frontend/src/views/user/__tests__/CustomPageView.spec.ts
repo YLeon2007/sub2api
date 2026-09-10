@@ -86,6 +86,8 @@ describe('custom page open button', () => {
     expect(button.href).toContain('token=test-token')
     expect(button.target).toBe('_blank')
     expect(button.rel).toBe('noopener noreferrer')
+    expect(button.getAttribute('aria-label')).toBe('customPage.openInNewTab')
+    expect(button.getAttribute('draggable')).toBe('false')
     await pointer(button, 'pointerdown', 700, 24)
     await pointer(button, 'pointermove', 702, 25)
     await pointer(button, 'pointerup', 702, 25)

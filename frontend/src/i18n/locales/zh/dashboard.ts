@@ -505,6 +505,28 @@ export default {
         shared: '共享',
         pro: 'Pro',
         flash: 'Flash'
+      },
+      errors: {
+        authenticationFailed: '认证失败',
+        authenticationFailedHttp: '认证失败（HTTP {status}）',
+        apiError: 'API 错误',
+        apiErrorHttp: 'API 错误（HTTP {status}）',
+        linkedAccountNotFound: '关联账号不存在',
+        snapshotMissing: '配额快照缺失',
+        quotaHigh: '配额使用率偏高：{window} {percent}%',
+        balanceDepleted: '余额已耗尽（{currency}）',
+        noBalanceEndpoint: '该供应商账号没有余额端点',
+        codingPlanNoBalanceEndpoint: 'Coding Plan 账号没有余额端点，请使用配额探测',
+        apiKeyEmpty: '账号未配置 api_key',
+        accountNotFound: '账号不存在',
+        invalidPlatform: '账号不是 CN provider 账号',
+        notCodingPlan: '账号不是 coding plan 账号',
+        serviceNotConfigured: '配额服务未配置',
+        requestBuildFailed: '构造配额请求失败',
+        upstreamRequestFailed: '上游请求失败',
+        noData: '用量服务没有返回数据',
+        probeFailed: '配额探测失败',
+        generic: '配额诊断不可用'
       }
     },
     extraModelsHeader: '附加模型',

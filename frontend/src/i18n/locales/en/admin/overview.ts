@@ -935,6 +935,9 @@ export default {
       failedToLoad: 'Failed to load groups',
       failedToCreate: 'Failed to create group',
       failedToUpdate: 'Failed to update group',
+      errors: {
+        GROUP_EXISTS: 'A group with this name already exists',
+      },
       failedToSave: 'Failed to save group',
       failedToDelete: 'Failed to delete group',
       nameRequired: 'Please enter group name',
@@ -1099,6 +1102,7 @@ export default {
         accounts: 'Pinned accounts',
         searchPlaceholder: 'Search accounts (OpenAI accounts in this group)',
         searchEmpty: 'No matching accounts',
+        removeAccount: 'Remove account {id}',
         fallback: 'Fall back to the scheduler when all pinned accounts are unavailable',
         fallbackHint: 'Off: return 503 / the upstream error. On: fall back to the existing scheduler path.',
         selectAtLeastOne: 'Select at least one account after enabling pinned accounts'

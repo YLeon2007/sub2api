@@ -169,6 +169,22 @@ resource_exists() {
     return 1
 }
 
+stat_owner() {
+    if stat -c '%u' "$1" >/dev/null 2>&1; then
+        stat -c '%u' "$1"
+    else
+        stat -f '%u' "$1"
+    fi
+}
+
+stat_mode() {
+    if stat -c '%a' "$1" >/dev/null 2>&1; then
+        stat -c '%a' "$1"
+    else
+        stat -f '%Lp' "$1"
+    fi
+}
+
 inspect_resource() {
     case "$1" in
         container) container inspect "$2" ;;
@@ -402,8 +418,8 @@ validate_env_file_security() {
     local owner mode permissions
 
     [[ -f "${ENV_FILE}" ]] || die "Environment file not found: ${ENV_FILE}. Run '$0 init' first."
-    owner="$(stat -f '%u' "${ENV_FILE}")" || die "Unable to read owner for ${ENV_FILE}."
-    mode="$(stat -f '%Lp' "${ENV_FILE}")" || die "Unable to read permissions for ${ENV_FILE}."
+    owner="$(stat_owner "${ENV_FILE}")" || die "Unable to read owner for ${ENV_FILE}."
+    mode="$(stat_mode "${ENV_FILE}")" || die "Unable to read permissions for ${ENV_FILE}."
     [[ "${owner}" == "${EUID}" ]] || die "Environment file must be owned by the current user: ${ENV_FILE}"
     [[ "${mode}" =~ ^[0-7]+$ ]] || die "Unable to parse permissions for ${ENV_FILE}: ${mode}"
     permissions=$((8#${mode}))
@@ -414,7 +430,7 @@ validate_env_file_security() {
 prepare_environment() {
     validate_env_file_security
 
-    APP_IMAGE="$(read_env_value APPLE_CONTAINER_SUB2API_IMAGE weishaw/sub2api:latest)"
+    APP_IMAGE="$(read_env_value APPLE_CONTAINER_SUB2API_IMAGE ghcr.io/yleon2007/sub2api:0.2.4-ru.1)"
     POSTGRES_IMAGE="$(read_env_value APPLE_CONTAINER_POSTGRES_IMAGE postgres:18-alpine)"
     REDIS_IMAGE="$(read_env_value APPLE_CONTAINER_REDIS_IMAGE redis:8-alpine)"
     BIND_HOST="$(read_env_value BIND_HOST 0.0.0.0)"

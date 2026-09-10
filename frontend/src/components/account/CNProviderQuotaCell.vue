@@ -52,7 +52,7 @@
     <div
       v-if="error"
       class="truncate text-[10px] leading-4 text-red-600 dark:text-red-400"
-      :title="error"
+      :title="localizedError"
     >
       {{ truncatedError }}
     </div>
@@ -65,6 +65,7 @@ import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import type { CNProviderQuotaProbeResult } from '@/api/admin/cnProviders'
 import type { Account } from '@/types'
+import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
 import { cnQuotaCellVisible } from './credentialsBuilder'
 import UsageProgressBar from './UsageProgressBar.vue'
 
@@ -145,20 +146,25 @@ const extractErrorMessage = (e: unknown): string => {
   const err = e as {
     message?: string
     reason?: string
-    response?: { data?: { message?: string; error?: string } }
+    response?: { data?: { detail?: string; message?: string; error?: string; code?: string } }
   }
   return (
-    err?.message ||
-    err?.reason ||
+    err?.response?.data?.detail ||
     err?.response?.data?.message ||
     err?.response?.data?.error ||
+    err?.response?.data?.code ||
+    err?.reason ||
+    err?.message ||
     t('common.error')
   )
 }
 
+const localizedError = computed(() => localizeQuotaDiagnostic(error.value, t))
+
 const truncatedError = computed(() => {
-  if (!error.value) return ''
-  return error.value.length > 80 ? `${error.value.slice(0, 80)}...` : error.value
+  const message = localizedError.value
+  if (!message) return ''
+  return message.length > 80 ? `${message.slice(0, 80)}...` : message
 })
 
 const windowLabel = (window: string) =>

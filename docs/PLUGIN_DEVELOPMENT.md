@@ -1,5 +1,7 @@
 # Sub2API 插件开发教程
 
+[中文](PLUGIN_DEVELOPMENT.md) | [Русский](PLUGIN_DEVELOPMENT_RU.md)
+
 本文面向希望为 Sub2API 开发、打包和发布插件的团队。插件是独立进程和静态 UI 组成的 `.s2plugin` 包，宿主通过稳定的 gRPC 协议调用它。本文以当前宿主已经定义的 `openai.oauth.outbound_transport.v1` 能力作为协议示例，说明开发者需要准备什么、哪些职责属于插件、哪些职责仍由 Sub2API 负责。
 
 本文不是一个可直接安装的完整插件，也不代表 Sub2API 已经发布对应的官方插件包。当前文档主要描述公开协议、宿主边界和开发流程。后续是否发布可安装包、支持哪些 Provider，以及如何提供示例仓库，都需要另行公告。
@@ -119,9 +121,9 @@ UI 是插件包内的静态页面，不需要修改 Sub2API 前端源码。宿�
   "name": "Example OpenAI Transport",
   "version": "0.1.0",
   "requires": {
-    "sub2api": ">=0.1.179 <0.2.0",
-    "recommended_sub2api_version": "0.1.179",
-    "tested_sub2api_versions": ["0.1.179"],
+    "sub2api": ">=0.2.4-ru.1 <0.3.0",
+    "recommended_sub2api_version": "0.2.4-ru.1",
+    "tested_sub2api_versions": ["0.2.4-ru.1"],
     "plugin_protocol": 1,
     "transport_api": 1,
     "ui_bridge": 1

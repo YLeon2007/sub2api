@@ -91,7 +91,12 @@ function restoreAirwallexSnapshot(): PaymentRecoverySnapshot | null {
 
 onMounted(async () => {
   const snapshot = restoreAirwallexSnapshot()
-  const checkoutLocale = locale.value.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+  const normalizedLocale = locale.value.toLowerCase()
+  const checkoutLocale = normalizedLocale.startsWith('zh')
+    ? 'zh'
+    : normalizedLocale.startsWith('ru')
+      ? 'ru'
+      : 'en'
 
   if (!snapshot) {
     loading.value = false

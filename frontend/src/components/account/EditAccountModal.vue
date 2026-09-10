@@ -3332,9 +3332,9 @@ const loadGrokMediaEligibility = async (accountID: number): Promise<GrokMediaEli
     grokMediaEligibilityMode.value = state.mode
     grokMediaEligibilityInitialMode.value = state.mode
     return state
-  } catch (error: any) {
+  } catch {
     if (requestVersion !== grokMediaEligibilityRequestVersion) return null
-    grokMediaEligibilityError.value = error?.message || t('admin.accounts.grokMediaEligibility.loadFailed')
+    grokMediaEligibilityError.value = t('admin.accounts.grokMediaEligibility.loadFailed')
     return null
   } finally {
     if (requestVersion === grokMediaEligibilityRequestVersion) {

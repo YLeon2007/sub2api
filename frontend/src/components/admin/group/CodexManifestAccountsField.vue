@@ -44,7 +44,7 @@
           <button
             type="button"
             class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"
-            :aria-label="`remove account ${id}`"
+            :aria-label="t('admin.groups.codexModelsManifest.removeAccount', { id })"
             @click="removeAccount(id)"
           >
             <Icon name="x" size="xs" />

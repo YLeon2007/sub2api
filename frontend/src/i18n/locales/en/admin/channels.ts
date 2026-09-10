@@ -83,7 +83,11 @@ export default {
           cacheWritePrice: 'cache write price',
           cacheWrite1hPrice: '1h cache write price',
           cacheReadPrice: 'cache read price',
-          perRequestPrice: 'per-request price'
+          perRequestPrice: 'per-request price',
+          inputMultiplier: 'input multiplier',
+          outputMultiplier: 'output multiplier',
+          cacheWriteMultiplier: 'cache write multiplier',
+          cacheReadMultiplier: 'cache read multiplier'
         }
       },
       timePricingValidation: {

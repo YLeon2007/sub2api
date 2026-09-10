@@ -80,7 +80,8 @@ export default {
     tableOfContents: '目录',
     copyCode: '复制',
     copiedCode: '已复制',
-    copyCodeFailed: '失败'
+    copyCodeFailed: '失败',
+    loadFailed: '页面加载失败'
   },
 
   // Announcements Page

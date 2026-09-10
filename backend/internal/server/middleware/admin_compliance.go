@@ -39,8 +39,13 @@ func AdminComplianceGuard(settingService *service.SettingService) gin.HandlerFun
 				"version":          service.AdminComplianceVersion,
 				"document_path_zh": service.AdminComplianceDocumentPathZH,
 				"document_path_en": service.AdminComplianceDocumentPathEN,
+				"document_path_ru": service.AdminComplianceDocumentPathRU,
 				"document_url_zh":  service.AdminComplianceDocumentURLZH,
 				"document_url_en":  service.AdminComplianceDocumentURLEN,
+				"document_url_ru":  service.AdminComplianceDocumentURLRU,
+				"ack_phrase_zh":    service.AdminComplianceAckPhraseZH,
+				"ack_phrase_en":    service.AdminComplianceAckPhraseEN,
+				"ack_phrase_ru":    service.AdminComplianceAckPhraseRU,
 			},
 		})
 		c.Abort()
