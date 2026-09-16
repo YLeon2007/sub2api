@@ -8,6 +8,7 @@ import { adminAPI } from '@/api/admin'
 
 const {
   listGroups,
+  createGroup,
   duplicateGroup,
   updateGroup,
   getModelAllowlistCandidates,
@@ -18,6 +19,7 @@ const {
   showError
 } = vi.hoisted(() => ({
   listGroups: vi.fn(),
+  createGroup: vi.fn(),
   duplicateGroup: vi.fn(),
   updateGroup: vi.fn(),
   getModelAllowlistCandidates: vi.fn(),
@@ -40,7 +42,7 @@ vi.mock('@/api/admin', () => ({
       getCapacitySummary,
       getLiveCapability,
       getAll: vi.fn(),
-      create: vi.fn(),
+      create: createGroup,
       update: updateGroup,
       delete: vi.fn(),
       updateSortOrder: vi.fn()
@@ -71,7 +73,12 @@ vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
     ...actual,
-    useI18n: () => ({ t: (key: string) => key })
+    useI18n: () => ({
+      t: (key: string, params?: Record<string, unknown>) => {
+        if (key === 'admin.groups.errors.GROUP_EXISTS') return 'localized group name conflict'
+        return params?.id === undefined ? key : `${key}:${String(params.id)}`
+      }
+    })
   }
 })
 
@@ -133,7 +140,7 @@ const AppLayoutStub = defineComponent({
 })
 
 const TablePageLayoutStub = defineComponent({
-  template: '<section><slot name="filters" /><slot name="table" /><slot name="pagination" /></section>'
+  template: '<section><slot name="header-actions" /><slot name="filters" /><slot name="table" /><slot name="pagination" /></section>'
 })
 
 const DataTableStub = defineComponent({
@@ -182,6 +189,7 @@ describe('GroupsView duplicate action', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     for (const fn of [
       listGroups,
+      createGroup,
       duplicateGroup,
       updateGroup,
       getModelAllowlistCandidates,
@@ -268,7 +276,7 @@ describe('GroupsView duplicate action', () => {
     wrapper.unmount()
   })
 
-  it('shows the API error and restores the action when duplication fails', async () => {
+  it('shows the localized primary error and restores the action when duplication fails', async () => {
     duplicateGroup.mockRejectedValueOnce(new Error('duplicate failed'))
     const wrapper = mountView()
     await flushPromises()
@@ -276,7 +284,8 @@ describe('GroupsView duplicate action', () => {
     await wrapper.get('[data-testid="group-duplicate"]').trigger('click')
     await flushPromises()
 
-    expect(showError).toHaveBeenCalledWith('duplicate failed')
+    expect(showError).toHaveBeenCalledWith('admin.groups.duplicateFailed')
+    expect(showError).not.toHaveBeenCalledWith('duplicate failed')
     expect(wrapper.get('[data-testid="group-duplicate"]').attributes('disabled')).toBeUndefined()
     wrapper.unmount()
   })
@@ -303,7 +312,7 @@ describe('GroupsView duplicate action', () => {
     wrapper.unmount()
   })
 
-  it('shows the standardized API message when updating a group fails', async () => {
+  it('shows the localized standardized API reason when updating a group fails', async () => {
     updateGroup.mockRejectedValueOnce({
       status: 409,
       code: 409,
@@ -321,7 +330,30 @@ describe('GroupsView duplicate action', () => {
     await flushPromises()
 
     expect(updateGroup).toHaveBeenCalledTimes(1)
-    expect(showError).toHaveBeenCalledWith('group name already exists')
+    expect(showError).toHaveBeenCalledWith('localized group name conflict')
+    wrapper.unmount()
+  })
+
+  it('shows the localized standardized API reason when creating a group fails', async () => {
+    createGroup.mockRejectedValueOnce({
+      status: 409,
+      code: 409,
+      message: 'group name already exists',
+      reason: 'GROUP_EXISTS'
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    const createButton = wrapper.findAll('button').find((button) => button.text() === 'admin.groups.createGroup')
+    expect(createButton).toBeTruthy()
+    await createButton!.trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-tour="group-form-name"]').setValue('Primary')
+    await wrapper.get('#create-group-form').trigger('submit')
+    await flushPromises()
+
+    expect(createGroup).toHaveBeenCalledTimes(1)
+    expect(showError).toHaveBeenCalledWith('localized group name conflict')
     wrapper.unmount()
   })
 
@@ -351,7 +383,7 @@ describe('GroupsView duplicate action', () => {
       await wrapper.get('[data-testid="codex-manifest-dropdown"] button').trigger('click')
       expect(wrapper.get('[data-testid="codex-manifest-selected-tags"]').text()).toContain('Manifest account')
 
-      await wrapper.get('[aria-label="remove account 5"]').trigger('click')
+      await wrapper.get('[aria-label="admin.groups.codexModelsManifest.removeAccount:5"]').trigger('click')
       expect(wrapper.find('[data-testid="codex-manifest-selected-tags"]').exists()).toBe(false)
       await wrapper.get('#edit-group-form').trigger('submit')
       expect(updateGroup).not.toHaveBeenCalled()

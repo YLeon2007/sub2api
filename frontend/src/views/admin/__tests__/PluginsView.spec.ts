@@ -166,4 +166,28 @@ describe('管理员插件页二次验证', () => {
     expect(stepUpRun).toHaveBeenCalledTimes(1)
     expect(uploadPlugin).toHaveBeenCalledTimes(1)
   })
+
+  it('本地化后端插件兼容性与运行状态的固定诊断文案', async () => {
+    listPlugins.mockResolvedValue([
+      {
+        ...plugin,
+        compatibility: {
+          ...plugin.compatibility,
+          status: 'compatible' as const,
+          message: '当前 Sub2API 版本已由插件声明测试',
+        },
+        runtime_healthy: true,
+        runtime_message: '插件进程运行中',
+      },
+    ])
+
+    const wrapper = mountView()
+    await flushPromises()
+    const text = wrapper.text()
+
+    expect(text).toContain('admin.plugins.messages.compatibleTested')
+    expect(text).toContain('admin.plugins.messages.runtimeRunning')
+    expect(text).not.toContain('当前 Sub2API 版本已由插件声明测试')
+    expect(text).not.toContain('插件进程运行中')
+  })
 })

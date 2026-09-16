@@ -1,5 +1,7 @@
 # Channel Monitor V2 Safe Defaults & Gentle Backfill
 
+English | [Русский](channel-monitor-v2-safe-defaults_RU.md)
+
 **Date:** 2026-08-08  
 **Status:** Approved for implementation  
 **Branch:** `fix/channel-monitor-v2-ops-ui-blockers` (onto channel-monitor-v2)

@@ -431,6 +431,10 @@ export default {
         loading: 'Loading...',
         empty: 'No alert events',
         loadFailed: 'Failed to load alert events',
+        generated: {
+          description: '{metric} {operator} {threshold} (current {current}) over last {minutes}m ({scope})',
+          overall: 'overall'
+        },
         status: {
           firing: 'FIRING',
           resolved: 'RESOLVED',
@@ -489,6 +493,40 @@ export default {
         editTitle: 'Edit Alert Rule',
         deleteConfirmTitle: 'Delete this rule?',
         deleteConfirmMessage: 'This will remove the rule and its related events. Continue?',
+        seeded: {
+          highErrorRate: {
+            name: 'High error rate',
+            description: 'Triggers when the error rate exceeds 5% for 5 consecutive minutes.'
+          },
+          lowSuccessRate: {
+            name: 'Low success rate',
+            description: 'Triggers when the success rate stays below 95% for 5 minutes (service availability is degraded).'
+          },
+          highP99Latency: {
+            name: 'P99 latency too high',
+            description: 'Triggers when P99 latency exceeds 3000 ms for 10 minutes.'
+          },
+          highP95Latency: {
+            name: 'P95 latency too high',
+            description: 'Triggers when P95 latency exceeds 2000 ms for 10 minutes.'
+          },
+          highCpuUsage: {
+            name: 'High CPU usage',
+            description: 'Triggers when CPU usage exceeds 85% for 10 minutes.'
+          },
+          highMemoryUsage: {
+            name: 'High memory usage',
+            description: 'Triggers when memory usage exceeds 90% for 10 minutes (may cause OOM).'
+          },
+          concurrencyQueueBacklog: {
+            name: 'Concurrency queue backlog',
+            description: 'Triggers when concurrency queue depth exceeds 100 for 5 minutes (insufficient processing capacity).'
+          },
+          criticalErrorRate: {
+            name: 'Critically high error rate',
+            description: 'Triggers when the error rate exceeds 20% for 1 minute (serious service degradation).'
+          }
+        },
         metricGroups: {
           system: 'System Metrics',
           group: 'Group-level Metrics (requires group_id)',

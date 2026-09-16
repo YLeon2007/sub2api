@@ -4,6 +4,7 @@ export interface AdminComplianceAcknowledgement {
   version: string
   document_zh: string
   document_en: string
+  document_ru?: string
   admin_user_id: number
   ip_address?: string
   user_agent?: string
@@ -15,10 +16,13 @@ export interface AdminComplianceStatus {
   version: string
   document_path_zh: string
   document_path_en: string
+  document_path_ru?: string
   document_url_zh: string
   document_url_en: string
+  document_url_ru?: string
   ack_phrase_zh: string
   ack_phrase_en: string
+  ack_phrase_ru?: string
   acknowledgement?: AdminComplianceAcknowledgement
 }
 
