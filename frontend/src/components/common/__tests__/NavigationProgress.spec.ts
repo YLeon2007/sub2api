@@ -15,6 +15,10 @@ vi.mock('@/composables/useNavigationLoading', () => ({
   })
 }))
 
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({ t: (key: string) => key === 'common.loading' ? 'Загрузка...' : key })
+}))
+
 describe('NavigationProgress', () => {
   beforeEach(() => {
     mockIsLoading.value = false
@@ -46,7 +50,7 @@ describe('NavigationProgress', () => {
 
     const progressBar = wrapper.find('.navigation-progress')
     expect(progressBar.attributes('role')).toBe('progressbar')
-    expect(progressBar.attributes('aria-label')).toBe('Loading')
+    expect(progressBar.attributes('aria-label')).toBe('Загрузка...')
     expect(progressBar.attributes('aria-valuemin')).toBe('0')
     expect(progressBar.attributes('aria-valuemax')).toBe('100')
   })

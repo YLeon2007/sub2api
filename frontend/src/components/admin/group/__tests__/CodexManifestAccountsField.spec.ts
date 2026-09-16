@@ -10,7 +10,10 @@ vi.mock("vue-i18n", async () => {
   const actual = await vi.importActual<typeof import("vue-i18n")>("vue-i18n");
   return {
     ...actual,
-    useI18n: () => ({ t: (key: string) => key }),
+    useI18n: () => ({
+      t: (key: string, params?: Record<string, unknown>) =>
+        params?.id === undefined ? key : `${key}:${String(params.id)}`,
+    }),
   };
 });
 
@@ -145,7 +148,12 @@ describe("CodexManifestAccountsField", () => {
     const removeButton = wrapper
       .find('[data-testid="codex-manifest-selected-tags"]')
       .findAll("button")
-      .find((b) => b.attributes("aria-label") === "remove account 5");
+      .find(
+        (b) =>
+          b.attributes("aria-label") ===
+          "admin.groups.codexModelsManifest.removeAccount:5",
+      );
+    expect(removeButton).toBeDefined();
     await removeButton!.trigger("click");
     await flushPromises();
 

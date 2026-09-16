@@ -198,9 +198,16 @@ release:
     docker pull ghcr.io/{{ .Env.GITHUB_REPO_OWNER_LOWER }}/sub2api:{{ .Version }}
     ```
 
-    **One-line install (Linux):**
+    **Reviewed script install (Linux):**
     ```bash
-    curl -sSL https://raw.githubusercontent.com/{{ .Env.GITHUB_REPO_OWNER }}/{{ .Env.GITHUB_REPO_NAME }}/main/deploy/install.sh | sudo bash
+    script_path="$(mktemp)"
+    trap 'rm -f "$script_path"' EXIT
+    curl -fL --proto '=https' --tlsv1.2 -o "$script_path" \
+      "https://raw.githubusercontent.com/{{ .Env.GITHUB_REPO_OWNER }}/{{ .Env.GITHUB_REPO_NAME }}/{{ .Tag }}/deploy/install.sh"
+    chmod 700 "$script_path"
+    less "$script_path"
+    read -r -p "Run the inspected installer? [y/N] " answer
+    case "$answer" in y|Y) sudo bash "$script_path" ;; *) echo "Aborted"; exit 1 ;; esac
     ```
 
     **Manual download:**

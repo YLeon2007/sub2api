@@ -113,7 +113,7 @@
                   : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
               "
             >
-              {{ selectedEventMeta.optional ? localText("可退订通知", "Optional") : localText("事务邮件", "Transactional") }}
+              {{ selectedEventMeta.optional ? localText("可退订通知", "Optional", "Уведомление с отпиской") : localText("事务邮件", "Transactional", "Транзакционное") }}
             </span>
           </div>
           <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
@@ -335,11 +335,14 @@ interface EventDisplayMeta {
   categoryLabel: string;
 }
 
-function localText(zh: string, en: string): string {
-  return locale.value.toLowerCase().startsWith("zh") ? zh : en;
+function localText(zh: string, en: string, ru: string): string {
+  const normalizedLocale = locale.value.toLowerCase();
+  if (normalizedLocale.startsWith("zh")) return zh;
+  if (normalizedLocale.startsWith("ru")) return ru;
+  return en;
 }
 
-const eventDisplayMeta: Record<string, EventDisplayMeta> = {
+const eventDisplayMeta = {
   "auth.verify_code": {
     label: "邮箱验证码",
     timing: "注册、绑定邮箱、OAuth 补全邮箱或 TOTP 邮箱校验时发送。",
@@ -400,9 +403,11 @@ const eventDisplayMeta: Record<string, EventDisplayMeta> = {
     timing: "运维日报、周报、错误摘要或账号健康报表到达配置的发送时间时发送；日报和周报的完整指标均可在模板中编辑。",
     categoryLabel: "运维",
   },
-};
+} satisfies Record<string, EventDisplayMeta>;
 
-const eventDisplayMetaEn: Record<string, EventDisplayMeta> = {
+type KnownEventDisplayKey = keyof typeof eventDisplayMeta;
+
+const eventDisplayMetaEn: Record<KnownEventDisplayKey, EventDisplayMeta> = {
   "auth.verify_code": {
     label: "Email Verification Code",
     timing: "Sent for registration, email binding, OAuth pending email completion, or TOTP email verification.",
@@ -465,6 +470,69 @@ const eventDisplayMetaEn: Record<string, EventDisplayMeta> = {
   },
 };
 
+const eventDisplayMetaRu: Record<KnownEventDisplayKey, EventDisplayMeta> = {
+  "auth.verify_code": {
+    label: "Код подтверждения email",
+    timing: "Отправляется при регистрации, привязке email, завершении email для OAuth или проверке email TOTP.",
+    categoryLabel: "Авторизация",
+  },
+  "auth.password_reset": {
+    label: "Сброс пароля",
+    timing: "Отправляется, когда пользователь запрашивает ссылку для сброса пароля.",
+    categoryLabel: "Авторизация",
+  },
+  "notification_email.verify_code": {
+    label: "Код подтверждения для email уведомлений",
+    timing: "Отправляется, когда пользователь добавляет и подтверждает дополнительный email для уведомлений.",
+    categoryLabel: "Авторизация",
+  },
+  "subscription.purchase_success": {
+    label: "Подписка активирована",
+    timing: "Отправляется после оплаты заказа, когда подписка активирована или продлена.",
+    categoryLabel: "Подписка",
+  },
+  "subscription.expiry_reminder": {
+    label: "Напоминание об окончании подписки",
+    timing: "Отправляется фоновой задачей за 7, 3 и 1 день до окончания активной подписки; можно отключить в настройках email.",
+    categoryLabel: "Подписка",
+  },
+  "balance.low": {
+    label: "Уведомление о низком балансе",
+    timing: "Отправляется, когда баланс пользователя становится ниже глобального или персонального порога уведомления.",
+    categoryLabel: "Биллинг",
+  },
+  "balance.recharge_success": {
+    label: "Баланс пополнен",
+    timing: "Отправляется после оплаты заказа на пополнение и зачисления средств.",
+    categoryLabel: "Биллинг",
+  },
+  "account.quota_alert": {
+    label: "Предупреждение о квоте аккаунта",
+    timing: "Отправляется на email администраторов, когда upstream-аккаунт достигает настроенного порога квоты.",
+    categoryLabel: "Администрирование",
+  },
+  "content_moderation.violation_notice": {
+    label: "Уведомление о нарушении правил",
+    timing: "Отправляется, когда запрос пользователя срабатывает на правила модерации или риск-контроля, но аккаунт ещё не отключён.",
+    categoryLabel: "Риск-контроль",
+  },
+  "content_moderation.account_disabled": {
+    label: "Аккаунт отключён за нарушения",
+    timing: "Отправляется, когда число нарушений модерации достигает порога блокировки и аккаунт пользователя автоматически отключается.",
+    categoryLabel: "Риск-контроль",
+  },
+  "ops.alert": {
+    label: "Операционное оповещение",
+    timing: "Отправляется операционным получателям, когда срабатывает правило мониторинга и настройки email позволяют отправку.",
+    categoryLabel: "Операции",
+  },
+  "ops.scheduled_report": {
+    label: "Плановый операционный отчёт",
+    timing: "Отправляется по расписанию для ежедневных и еженедельных отчётов, дайджестов ошибок и отчётов о состоянии аккаунтов; все метрики ежедневных и еженедельных сводок можно редактировать в этом шаблоне.",
+    categoryLabel: "Операции",
+  },
+};
+
 function normalizeEventOption(option: EmailTemplateEventOption): EmailTemplateOption {
   if (typeof option === "string") {
     return { value: option };
@@ -472,13 +540,21 @@ function normalizeEventOption(option: EmailTemplateEventOption): EmailTemplateOp
   return option;
 }
 
+function isKnownEventDisplayKey(value: string): value is KnownEventDisplayKey {
+  return value in eventDisplayMeta;
+}
+
 function eventMetaFor(option?: EmailTemplateOption | null) {
   if (!option) return null;
-  const displayMeta = (
-    locale.value.toLowerCase().startsWith("zh")
-      ? eventDisplayMeta
-      : eventDisplayMetaEn
-  )[option.value];
+  const normalizedLocale = locale.value.toLowerCase();
+  const displayMap: Record<KnownEventDisplayKey, EventDisplayMeta> = normalizedLocale.startsWith("zh")
+    ? eventDisplayMeta
+    : normalizedLocale.startsWith("ru")
+      ? eventDisplayMetaRu
+      : eventDisplayMetaEn;
+  const displayMeta = isKnownEventDisplayKey(option.value)
+    ? displayMap[option.value]
+    : undefined;
   const label = displayMeta?.label || option.label || option.value;
   const timing = displayMeta?.timing || option.description || "";
   const categoryLabel =
@@ -499,17 +575,17 @@ function formatEventOptionLabel(option: EmailTemplateOption): string {
 
 function formatCategory(category: string): string {
   const normalized = category.trim().toLowerCase();
-  if (!normalized) return localText("通知", "Notification");
-  const labels: Record<string, { zh: string; en: string }> = {
-    auth: { zh: "认证安全", en: "Auth" },
-    subscription: { zh: "订阅", en: "Subscription" },
-    billing: { zh: "计费", en: "Billing" },
-    admin: { zh: "管理告警", en: "Admin" },
-    risk_control: { zh: "风控", en: "Risk Control" },
-    ops: { zh: "运维", en: "Ops" },
+  if (!normalized) return localText("通知", "Notification", "Уведомление");
+  const labels: Record<string, { zh: string; en: string; ru: string }> = {
+    auth: { zh: "认证安全", en: "Auth", ru: "Авторизация" },
+    subscription: { zh: "订阅", en: "Subscription", ru: "Подписка" },
+    billing: { zh: "计费", en: "Billing", ru: "Биллинг" },
+    admin: { zh: "管理告警", en: "Admin", ru: "Администрирование" },
+    risk_control: { zh: "风控", en: "Risk Control", ru: "Риск-контроль" },
+    ops: { zh: "运维", en: "Ops", ru: "Операции" },
   };
   const item = labels[normalized];
-  return item ? localText(item.zh, item.en) : category;
+  return item ? localText(item.zh, item.en, item.ru) : category;
 }
 
 const selectedEventOption = computed(() => {
@@ -522,9 +598,9 @@ const selectedEventOption = computed(() => {
 const selectedEventMeta = computed(() => eventMetaFor(selectedEventOption.value));
 
 const selectedEventDescription = computed(() => {
-  return (
-    selectedEventOption.value?.description || ""
-  );
+  const option = selectedEventOption.value;
+  if (!option || isKnownEventDisplayKey(option.value)) return "";
+  return option.description || "";
 });
 
 const placeholderList = computed(() => {
@@ -565,6 +641,9 @@ function formatLocale(locale: string): string {
   }
   if (lower === "en" || lower.startsWith("en-")) {
     return t("admin.settings.emailTemplates.localeEn");
+  }
+  if (lower === "ru" || lower.startsWith("ru-")) {
+    return localText("俄语", "Russian", "Русский");
   }
   return locale;
 }
