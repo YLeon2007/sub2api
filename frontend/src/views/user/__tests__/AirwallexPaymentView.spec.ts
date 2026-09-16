@@ -12,6 +12,7 @@ const routeState = vi.hoisted(() => ({
 const routerPush = vi.hoisted(() => vi.fn())
 const airwallexInit = vi.hoisted(() => vi.fn())
 const redirectToCheckout = vi.hoisted(() => vi.fn())
+const localeRef = vi.hoisted(() => ({ value: 'zh-CN' }))
 
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
@@ -28,7 +29,7 @@ vi.mock('vue-i18n', async () => {
     ...actual,
     useI18n: () => ({
       t: (key: string) => key,
-      locale: { value: 'zh-CN' },
+      locale: localeRef,
     }),
   }
 })
@@ -82,6 +83,7 @@ describe('AirwallexPaymentView', () => {
     })
     redirectToCheckout.mockReset()
     window.localStorage.clear()
+    localeRef.value = 'zh-CN'
   })
 
   it('从本地恢复快照读取支付参数，避免在 URL 中暴露 client_secret', async () => {
@@ -116,6 +118,25 @@ describe('AirwallexPaymentView', () => {
     expect(successUrl.searchParams.get('order_id')).toBe('101')
     expect(successUrl.searchParams.get('out_trade_no')).toBe('sub2_awx_101')
     expect(successUrl.searchParams.get('resume_token')).toBe('resume-awx')
+  })
+
+  it('передаёт русский locale в Airwallex SDK', async () => {
+    localeRef.value = 'ru-RU'
+    routeState.query = {
+      order_id: '101',
+      out_trade_no: 'sub2_awx_101',
+      resume_token: 'resume-awx',
+    }
+    window.localStorage.setItem(
+      PAYMENT_RECOVERY_STORAGE_KEY,
+      JSON.stringify(airwallexSnapshot()),
+    )
+
+    mountView()
+    await flushPromises()
+    await flushPromises()
+
+    expect(airwallexInit).toHaveBeenCalledWith(expect.objectContaining({ locale: 'ru' }))
   })
 
   it('拒绝只从 URL query 读取 Airwallex 支付密钥', async () => {

@@ -476,9 +476,9 @@ const startTest = async () => {
       return
     }
     status.value = 'error'
-    const msg = error instanceof Error ? error.message : 'Unknown error'
-    errorMessage.value = msg
-    addLine(`Error: ${msg}`, 'text-red-400')
+    const msg = error instanceof Error ? error.message : t('common.unknownError')
+    errorMessage.value = t('admin.accounts.testFailed')
+    addLine(t('admin.accounts.errorPrefix', { message: msg }), 'text-red-400')
   }
 }
 
@@ -540,13 +540,19 @@ const handleEvent = (event: {
         status.value = 'success'
       } else {
         status.value = 'error'
-        errorMessage.value = event.error || 'Test failed'
+        errorMessage.value = t('admin.accounts.testFailed')
+        if (event.error) {
+          addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
+        }
       }
       break
 
     case 'error':
       status.value = 'error'
-      errorMessage.value = event.error || 'Unknown error'
+      errorMessage.value = t('admin.accounts.testFailed')
+      if (event.error) {
+        addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
+      }
       if (streamingContent.value) {
         addLine(streamingContent.value, 'text-green-300')
         streamingContent.value = ''

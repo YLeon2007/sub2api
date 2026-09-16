@@ -9,7 +9,10 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     // te() 恒真：已知 token 直接返回 i18n key，便于断言 window/label 映射。
-    useI18n: () => ({ t: (key: string) => key, te: () => true }),
+    useI18n: () => ({
+      t: (key: string, values?: Record<string, string | number>) => values ? `${key}:${JSON.stringify(values)}` : key,
+      te: () => true
+    }),
   }
 })
 
@@ -102,17 +105,30 @@ describe('MonitorQuotaView', () => {
     expect(wrapper.text()).toContain('3.20 CNY')
   })
 
-  it('renders a truncated error state when the fetch failed', () => {
-    const longError = 'x'.repeat(60)
+  it('localizes known failed snapshot diagnostics instead of showing raw backend English', () => {
+    const rawError = 'quota high: pro/7d at 93.4%'
     const wrapper = mount(MonitorQuotaView, {
       props: {
-        snapshot: makeSnapshot({ success: false, error: longError }),
+        snapshot: makeSnapshot({ success: false, error: rawError }),
       },
     })
 
     const error = wrapper.get('[data-testid="monitor-quota-error"]')
-    expect(error.text()).toBe(`${'x'.repeat(48)}…`)
-    expect(error.attributes('title')).toBe(longError)
+    const expected = 'monitorCommon.quota.errors.quotaHigh:{"window":"pro/7d","percent":"93.4"}'
+    expect(error.text()).toBe(`${expected.slice(0, 48)}…`)
+    expect(error.attributes('title')).toBe(expected)
+  })
+
+  it('collapses unknown failed snapshot diagnostics to a localized generic message', () => {
+    const wrapper = mount(MonitorQuotaView, {
+      props: {
+        snapshot: makeSnapshot({ success: false, error: 'raw upstream English sentence' }),
+      },
+    })
+
+    const error = wrapper.get('[data-testid="monitor-quota-error"]')
+    expect(error.text()).toBe('monitorCommon.quota.errors.generic')
+    expect(error.attributes('title')).toBe('monitorCommon.quota.errors.generic')
   })
 
   it('keeps failed snapshots from rendering tier rows', () => {
