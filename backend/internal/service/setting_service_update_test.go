@@ -13,6 +13,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
 	"github.com/stretchr/testify/require"
 )
 
@@ -571,6 +572,19 @@ func TestSettingService_InitializeDefaultSettingsPersistsConfiguredForwardedClie
 
 	require.NoError(t, svc.InitializeDefaultSettings(context.Background()))
 	require.JSONEq(t, `["X-Cdn-Ip","True-Client-Ip"]`, repo.values[SettingKeyForwardedClientIPHeaders])
+}
+
+func TestSettingService_GrokCrossClientMappingDefaultsToOptIn(t *testing.T) {
+	t.Cleanup(func() { xai.SetRuntimeModelMappingOptions(xai.ModelMappingOptions{}) })
+	repo := &forwardedIPMigrationRepoStub{values: map[string]string{}}
+	svc := NewSettingService(repo, &config.Config{})
+
+	require.NoError(t, svc.InitializeDefaultSettings(context.Background()))
+	require.Equal(t, "false", repo.values[SettingKeyGrokCrossClientModelMapEnabled])
+	require.False(t, svc.parseSettings(map[string]string{}).GrokCrossClientModelMapEnabled)
+	require.True(t, svc.parseSettings(map[string]string{
+		SettingKeyGrokCrossClientModelMapEnabled: "true",
+	}).GrokCrossClientModelMapEnabled)
 }
 
 func TestSettingService_UpdateSettings_APIKeyACLTrustForwardedIPRefreshesConfig(t *testing.T) {
