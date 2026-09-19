@@ -149,15 +149,15 @@ describe('Russian v0.2.2 upstream semantics', () => {
       tryAgain: 'Попробуйте ещё раз',
     })
     const settings = source('backend/internal/service/setting_parse.go')
-    expect(settings).toContain('SettingKeyGrokCrossClientModelMapEnabled: "false"')
+    expect(settings).toContain('SettingKeyGrokCrossClientModelMapEnabled: "true"')
     expect(settings).toContain(
-      'GrokCrossClientModelMapEnabled = settings[SettingKeyGrokCrossClientModelMapEnabled] == "true"'
+      'GrokCrossClientModelMapEnabled = !isFalseSettingValue(settings[SettingKeyGrokCrossClientModelMapEnabled])'
     )
-    expect(ru.admin.settings.gatewayForwarding.grokCrossClientMapHint).toBe(
-      'По умолчанию выключено. Когда включено, идентификаторы моделей GPT, Codex, o-series и Claude перенаправляются на указанную выше текстовую модель Grok по умолчанию.'
+    expect(ru.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain(
+      'По умолчанию включено.'
     )
-    expect(en.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain('Disabled by default.')
-    expect(zh.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain('默认关闭')
+    expect(en.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain('Enabled by default.')
+    expect(zh.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain('默认开启')
   })
 
   it('updates pinned-account discovery from Codex-only manifests to ordinary model lists too', () => {
