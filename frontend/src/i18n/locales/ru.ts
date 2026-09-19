@@ -7740,7 +7740,7 @@ export const ruOverrides = {
         "grokDefaultTextModel": "Текстовая модель Grok по умолчанию",
         "grokDefaultTextModelHint": "Используется для пустых значений model и, только когда переключатель включён, для запросов из других пространств имён клиентских моделей. Допускаются пользовательские Grok model IDs.",
         "grokCrossClientMap": "Сопоставлять другие клиенты с Grok",
-        "grokCrossClientMapHint": "По умолчанию включено. Отключите переключатель, если не нужно направлять идентификаторы моделей GPT, Codex, o-series и Claude на указанную выше текстовую модель Grok по умолчанию.",
+        "grokCrossClientMapHint": "По умолчанию выключено. Когда включено, идентификаторы моделей GPT, Codex, o-series и Claude перенаправляются на указанную выше текстовую модель Grok по умолчанию.",
         "grokDefaultBaseURLMode": "Upstream Grok по умолчанию",
         "grokDefaultBaseURLModeHint": "Используется только тогда, когда у Grok-аккаунта не задан явный base URL. Медиа- и голосовые эндпоинты продолжат использовать свои официальные API-хосты.",
         "grokBaseURLModeCLI": "CLI-прокси чата",

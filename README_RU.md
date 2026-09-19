@@ -28,7 +28,7 @@
 - [Сообщить о проблеме](https://github.com/YLeon2007/sub2api/issues)
 - [Оригинальный upstream](https://github.com/Wei-Shaw/sub2api)
 
-Текущий русифицированный релиз: `v0.2.7-ru.2`.
+Текущий русифицированный релиз: `v0.2.7-ru.3`.
 
 ## Партнёры
 
@@ -110,7 +110,6 @@ Sub2API — это AI API Gateway для распределения и упра�
 ### Улучшения
 
 - В mobile portrait layout верхняя панель сохраняет иконку входа в model marketplace.
-- Сопоставление моделей других клиентских пространств имён с Grok включено по умолчанию; отключите переключатель, если это поведение не требуется.
 
 ### Исправления
 
@@ -215,7 +214,7 @@ fast_mode = true
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.7-ru.2/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.7-ru.3/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in
@@ -248,7 +247,7 @@ sudo journalctl -u sub2api -f
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.7-ru.2/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.7-ru.3/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected uninstaller? [y/N] " confirm
 case "$confirm" in
@@ -272,7 +271,7 @@ mkdir -p sub2api-deploy
 cd sub2api-deploy
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.7-ru.2/deploy/docker-deploy.sh
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.7-ru.3/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -290,7 +289,7 @@ docker compose logs -f sub2api
 По умолчанию используется immutable образ:
 
 ```text
-ghcr.io/yleon2007/sub2api:0.2.7-ru.2
+ghcr.io/yleon2007/sub2api:0.2.7-ru.3
 ```
 
 #### Ручная установка
@@ -365,7 +364,7 @@ go build -tags embed -ldflags="-X main.Version=${VERSION}" -o sub2api ./cmd/serv
 Используйте только конкретный immutable тег:
 
 ```bash
-docker pull ghcr.io/yleon2007/sub2api:0.2.7-ru.2
+docker pull ghcr.io/yleon2007/sub2api:0.2.7-ru.3
 docker compose up -d --no-deps --force-recreate sub2api
 ```
 

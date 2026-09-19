@@ -149,15 +149,15 @@ describe('Russian v0.2.2 upstream semantics', () => {
       tryAgain: 'Попробуйте ещё раз',
     })
     const settings = source('backend/internal/service/setting_parse.go')
-    expect(settings).toContain('SettingKeyGrokCrossClientModelMapEnabled: "true"')
+    expect(settings).toContain('SettingKeyGrokCrossClientModelMapEnabled: "false"')
     expect(settings).toContain(
-      'GrokCrossClientModelMapEnabled = !isFalseSettingValue(settings[SettingKeyGrokCrossClientModelMapEnabled])'
+      'GrokCrossClientModelMapEnabled = settings[SettingKeyGrokCrossClientModelMapEnabled] == "true"',
     )
     expect(ru.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain(
-      'По умолчанию включено.'
+      'По умолчанию выключено.'
     )
-    expect(en.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain('Enabled by default.')
-    expect(zh.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain('默认开启')
+    expect(en.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain('Disabled by default.')
+    expect(zh.admin.settings.gatewayForwarding.grokCrossClientMapHint).toContain('默认关闭')
   })
 
   it('updates pinned-account discovery from Codex-only manifests to ordinary model lists too', () => {

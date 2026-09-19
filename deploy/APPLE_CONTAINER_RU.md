@@ -102,7 +102,7 @@ export SUB2API_ENV_FILE=/absolute/path/to/sub2api.env
 Доступны отдельные переопределения образов для Apple:
 
 ```dotenv
-APPLE_CONTAINER_SUB2API_IMAGE=ghcr.io/yleon2007/sub2api:0.2.7-ru.2
+APPLE_CONTAINER_SUB2API_IMAGE=ghcr.io/yleon2007/sub2api:0.2.7-ru.3
 APPLE_CONTAINER_POSTGRES_IMAGE=postgres:18-alpine
 APPLE_CONTAINER_REDIS_IMAGE=redis:8-alpine
 ```
@@ -193,7 +193,7 @@ container exec sub2api-apple sh -c 'tar -C "$DATA_DIR" -czf - .' \
 
 # Удалите только app-контейнер, чтобы helper мог смонтировать его named volume.
 container delete sub2api-apple
-SUB2API_IMAGE=ghcr.io/yleon2007/sub2api:0.2.7-ru.2 # Должен совпадать с APPLE_CONTAINER_SUB2API_IMAGE в .env.
+SUB2API_IMAGE=ghcr.io/yleon2007/sub2api:0.2.7-ru.3 # Должен совпадать с APPLE_CONTAINER_SUB2API_IMAGE в .env.
 container run --rm --name sub2api-apple-data-restore \
   --entrypoint /bin/sh \
   --volume sub2api-apple-data:/restore \
