@@ -1,5 +1,7 @@
 # Antigravity：Claude Desktop attribution 元数据触发 429 的排查记录
 
+[English](ANTIGRAVITY_ATTRIBUTION_429_RU.md) | 中文
+
 本文记录一次实际问题的定位和修复，适用于 Claude Desktop / Claude Code 经 Anthropic Messages 协议转到 Antigravity 的场景。它不是所有 `429 RESOURCE_EXHAUSTED` 的通用解释：额度耗尽、请求频率、上游容量等仍应独立排查。
 
 ## 现象与环境

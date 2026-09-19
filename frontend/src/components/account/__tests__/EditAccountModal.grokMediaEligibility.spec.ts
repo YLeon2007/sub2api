@@ -90,6 +90,15 @@ describe('EditAccountModal Grok media eligibility', () => {
     expect(mountModal(account('openai', 'oauth')).find('[data-testid="grok-media-eligibility-card"]').exists()).toBe(false)
   })
 
+  it('shows a localized fallback instead of a raw upstream error', async () => {
+    getEligibilityMock.mockRejectedValue(new Error('English upstream eligibility failure'))
+    const wrapper = mountModal()
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain('admin.accounts.grokMediaEligibility.loadFailed')
+    })
+    expect(wrapper.text()).not.toContain('English upstream eligibility failure')
+  })
+
   it('updates the dedicated endpoint only when the mode changes', async () => {
     const wrapper = mountModal()
     await vi.waitFor(() => expect(getEligibilityMock).toHaveBeenCalled())
