@@ -13,7 +13,7 @@
 
 services:
   sub2api:
-    image: ghcr.io/yleon2007/sub2api:0.2.7-ru.3
+    image: ghcr.io/yleon2007/sub2api:0.2.8-ru.1
     container_name: sub2api
     restart: unless-stopped
     security_opt:

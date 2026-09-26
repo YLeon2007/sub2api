@@ -272,18 +272,15 @@ describe('Russian locale key coverage', () => {
       'Применяется только к непотоковым ответам Images аккаунтов OpenAI API Key. Если элемент изображения upstream содержит url, но не содержит b64_json, шлюз скачивает данные по url и заполняет b64_json их содержимым в base64 (url сохраняется) для клиентов на основе официального API; при ошибке скачивания ответ возвращается без изменений.'
     )
 
-    expect(ru.admin.channels.form.maxReasoningEffortMultiplier).toBe(
-      'Множитель для reasoning effort=max'
-    )
-    expect(ru.admin.channels.form.fable51DefaultMaxReasoningMultiplier).toBe(
-      'По умолчанию: 3'
+    expect(ru.admin.channels.form.reasoningEffortMultipliers).toBe(
+      'Свои множители Reasoning Effort (необязательно)'
     )
     expect(ru.admin.channels.form.multiplierPositive).toBe(
-      'Fast/Flex/max effort multipliers (множители tier-ов) должны быть больше 0'
+      'Fast/Flex multipliers (множители tier-ов) должны быть конечными числами больше 0'
     )
-    expect(ru.modelPlaza.table.maxReasoningMultiplierBadge).toBe('Max ×{multiplier}')
-    expect(ru.modelPlaza.table.maxReasoningMultiplierHint).toBe(
-      'Если передаваемый reasoning effort равен max, тарификация и расход квоты для запроса умножаются на {multiplier}'
+    expect(ru.modelPlaza.table.reasoningMultiplierBadge).toBe('{effort} ×{multiplier}')
+    expect(ru.modelPlaza.table.reasoningMultiplierHint).toBe(
+      'Если передаваемый reasoning effort равен {effort}, тарификация и расход квоты для запроса умножаются на {multiplier}. Для ненастроенных уровней используется 1×'
     )
 
     expect(ru.admin.groups.codexModelsManifest.fallback).toBe(

@@ -80,7 +80,7 @@ const expectedAddedLeaves = [
   ],
   [
     'admin.ops.systemLogs.retentionDaysHint',
-    'Применяется плановым заданием очистки данных.'
+    'Применяется по расписанию очистки данных, когда очистка включена в настройках операций.'
   ],
   [
     'admin.settings.features.channelMonitor.hideUserRanking',
