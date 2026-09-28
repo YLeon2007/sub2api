@@ -527,7 +527,7 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.accounts.platforms.zhipu).toBe('Zhipu GLM')
     expect(ru.admin.accounts.platforms.deepseek).toBe('DeepSeek')
     expect(ru.admin.accounts.cnProviders.accountMode.paygDesc).toContain('тарифицируется по токенам')
-    expect(ru.admin.accounts.cnProviders.accountMode.codingDesc).toContain('скользящим окнам расхода 5 часов / неделя')
+    expect(ru.admin.accounts.cnProviders.accountMode.codingDesc).toContain('скользящим окнам расхода: 5 часов и неделя')
     expect(ru.admin.accounts.cnProviders.apiProtocol.anthropicDesc).toContain('Native passthrough')
     expect(ru.admin.accounts.bulkEdit.longContextShadowHint).toContain('Long-context billing задаётся на родительском аккаунте')
     expect(ru.admin.accounts.status.expired).toBe('Истёк')
@@ -551,11 +551,11 @@ describe('Russian locale key coverage', () => {
   })
 
   it('preserves the added v0.1.179 adaptive API protocol and multiplier pricing semantics in Russian', () => {
-    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptive).toBe('Adaptive (автовыбор protocol)')
-    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptiveDesc).toContain('родной endpoint провайдера')
-    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptiveDesc).toContain('конвертирует только если endpoint недоступен')
-    expect(ru.admin.accounts.cnProviders.apiProtocol.endpoints).toContain('endpoint-ы протоколов')
-    expect(ru.admin.accounts.cnProviders.apiProtocol.responsesFallbackDesc).toContain('Responses-запросы')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptive).toBe('Адаптивный (автовыбор протокола)')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptiveDesc).toContain('родной эндпоинт провайдера')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.adaptiveDesc).toContain('преобразует запрос только при недоступности такого эндпоинта')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.endpoints).toBe('Эндпоинты протоколов')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.responsesFallbackDesc).toContain('Запросы Responses')
     expect(ru.admin.accounts.cnProviders.apiProtocol.responsesFallbackDesc).toContain('Chat Completions')
 
     expect(ru.admin.channels.form.fastMultiplier).toContain('множитель быстрого tier')
