@@ -1025,6 +1025,7 @@ export default {
 
   // Pagination
   pagination: {
+    navigation: '分页导航',
     showing: '显示',
     to: '至',
     of: '共',

@@ -1021,6 +1021,7 @@ export default {
 
   // Pagination
   pagination: {
+    navigation: 'Pagination navigation',
     showing: 'Showing',
     to: 'to',
     of: 'of',
