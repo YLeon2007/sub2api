@@ -459,6 +459,9 @@ describe('Russian locale key coverage', () => {
     )
     expect(ru.channelMonitorV2.settings.modeV1).toBe('Активные проверки V1')
     expect(ru.channelMonitorV2.settings.modeV2).toBe('Пассивный мониторинг V2')
+    expect(ru.monitorCommon.checkMode.probe).toBe('Проверка доступности')
+    expect(ru.monitorCommon.checkMode.quota).toBe('Квота')
+    expect(ru.monitorCommon.checkMode.quota_probe).toBe('Проверка и квота')
     expect(ru.channelMonitorV2.admin.descriptionV1).toBe(
       'Системный режим — активные проверки V1: управляйте мониторами и запускайте проверки вручную; агрегация V2 не выполняется.'
     )

@@ -91,12 +91,14 @@ function localizeMetadata(metadata: Record<string, unknown>, t: TranslateFn): Re
  * @param t        - Vue i18n translate function
  * @param namespace- i18n key prefix, e.g. "payment.errors"
  * @param fallback - Fallback key or plain string if no localized mapping exists
+ * @param localizedFallbackOnly - Never expose unlocalized API prose on unknown reasons
  */
 export function extractI18nErrorMessage(
   err: unknown,
   t: TranslateFn,
   namespace: string,
   fallback: string,
+  localizedFallbackOnly = false,
 ): string {
   const code = extractApiErrorCode(err)
   if (code) {
@@ -110,7 +112,7 @@ export function extractI18nErrorMessage(
     const te = (t as TranslateWithExistsFn).te
     if (te && te(key)) return translated
   }
-  return extractApiErrorMessage(err, fallback)
+  return localizedFallbackOnly ? fallback : extractApiErrorMessage(err, fallback)
 }
 
 /**

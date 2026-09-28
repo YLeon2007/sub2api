@@ -357,6 +357,33 @@ describe('GroupsView duplicate action', () => {
     wrapper.unmount()
   })
 
+  it('does not display raw API prose when a group creation reason is unknown', async () => {
+    createGroup.mockRejectedValueOnce({ message: 'upstream group creation failed in English', reason: 'UNKNOWN_REASON' })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.findAll('button').find((button) => button.text() === 'admin.groups.createGroup')!.trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-tour="group-form-name"]').setValue('Primary')
+    await wrapper.get('#create-group-form').trigger('submit')
+    await flushPromises()
+    expect(showError).toHaveBeenCalledWith('admin.groups.failedToCreate')
+    expect(showError).not.toHaveBeenCalledWith('upstream group creation failed in English')
+    wrapper.unmount()
+  })
+
+  it('does not display raw API prose when a group update reason is unknown', async () => {
+    updateGroup.mockRejectedValueOnce({ response: { data: { detail: 'upstream group update failed in English' } } })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.findAll('button').find((button) => button.text() === 'common.edit')!.trigger('click')
+    await flushPromises()
+    await wrapper.get('#edit-group-form').trigger('submit')
+    await flushPromises()
+    expect(showError).toHaveBeenCalledWith('admin.groups.failedToUpdate')
+    expect(showError).not.toHaveBeenCalledWith('upstream group update failed in English')
+    wrapper.unmount()
+  })
+
   it('loads, edits, and saves custom reasoning multipliers for group pricing', async () => {
     const group = {
       ...sourceGroup,

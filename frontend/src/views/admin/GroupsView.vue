@@ -6040,6 +6040,7 @@ const handleCreateGroup = async () => {
         t,
         "admin.groups.errors",
         t("admin.groups.failedToCreate"),
+        true,
       ),
     );
     console.error("Error creating group:", error);
@@ -6391,6 +6392,7 @@ const handleUpdateGroup = async () => {
         t,
         "admin.groups.errors",
         t("admin.groups.failedToUpdate"),
+        true,
       ),
     );
     console.error("Error updating group:", error);

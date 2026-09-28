@@ -1192,9 +1192,9 @@ export const ruOverrides = {
       "opencode_go": "OpenCode"
     },
     "checkMode": {
-      "probe": "Probe",
-      "quota": "Quota",
-      "quota_probe": "Probe + Quota"
+      "probe": "Проверка доступности",
+      "quota": "Квота",
+      "quota_probe": "Проверка и квота"
     },
     "quota": {
       "unavailable": "Квота недоступна",
