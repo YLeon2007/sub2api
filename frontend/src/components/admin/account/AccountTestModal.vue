@@ -933,9 +933,25 @@ const startTest = async () => {
     }
     status.value = 'error'
     const msg = error instanceof Error ? error.message : t('common.unknownError')
-    errorMessage.value = msg
+    errorMessage.value = t('admin.accounts.testFailed')
     addLine(t('admin.accounts.errorPrefix', { message: msg }), 'text-red-400')
   }
+}
+
+const localizeKnownAccountTestText = (text: string) => {
+  if (testMode.value !== 'compact') {
+    return text
+  }
+  if (text === 'Compact probe succeeded (native remote compaction v2)') {
+    return t('admin.accounts.openai.compactProbeSuccess')
+  }
+  if (
+    text ===
+    'Upstream returned 2xx without a compaction output item (native remote compaction v2 unsupported on this chain)'
+  ) {
+    return t('admin.accounts.openai.compactProbeUnsupported')
+  }
+  return text
 }
 
 const handleEvent = (event: {
@@ -981,7 +997,7 @@ const handleEvent = (event: {
 
     case 'content':
       if (event.text) {
-        streamingContent.value += event.text
+        streamingContent.value += localizeKnownAccountTestText(event.text)
         scrollToBottom()
       }
       break
@@ -1032,13 +1048,33 @@ const handleEvent = (event: {
         status.value = 'success'
       } else {
         status.value = 'error'
-        errorMessage.value = event.error || t('admin.accounts.testFailed')
+        if (event.error) {
+          const localizedError = localizeKnownAccountTestText(event.error)
+          if (localizedError === event.error) {
+            errorMessage.value = t('admin.accounts.testFailed')
+            addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
+          } else {
+            errorMessage.value = localizedError
+          }
+        } else {
+          errorMessage.value = t('admin.accounts.testFailed')
+        }
       }
       break
 
     case 'error':
       status.value = 'error'
-      errorMessage.value = event.error || t('common.unknownError')
+      if (event.error) {
+        const localizedEventError = localizeKnownAccountTestText(event.error)
+        if (localizedEventError === event.error) {
+          errorMessage.value = t('admin.accounts.testFailed')
+          addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
+        } else {
+          errorMessage.value = localizedEventError
+        }
+      } else {
+        errorMessage.value = t('admin.accounts.testFailed')
+      }
       if (streamingContent.value) {
         addLine(streamingContent.value, 'text-green-300')
         streamingContent.value = ''

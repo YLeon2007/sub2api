@@ -101,6 +101,8 @@
             :href="embeddedUrl"
             target="_blank"
             rel="noopener noreferrer"
+            :aria-label="t('customPage.openInNewTab')"
+            draggable="false"
             class="btn btn-secondary btn-sm custom-open-fab"
             :style="openButtonPosition ? { left: `${openButtonPosition.x}px`, top: `${openButtonPosition.y}px`, right: 'auto' } : undefined"
             @pointerdown="startButtonDrag"
@@ -331,7 +333,7 @@ async function fetchAndRenderMarkdown(slug: string) {
     renderedHtml.value = withIds
     tocItems.value = toc
   } catch {
-    renderedHtml.value = '<p class="text-red-500">Failed to load page</p>'
+    renderedHtml.value = `<p class="text-red-500">${t('customPage.loadFailed')}</p>`
   } finally {
     loading.value = false
     await nextTick()
