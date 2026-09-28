@@ -272,7 +272,7 @@ import { useSubscriptionStore } from '@/stores/subscriptions'
 import { useAppStore } from '@/stores'
 import { FeatureFlags, resolveFeatureFlag } from '@/utils/featureFlags'
 import { paymentAPI } from '@/api/payment'
-import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
+import { extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
 import { hasPeakRate, formatPeakRateWindow, serverTimezoneLabel, type PeakRateFields } from '@/utils/peak-rate'
 import type { SubscriptionPlan, CheckoutInfoResponse, CreateOrderResult, OrderType } from '@/types/payment'
@@ -962,7 +962,7 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
         normalizeVisibleMethod(options.paymentType || selectedMethod.value) || selectedMethod.value,
       )
       if (!handled) {
-        errorMessage.value = extractI18nErrorMessage(err, t, 'payment.errors', extractApiErrorMessage(err, t('payment.result.failed')))
+        errorMessage.value = extractI18nErrorMessage(err, t, 'payment.errors', t('payment.result.failed'))
         errorHintMessage.value = ''
       }
       if (handled) {

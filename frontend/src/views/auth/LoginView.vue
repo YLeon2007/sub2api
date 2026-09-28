@@ -250,6 +250,7 @@ import type {
   TotpLoginResponse
 } from '@/types'
 import { extractI18nErrorMessage } from '@/utils/apiError'
+import { getLocale } from '@/i18n'
 import { clearAllAffiliateReferralCodes } from '@/utils/oauthAffiliate'
 
 const { t } = useI18n()
@@ -717,7 +718,9 @@ async function handle2FAVerify(code: string): Promise<void> {
     await router.push(redirectTo)
   } catch (error: unknown) {
     const err = error as { message?: string; response?: { data?: { message?: string } } }
-    const message = err.response?.data?.message || err.message || t('profile.totp.loginFailed')
+    const message = getLocale() === 'ru'
+      ? t('profile.totp.loginFailed')
+      : err.response?.data?.message || err.message || t('profile.totp.loginFailed')
 
     if (totpModalRef.value) {
       totpModalRef.value.setError(message)
