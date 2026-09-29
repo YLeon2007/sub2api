@@ -95,6 +95,13 @@ describe('Russian release review closure', () => {
     expect(errorLog).toContain("msg.toLowerCase().includes('rate limit')")
   })
 
+  it('localizes the active Codex PAT option and missing-token error', () => {
+    expect(ru.admin.accounts.oauth.openai.codexPatAuth).toBe('Персональный токен доступа Codex')
+    expect(ru.admin.accounts.oauth.openai.codexPatEmpty).toBe('Введите персональный токен доступа Codex')
+    expect(source('src/components/account/OAuthAuthorizationFlow.vue')).toContain("t('admin.accounts.oauth.openai.codexPatAuth')")
+    expect(source('src/components/account/CreateAccountModal.vue')).toContain("t('admin.accounts.oauth.openai.codexPatEmpty')")
+  })
+
   it('binds shared dialog, tooltip, and pagination accessible text to locale keys', () => {
     expect(en.pagination.navigation).toBe('Pagination navigation')
     expect(zh.pagination.navigation).toBe('分页导航')
