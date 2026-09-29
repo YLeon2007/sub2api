@@ -217,11 +217,11 @@ const expectedModified: Record<string, string> = {
     'Сначала нажмите «Сбросы», чтобы загрузить доступное число',
   'admin.channels.form.multiplierPositive':
     'Fast/Flex multipliers (множители tier-ов) должны быть конечными числами больше 0',
-  'admin.riskControl.apiKey': 'API Key',
+  'admin.riskControl.apiKey': 'API-ключ',
   'admin.riskControl.apiKeyTestFailed': 'Не удалось проверить API-ключи аудита',
   'admin.riskControl.apiKeyTestNoInput': 'Сначала введите API-ключи для проверки',
-  'admin.riskControl.apiKeys': 'API Keys',
-  'admin.riskControl.baseUrl': 'Base URL',
+  'admin.riskControl.apiKeys': 'API-ключи',
+  'admin.riskControl.baseUrl': 'Базовый URL',
   'admin.riskControl.configHint':
     'Используйте выбранный движок аудита для оценки контента запроса и обработки срабатываний порогов по режиму.',
   'admin.riskControl.proxyHint':
@@ -284,9 +284,9 @@ describe('Russian v0.2.8 upstream locale delta', () => {
     expect(rc.configHint).not.toContain('OpenAI Moderations')
     expect(rc.riskThresholdsHint).toContain('выбранного движка')
     expect(rc.riskThresholdsHint).not.toContain('OpenAI Moderations')
-    expect(rc.apiKey).toBe('API Key')
-    expect(rc.apiKeys).toBe('API Keys')
-    expect(rc.baseUrl).toBe('Base URL')
+    expect(rc.apiKey).toBe('API-ключ')
+    expect(rc.apiKeys).toBe('API-ключи')
+    expect(rc.baseUrl).toBe('Базовый URL')
     expect(rc.apiKeyTestNoInput).not.toContain('OpenAI')
     expect(rc.apiKeyTestFailed).not.toContain('OpenAI')
     expect(rc.proxyHint).not.toContain('OpenAI')

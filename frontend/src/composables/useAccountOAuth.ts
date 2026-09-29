@@ -36,7 +36,7 @@ export interface TokenInfo {
 
 export function useAccountOAuth() {
   const appStore = useAppStore()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
 
   // State
   const authUrl = ref('')
@@ -78,7 +78,7 @@ export function useAccountOAuth() {
       sessionId.value = response.session_id
       return true
     } catch (err: any) {
-      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.failedToGenerateUrl'))
+      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.failedToGenerateUrl'), undefined, locale.value)
       appStore.showError(error.value)
       return false
     } finally {
@@ -114,7 +114,7 @@ export function useAccountOAuth() {
 
       return tokenInfo as TokenInfo
     } catch (err: any) {
-      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.failedToExchangeCode'))
+      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.failedToExchangeCode'), undefined, locale.value)
       appStore.showError(error.value)
       return null
     } finally {
@@ -151,7 +151,7 @@ export function useAccountOAuth() {
 
       return tokenInfo as TokenInfo
     } catch (err: any) {
-      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.cookieAuthFailed'))
+      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.cookieAuthFailed'), undefined, locale.value)
       return null
     } finally {
       loading.value = false

@@ -1152,6 +1152,7 @@ export default {
       pleaseSelectStatus: '请选择有效的账号状态',
       mixedChannelWarningTitle: '混合渠道警告',
       mixedChannelWarning: '警告：分组 "{groupName}" 中同时包含 {currentPlatform} 和 {otherPlatform} 账号。混合使用不同渠道可能导致 thinking block 签名验证问题，会自动回退到非 thinking 模式。确定要继续吗？',
+      mixedChannelWarningGeneric: '警告：混合使用不同渠道可能导致思考模式被禁用。确定要继续吗？',
       pleaseEnterAccountName: '请输入账号名称',
       pleaseEnterApiKey: '请输入 API Key',
       bedrockAccessKeyId: 'AWS Access Key ID',
@@ -1189,6 +1190,7 @@ export default {
       oauth: {
         title: 'Claude 账号授权',
         authMethod: '授权方式',
+        copyUrl: '复制链接',
         manualAuth: '手动授权',
         cookieAutoAuth: 'Cookie 自动授权',
         cookieAutoAuthDesc: '使用 claude.ai sessionKey 自动完成 OAuth 授权，无需手动打开浏览器。',

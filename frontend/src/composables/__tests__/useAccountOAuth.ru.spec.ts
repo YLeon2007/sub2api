@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const state = vi.hoisted(() => ({ locale: 'ru', showError: vi.fn() }))
+const state = vi.hoisted(() => ({ locale: 'ru', localLocale: 'ru', showError: vi.fn() }))
 
 vi.mock('@/i18n', () => ({ getLocale: () => state.locale }))
 vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showError: state.showError }) }))
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
+    locale: { value: state.localLocale },
     t: (key: string) => ({
       'admin.accounts.oauth.failedToGenerateUrl': 'Не удалось создать ссылку авторизации',
       'admin.accounts.oauth.failedToExchangeCode': 'Не удалось обменять код авторизации',
@@ -25,6 +26,7 @@ import { useAccountOAuth } from '../useAccountOAuth'
 beforeEach(() => {
   vi.clearAllMocks()
   state.locale = 'ru'
+  state.localLocale = 'ru'
 })
 
 describe('useAccountOAuth Russian error paths', () => {
@@ -60,8 +62,20 @@ describe('useAccountOAuth Russian error paths', () => {
     expect(oauth.error.value).toBe('Введите хотя бы один корректный sessionKey')
   })
 
+  it('uses the local Russian locale even if the global locale lags in English', async () => {
+    state.locale = 'en'
+    state.localLocale = 'ru'
+    vi.mocked(adminAPI.accounts.generateAuthUrl).mockRejectedValueOnce({
+      response: { data: { detail: 'Provider-specific diagnostic' } }
+    })
+    const oauth = useAccountOAuth()
+    expect(await oauth.generateAuthUrl('oauth')).toBe(false)
+    expect(oauth.error.value).toBe('Не удалось создать ссылку авторизации')
+  })
+
   it('preserves the existing backend diagnostic for English', async () => {
     state.locale = 'en'
+    state.localLocale = 'en'
     vi.mocked(adminAPI.accounts.generateAuthUrl).mockRejectedValueOnce({
       response: { data: { detail: 'Provider-specific diagnostic' } }
     })

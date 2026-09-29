@@ -1052,6 +1052,7 @@ export default {
       pleaseSelectStatus: 'Please select a valid account status',
       mixedChannelWarningTitle: 'Mixed Channel Warning',
       mixedChannelWarning: 'Warning: Group "{groupName}" contains both {currentPlatform} and {otherPlatform} accounts. Mixing different channels may cause thinking block signature validation issues, which will fallback to non-thinking mode. Are you sure you want to continue?',
+      mixedChannelWarningGeneric: 'Warning: Mixing channels in this group may disable thinking mode. Continue?',
       pleaseEnterAccountName: 'Please enter account name',
       pleaseEnterApiKey: 'Please enter API Key',
       bedrockAccessKeyId: 'AWS Access Key ID',
@@ -1089,6 +1090,7 @@ export default {
       oauth: {
         title: 'Claude Account Authorization',
         authMethod: 'Authorization Method',
+        copyUrl: 'Copy URL',
         manualAuth: 'Manual Authorization',
         cookieAutoAuth: 'Cookie Auto-Auth',
         cookieAutoAuthDesc:

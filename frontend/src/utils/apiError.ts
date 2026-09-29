@@ -126,11 +126,13 @@ export function extractI18nErrorMessage(
  * @param err - The caught error (unknown type)
  * @param fallback - Fallback message if none can be extracted (use t('common.error') or similar)
  * @param i18nMap - Optional map of error codes to i18n translated strings
+ * @param localeOverride - Component locale when it differs from the global locale
  */
 export function extractApiErrorMessage(
   err: unknown,
   fallback = 'Unknown error',
   i18nMap?: Record<string, string>,
+  localeOverride?: string,
 ): string {
   if (!err) return fallback
 
@@ -144,7 +146,7 @@ export function extractApiErrorMessage(
 
   // Unknown backend text (including Error.message and stringified errors) is
   // diagnostic data, not a Russian primary UI message. Keep EN/ZH behavior.
-  if (getLocale() === 'ru') return fallback
+  if ((localeOverride ?? getLocale()) === 'ru') return fallback
 
   // Plain object from API client interceptor (most common case)
   if (typeof err === 'object' && err !== null) {

@@ -102,6 +102,49 @@ describe('Russian release review closure', () => {
     expect(source('src/components/account/CreateAccountModal.vue')).toContain("t('admin.accounts.oauth.openai.codexPatEmpty')")
   })
 
+  it('localizes the shared OAuth method label and copy-URL tooltip', () => {
+    const flow = source('src/components/account/OAuthAuthorizationFlow.vue')
+    expect(ru.admin.accounts.oauth.authMethod).toBe('Способ авторизации')
+    expect(ru.admin.accounts.oauth.copyUrl).toBe('Скопировать ссылку')
+    expect(flow).not.toContain("default: 'Authorization Method'")
+    expect(flow).toContain("methodLabel || t('admin.accounts.oauth.authMethod')")
+    expect(flow).not.toContain('title="Copy URL"')
+    expect(flow).toContain(":title=\"t('admin.accounts.oauth.copyUrl')\"")
+  })
+
+  it('does not promote raw backend failures in active account OAuth flows', () => {
+    const modal = source('src/components/account/CreateAccountModal.vue')
+    expect(modal).not.toMatch(/error\.response\?\.data\?\.(?:detail|message)\s*\|\|/)
+    expect(modal).not.toMatch(/error\.message\s*\|\|/)
+    expect(modal).not.toContain("'Unknown error'")
+    expect(modal).not.toContain("'Validation failed'")
+    expect(modal).not.toContain('item.error ||')
+    expect(modal).toMatch(/mixedChannelWarningRawMessage\.value\s*=\s*extractApiErrorMessage\(/)
+    expect(modal).not.toContain('return `#${item.index}${name}: ${item.message}`')
+    const antigravity = source('src/composables/useAntigravityOAuth.ts')
+    const gemini = source('src/composables/useGeminiOAuth.ts')
+    expect(antigravity).not.toMatch(/err\.response\?\.data\?\.detail\s*\|\|/)
+    expect(gemini).not.toMatch(/error\.value = (?:err|error)\.(?:message|response)/)
+  })
+
+  it('keeps OAuth failure and token instructions in Russian', () => {
+    expect(ru.admin.accounts.oauth.gemini.failedToGenerateUrl).toBe('Не удалось создать ссылку авторизации Gemini')
+    expect(ru.admin.accounts.oauth.antigravity.failedToValidateRT).toBe('Не удалось проверить токен обновления Antigravity')
+    expect(JSON.stringify(ru.admin.accounts.oauth)).not.toMatch(/\b(?:auth URL|auth code|authorization code|refresh token)\b/i)
+  })
+
+  it('localizes the active Vertex service-account choice', () => {
+    const modal = source('src/components/account/CreateAccountModal.vue')
+    expect(ru.admin.accounts.vertexDesc).toBe('Сервисный аккаунт')
+    expect(modal).toContain("t('admin.accounts.vertexDesc')")
+    expect(modal).not.toContain('>Service Account</span>')
+  })
+
+  it('localizes common active configuration labels without changing API identifiers', () => {
+    const text = JSON.stringify(ru)
+    expect(text).not.toMatch(/"(?:baseUrl|apiKey|requestId|clientId|clientSecret|redirectUrl|siteKey|secretKey|appIdLabel|appSecretLabel)":"(?:Base URL|API Key|Request ID|Client ID|Client Secret|Redirect URL|Site Key|Secret Key|App ID|App Secret)"/)
+  })
+
   it('binds shared dialog, tooltip, and pagination accessible text to locale keys', () => {
     expect(en.pagination.navigation).toBe('Pagination navigation')
     expect(zh.pagination.navigation).toBe('分页导航')
