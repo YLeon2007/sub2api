@@ -84,7 +84,8 @@ export default {
     tableOfContents: 'Contents',
     copyCode: 'Copy',
     copiedCode: 'Copied',
-    copyCodeFailed: 'Failed'
+    copyCodeFailed: 'Failed',
+    loadFailed: 'Failed to load page'
   },
 
   // Announcements Page
