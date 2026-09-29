@@ -81,6 +81,20 @@ describe('Russian release review closure', () => {
     expect(accountForm).toContain("@click=\"accountMode = 'coding'\"")
   })
 
+  it('translates active upstream, registration, callback and error-log labels', () => {
+    expect(ru.admin.accounts.upstream.baseUrl).toBe('Базовый URL вышестоящего сервиса')
+    expect(ru.admin.accounts.upstream.apiKey).toBe('API-ключ вышестоящего сервиса')
+    expect(ru.admin.settings.registration.frontendUrl).toBe('URL фронтенда')
+    expect(ru.admin.settings.wechatConnect.frontendRedirectUrlLabel).toBe('URL перенаправления фронтенда')
+    expect(ru.admin.ops.errorLog.commonErrors.contextDeadlineExceeded).toBe('Превышено время ожидания')
+    expect(ru.admin.ops.errorLog.commonErrors.connectionRefused).toBe('В соединении отказано')
+    expect(ru.admin.ops.errorLog.commonErrors.rateLimit).toBe('Превышен лимит запросов')
+    const errorLog = source('src/views/admin/ops/components/OpsErrorLogTable.vue')
+    expect(errorLog).toContain("msg.includes('context deadline exceeded')")
+    expect(errorLog).toContain("msg.includes('connection refused')")
+    expect(errorLog).toContain("msg.toLowerCase().includes('rate limit')")
+  })
+
   it('binds shared dialog, tooltip, and pagination accessible text to locale keys', () => {
     expect(en.pagination.navigation).toBe('Pagination navigation')
     expect(zh.pagination.navigation).toBe('分页导航')

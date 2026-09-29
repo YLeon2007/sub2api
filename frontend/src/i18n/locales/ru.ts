@@ -5259,12 +5259,12 @@ export const ruOverrides = {
       "apiKeyIsRequired": "API Key обязателен",
       "leaveEmptyToKeep": "Оставьте пустым, чтобы сохранить текущий ключ",
       "upstream": {
-        "baseUrl": "Upstream Base URL",
-        "baseUrlHint": "Адрес upstream-сервиса Antigravity, например https://cloudcode-pa.googleapis.com",
-        "apiKey": "Upstream API Key",
-        "apiKeyHint": "API Key для upstream-сервиса",
-        "pleaseEnterBaseUrl": "Введите upstream Base URL",
-        "pleaseEnterApiKey": "Введите upstream API Key"
+        "baseUrl": "Базовый URL вышестоящего сервиса",
+        "baseUrlHint": "Адрес вышестоящего сервиса Antigravity, например https://cloudcode-pa.googleapis.com",
+        "apiKey": "API-ключ вышестоящего сервиса",
+        "apiKeyHint": "API-ключ вышестоящего сервиса",
+        "pleaseEnterBaseUrl": "Введите базовый URL вышестоящего сервиса",
+        "pleaseEnterApiKey": "Введите API-ключ вышестоящего сервиса"
       },
       "oauth": {
         "title": "Авторизация аккаунта Claude",
@@ -5304,6 +5304,9 @@ export const ruOverrides = {
         "verifying": "Проверка...",
         "pleaseEnterSessionKey": "Введите хотя бы один корректный sessionKey",
         "authFailed": "Авторизация не удалась",
+        "failedToGenerateUrl": "Не удалось создать ссылку авторизации",
+        "failedToExchangeCode": "Не удалось обменять код авторизации",
+        "missingAuthCodeOrSession": "Отсутствует код авторизации или ID сеанса",
         "cookieAuthFailed": "Cookie-авторизация не удалась",
         "keyAuthFailed": "Ключ {index}: {error}",
         "successCreated": "Создано аккаунтов: {count}",
@@ -6709,9 +6712,9 @@ export const ruOverrides = {
       "errorLog": {
         "timeId": "Время / ID",
         "commonErrors": {
-          "contextDeadlineExceeded": "context deadline exceeded",
-          "connectionRefused": "connection refused",
-          "rateLimit": "rate limit"
+          "contextDeadlineExceeded": "Превышено время ожидания",
+          "connectionRefused": "В соединении отказано",
+          "rateLimit": "Превышен лимит запросов"
         },
         "time": "Время",
         "type": "Тип",
@@ -7492,9 +7495,9 @@ export const ruOverrides = {
         "invitationCodeHint": "Когда включено, пользователи должны ввести действительный код приглашения для регистрации",
         "passwordReset": "Сброс пароля",
         "passwordResetHint": "Разрешить пользователям сбрасывать пароль через email",
-        "frontendUrl": "Frontend URL",
+        "frontendUrl": "URL фронтенда",
         "frontendUrlPlaceholder": "https://example.com",
-        "frontendUrlHint": "Используется для генерации ссылок сброса пароля в email. Пример: https://example.com",
+        "frontendUrlHint": "Используется для создания ссылок сброса пароля в письмах. Пример: https://example.com",
         "totp": "Двухфакторная аутентификация (2FA)",
         "totpHint": "Разрешить пользователям использовать приложения-аутентификаторы, например Google Authenticator",
         "totpKeyNotConfigured": "Сначала настройте TOTP_ENCRYPTION_KEY в переменных окружения. Сгенерируйте ключ командой: openssl rand -hex 32",
@@ -8475,13 +8478,13 @@ export const ruOverrides = {
         "openModeHint": "Использовать QR-авторизацию Open Platform вне браузера WeChat.",
         "mpModeLabel": "Использовать MP внутри WeChat",
         "mpModeHint": "Использовать авторизацию Official Account внутри браузера WeChat.",
-        "redirectUrlLabel": "Redirect URL",
+        "redirectUrlLabel": "URL перенаправления",
         "redirectUrlPlaceholder": "https://your-site.com/api/v1/auth/oauth/wechat/callback",
         "generateAndCopy": "Сгенерировать и скопировать (текущий сайт)",
-        "redirectUrlSetAndCopied": "Redirect URL сгенерирован и скопирован в буфер обмена",
-        "frontendRedirectUrlLabel": "Frontend redirect URL",
+        "redirectUrlSetAndCopied": "URL перенаправления сгенерирован и скопирован в буфер обмена",
+        "frontendRedirectUrlLabel": "URL перенаправления фронтенда",
         "frontendRedirectUrlPlaceholder": "/auth/wechat/callback",
-        "frontendRedirectUrlHint": "Обычно это callback path frontend-маршрута; держите его согласованным с backend."
+        "frontendRedirectUrlHint": "Обычно это путь обратного вызова маршрута фронтенда; он должен совпадать с настройкой сервера."
       },
       "authSourceDefaults": {
         "title": "Значения по умолчанию для источника auth",
