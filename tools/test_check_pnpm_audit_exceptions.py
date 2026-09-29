@@ -25,15 +25,27 @@ class AuditPayloadContractTests(unittest.TestCase):
             )
 
     def test_rejects_empty_transport_error_and_metadata_only_payloads(self) -> None:
+        counts = {"info": 0, "low": 0, "moderate": 0, "high": 1, "critical": 0}
         payloads = [
             {},
             {"error": {"code": "ERR_PNPM_META_FETCH_FAIL", "summary": "network failure"}},
             {"metadata": {"vulnerabilities": {"high": 0, "critical": 0}}},
+            {"advisories": {}, "metadata": {"vulnerabilities": counts}},
+            {"vulnerabilities": {}, "metadata": {"vulnerabilities": counts}},
+            {"vulnerabilities": {"foo": {"severity": "high", "via": []}}, "metadata": {"vulnerabilities": counts}},
+            {"advisories": {"one": {"severity": "low"}}, "metadata": {"vulnerabilities": counts}},
+            {"advisories": {"one": {"severity": "high"}}, "metadata": {"vulnerabilities": {**counts, "high": 2}}},
+            {"advisories": {"one": "bad"}, "metadata": {"vulnerabilities": counts}},
         ]
         for payload in payloads:
             with self.subTest(payload=payload):
                 result = self.run_checker(payload)
                 self.assertNotEqual(result.returncode, 0, result.stdout)
+
+    def test_accepts_consistent_zero_findings(self) -> None:
+        counts = {level: 0 for level in ("info", "low", "moderate", "high", "critical")}
+        result = self.run_checker({"advisories": {}, "metadata": {"vulnerabilities": counts}})
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

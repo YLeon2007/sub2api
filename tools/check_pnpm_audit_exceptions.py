@@ -163,11 +163,29 @@ def main() -> int:
         return 1
     counts = metadata.get("vulnerabilities")
     if not isinstance(counts, dict) or any(
-        not isinstance(counts.get(level), int) or isinstance(counts.get(level), bool)
+        not isinstance(counts.get(level), int)
+        or isinstance(counts.get(level), bool)
+        or counts[level] < 0
         for level in ("info", "low", "moderate", "high", "critical")
     ):
         sys.stderr.write("pnpm audit metadata vulnerability counts are malformed\n")
         return 1
+    # An incomplete registry response must never turn reported high/critical
+    # findings into an empty iterator and silently pass the exception policy.
+    if isinstance(advisories, dict):
+        observed = {level: 0 for level in ("info", "low", "moderate", "high", "critical")}
+        for entry in advisories.values():
+            if not isinstance(entry, dict) or entry.get("severity") not in observed:
+                sys.stderr.write("pnpm audit advisory severity is malformed\n")
+                return 1
+            observed[entry["severity"]] += 1
+        if observed != {level: counts[level] for level in observed}:
+            sys.stderr.write("pnpm audit advisory counts disagree with metadata\n")
+            return 1
+    elif counts["high"] or counts["critical"]:
+        if not isinstance(vulnerabilities, dict) or not vulnerabilities:
+            sys.stderr.write("pnpm audit has high/critical counts without findings\n")
+            return 1
 
     # 读取异常清单并建立索引，便于快速匹配包名 + advisory。
     exceptions = parse_exceptions(args.exceptions)
@@ -238,6 +256,9 @@ def main() -> int:
             expired_exceptions.append(
                 (name, sev, advisory_id, exc["expires_on"].isoformat())
             )
+
+    if not isinstance(advisories, dict) and len(seen) < counts["high"] + counts["critical"]:
+        errors.append("pnpm audit high/critical counts exceed parsed findings")
 
     if missing_exceptions:
         errors.append("High/Critical vulnerabilities missing exceptions:")
