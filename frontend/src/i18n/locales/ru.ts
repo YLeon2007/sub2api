@@ -5439,7 +5439,7 @@ export const ruOverrides = {
           "followSteps": "Выполните шаги для авторизации аккаунта Gemini:",
           "step1GenerateUrl": "Сгенерируйте URL авторизации",
           "generateAuthUrl": "Создать ссылку авторизации",
-          "projectIdLabel": "Project ID (необязательно)",
+          "projectIdLabel": "ID проекта (необязательно)",
           "projectIdPlaceholder": "например, my-gcp-project или cloud-ai-companion-xxxxx",
           "projectIdHint": "Оставьте пустым для автоопределения после обмена кода. Если автоопределение не сработает, заполните поле и заново создайте ссылку авторизации.",
           "howToGetProjectId": "Как получить",

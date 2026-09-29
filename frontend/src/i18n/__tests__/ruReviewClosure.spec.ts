@@ -174,6 +174,38 @@ describe('Russian release review closure', () => {
     expect(settings).toContain("localText('客户端密钥', 'Client Secret', 'Секрет клиента')")
   })
 
+  it('sanitizes account edit, bulk edit and model-sync errors for Russian users', () => {
+    const edit = source('src/components/account/EditAccountModal.vue')
+    const bulk = source('src/components/account/BulkEditAccountModal.vue')
+    const whitelist = source('src/components/account/ModelWhitelistSelector.vue')
+    expect(edit).not.toContain("error instanceof Error ? error.message")
+    expect(edit).not.toContain("error.message || t('admin.accounts.failedToUpdate')")
+    expect(edit).not.toContain("'Unknown'")
+    expect(edit).toContain("extractApiErrorMessage(error, t('admin.accounts.failedToUpdate'), undefined, locale.value)")
+    expect(bulk).not.toContain("error.message || t('admin.accounts.bulkEdit.failed')")
+    expect(bulk).not.toContain("mixedChannelWarningMessage.value = error.message")
+    expect(whitelist).not.toContain("error instanceof Error ? error.message")
+  })
+
+  it('sanitizes reauthorization and account probe primary error text', () => {
+    const reauth = source('src/components/account/ReAuthAccountModal.vue')
+    expect(reauth).not.toContain("error.response?.data?.detail ||")
+    const quota = source('src/components/account/OpenAIQuotaResetCell.vue')
+    const grok = source('src/components/account/GrokQuotaProbeCell.vue')
+    const referral = source('src/components/account/OpenAIReferralCell.vue')
+    expect(quota).toContain('extractApiErrorMessage')
+    expect(grok).toContain('extractApiErrorMessage')
+    expect(referral).not.toContain("err.message || t('common.error')")
+  })
+
+  it('localizes Grok account defaults and optional Gemini project label', () => {
+    const create = source('src/components/account/CreateAccountModal.vue')
+    expect(ru.admin.accounts.oauth.gemini.projectIdLabel).toBe('ID проекта (необязательно)')
+    expect(ru.admin.accounts.grokAccount).toBe('Аккаунт Grok')
+    expect(create).not.toContain("'Grok OAuth Account'")
+    expect(create).toContain("form.name || tokenInfo.email || t('admin.accounts.grokAccount')")
+  })
+
   it('localizes common active configuration labels without changing API identifiers', () => {
     const text = JSON.stringify(ru)
     expect(text).not.toMatch(/"(?:baseUrl|apiKey|requestId|clientId|clientSecret|redirectUrl|siteKey|secretKey|appIdLabel|appSecretLabel)":"(?:Base URL|API Key|Request ID|Client ID|Client Secret|Redirect URL|Site Key|Secret Key|App ID|App Secret)"/)

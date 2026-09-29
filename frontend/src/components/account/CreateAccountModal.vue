@@ -6048,7 +6048,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
         const credentials = grokOAuth.buildCredentials(tokenInfo)
         applyGrokOAuthUpstreamConfig(credentials)
         const extra = grokOAuth.buildExtraInfo(tokenInfo)
-        const accountName = refreshTokens.length > 1 ? `${form.name || tokenInfo.email || 'Grok OAuth Account'} #${i + 1}` : (form.name || tokenInfo.email || 'Grok OAuth Account')
+        const accountName = refreshTokens.length > 1 ? `${form.name || tokenInfo.email || t('admin.accounts.grokAccount')} #${i + 1}` : (form.name || tokenInfo.email || t('admin.accounts.grokAccount'))
 
         const modelMapping = buildModelMappingObject(modelRestrictionMode.value, allowedModels.value, modelMappings.value)
         if (modelMapping) {
@@ -6220,8 +6220,8 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         const extra = grokOAuth.buildExtraInfo(tokenInfo)
         const accountName =
           lines.length > 1
-            ? `${form.name || tokenInfo.email || 'Grok OAuth Account'} #${i + 1}`
-            : form.name || tokenInfo.email || 'Grok OAuth Account'
+            ? `${form.name || tokenInfo.email || t('admin.accounts.grokAccount')} #${i + 1}`
+            : form.name || tokenInfo.email || t('admin.accounts.grokAccount')
 
         const modelMapping = buildModelMappingObject(
           modelRestrictionMode.value,

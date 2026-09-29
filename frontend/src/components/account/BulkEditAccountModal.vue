@@ -1476,6 +1476,7 @@
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import { adminAPI } from '@/api/admin'
 import type {
   Proxy as ProxyConfig,
@@ -1538,7 +1539,7 @@ const emit = defineEmits<{
   updated: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 
 // Platform awareness
@@ -2185,11 +2186,13 @@ const preCheckMixedChannelRisk = async (built: Record<string, unknown>): Promise
     if (!result.has_risk) return true
 
     pendingUpdatesForConfirm.value = built
-    mixedChannelWarningMessage.value = result.message || t('admin.accounts.bulkEdit.failed')
+    mixedChannelWarningMessage.value = extractApiErrorMessage(
+      { message: result.message }, t('admin.accounts.mixedChannelWarningGeneric'), undefined, locale.value
+    )
     showMixedChannelWarning.value = true
     return false
   } catch (error: any) {
-    appStore.showError(error.message || t('admin.accounts.bulkEdit.failed'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.bulkEdit.failed'), undefined, locale.value))
     return false
   }
 }
@@ -2316,7 +2319,7 @@ const submitBulkUpdate = async (baseUpdates: Record<string, unknown>) => {
     // 兜底：多平台混合场景下，预检查跳过，由后端 409 触发确认框
     if (error.status === 409 && error.error === 'mixed_channel_warning') {
       pendingUpdatesForConfirm.value = baseUpdates
-      mixedChannelWarningMessage.value = error.message
+      mixedChannelWarningMessage.value = extractApiErrorMessage(error, t('admin.accounts.mixedChannelWarningGeneric'), undefined, locale.value)
       showMixedChannelWarning.value = true
     } else if (error.reason === 'UPSTREAM_BILLING_RATE_SYNC_BULK_CONFLICT') {
       appStore.showError(t('admin.accounts.bulkEdit.rateSyncConflict', {
@@ -2325,7 +2328,7 @@ const submitBulkUpdate = async (baseUpdates: Record<string, unknown>) => {
     } else if (error.reason === 'OPENAI_LONG_CONTEXT_PARENT_REQUIRED') {
       appStore.showError(t('admin.accounts.bulkEdit.longContextParentRequired'))
     } else {
-      appStore.showError(error.message || t('admin.accounts.bulkEdit.failed'))
+      appStore.showError(extractApiErrorMessage(error, t('admin.accounts.bulkEdit.failed'), undefined, locale.value))
       console.error('Error bulk updating accounts:', error)
     }
   } finally {
