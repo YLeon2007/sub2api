@@ -42,6 +42,18 @@ class AuditPayloadContractTests(unittest.TestCase):
                 result = self.run_checker(payload)
                 self.assertNotEqual(result.returncode, 0, result.stdout)
 
+    def test_rejects_advisory_with_missing_package_name(self) -> None:
+        counts = {"info": 0, "low": 0, "moderate": 0, "high": 1, "critical": 0}
+        for name in (None, "", "   "):
+            entry = {"severity": "high", "github_advisory_id": "GHSA-test-missing-package"}
+            if name is not None:
+                entry["module_name"] = name
+            payload = {"advisories": {"one": entry}, "metadata": {"vulnerabilities": counts}}
+            with self.subTest(package=name):
+                result = self.run_checker(payload)
+                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertIn("package", result.stderr.lower())
+
     def test_accepts_consistent_zero_findings(self) -> None:
         counts = {level: 0 for level in ("info", "low", "moderate", "high", "critical")}
         result = self.run_checker({"advisories": {}, "metadata": {"vulnerabilities": counts}})

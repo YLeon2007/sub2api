@@ -896,7 +896,7 @@
       <div v-if="(account.platform === 'gemini' || account.platform === 'anthropic') && account.type === 'service_account'" class="space-y-4">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label class="input-label">Project ID</label>
+            <label class="input-label">{{ t('admin.accounts.vertexProjectIdLabel') }}</label>
             <input
               v-model="editVertexProjectId"
               type="text"
@@ -907,7 +907,7 @@
             <p class="input-hint">{{ t('admin.accounts.vertexSaJsonEditHint') }}</p>
           </div>
           <div>
-            <label class="input-label">Location</label>
+            <label class="input-label">{{ t('admin.accounts.vertexLocationLabel') }}</label>
             <select
               v-model="editVertexLocation"
               required

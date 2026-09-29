@@ -2606,7 +2606,7 @@
                         → New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址。
                       </template>
                       <template v-else-if="isRuLocale">
-                        Инструкция: GitHub Settings → Developer settings →
+                        Инструкция: откройте в GitHub раздел Settings → Developer settings →
                         <a
                           data-testid="github-oauth-apps-guide-link"
                           href="https://github.com/settings/developers"
@@ -2614,7 +2614,7 @@
                           rel="noopener noreferrer"
                           class="font-medium text-primary-600 hover:underline dark:text-primary-400"
                         >OAuth Apps</a>
-                        → New OAuth App. Укажите origin сайта как Homepage URL, а backend callback URL ниже — как Authorization callback URL.
+                        → New OAuth App. В поле Homepage URL укажите адрес сайта, а в поле Authorization callback URL — адрес обратного вызова сервера ниже.
                       </template>
                       <template v-else>
                         Setup guide: GitHub Settings → Developer settings →
@@ -2631,16 +2631,16 @@
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Client ID</label>
+                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ localText('客户端 ID', 'Client ID', 'ID клиента') }}</label>
                         <input
                           v-model="form.github_oauth_client_id"
                           type="text"
                           class="input font-mono text-sm"
-                          placeholder="GitHub OAuth Client ID"
+                          :placeholder="localText('GitHub OAuth 客户端 ID', 'GitHub OAuth Client ID', 'ID клиента GitHub OAuth')"
                         />
                       </div>
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Client Secret</label>
+                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ localText('客户端密钥', 'Client Secret', 'Секрет клиента') }}</label>
                         <input
                           v-model="form.github_oauth_client_secret"
                           type="password"
@@ -2648,7 +2648,7 @@
                           :placeholder="
                             form.github_oauth_client_secret_configured
                               ? localText('密钥已配置，留空以保留当前值。', 'Secret configured. Leave empty to keep the current value.', 'Секрет уже настроен. Оставьте пустым, чтобы сохранить текущее значение.')
-                              : 'GitHub OAuth Client Secret'
+                              : localText('GitHub OAuth 客户端密钥', 'GitHub OAuth Client Secret', 'Секрет клиента GitHub OAuth')
                           "
                         />
                       </div>
@@ -2706,7 +2706,7 @@
                           localText(
                             "Google OAuth 客户端需要 openid email profile 范围，并在凭据里登记后端回调地址。",
                             "Google OAuth client needs openid email profile scopes and the backend callback URL registered in credentials.",
-                            'Для Google OAuth client нужны области openid email profile, а backend callback URL должен быть зарегистрирован в credentials.',)
+                            'Для клиента Google OAuth нужны области доступа openid email profile; адрес обратного вызова сервера должен быть зарегистрирован в настройках учётных данных.',)
                         }}
                       </p>
                     </div>
@@ -2719,22 +2719,22 @@
                         localText(
                           "开通引导：Google Cloud Console → APIs & Services → OAuth consent screen 完成同意屏幕；Credentials → Create Credentials → OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs。",
                           "Setup guide: Google Cloud Console → APIs & Services → OAuth consent screen, then Credentials → Create Credentials → OAuth client ID, choose Web application, and add the URL below to Authorized redirect URIs.",
-                          'Инструкция: в Google Cloud Console → APIs & Services → OAuth consent screen заполните экран согласия; затем Credentials → Create Credentials → OAuth client ID, выберите Web application и добавьте URL ниже в Authorized redirect URIs.',)
+                          'Инструкция: в Google Cloud Console откройте APIs & Services → OAuth consent screen и заполните экран согласия; затем в Credentials → Create Credentials → OAuth client ID выберите Web application и добавьте адрес ниже в Authorized redirect URIs.',)
                       }}
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Client ID</label>
+                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ localText('客户端 ID', 'Client ID', 'ID клиента') }}</label>
                         <input
                           v-model="form.google_oauth_client_id"
                           type="text"
                           class="input font-mono text-sm"
-                          placeholder="Google OAuth Client ID"
+                          :placeholder="localText('Google OAuth 客户端 ID', 'Google OAuth Client ID', 'ID клиента Google OAuth')"
                         />
                       </div>
                       <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Client Secret</label>
+                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ localText('客户端密钥', 'Client Secret', 'Секрет клиента') }}</label>
                         <input
                           v-model="form.google_oauth_client_secret"
                           type="password"
@@ -2742,7 +2742,7 @@
                           :placeholder="
                             form.google_oauth_client_secret_configured
                               ? localText('密钥已配置，留空以保留当前值。', 'Secret configured. Leave empty to keep the current value.', 'Секрет уже настроен. Оставьте пустым, чтобы сохранить текущее значение.')
-                              : 'Google OAuth Client Secret'
+                              : localText('Google OAuth 客户端密钥', 'Google OAuth Client Secret', 'Секрет клиента Google OAuth')
                           "
                         />
                       </div>

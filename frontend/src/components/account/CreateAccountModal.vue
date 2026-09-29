@@ -769,7 +769,7 @@
                 Vertex
               </span>
               <span class="text-xs text-gray-500 dark:text-gray-400">
-                Service Account
+                {{ t('admin.accounts.vertexDesc') }}
               </span>
             </div>
           </button>
@@ -1152,7 +1152,7 @@
       <!-- Vertex Service Account -->
       <div v-if="(form.platform === 'gemini' || form.platform === 'anthropic') && accountCategory === 'service_account'" class="space-y-4">
         <div>
-          <label class="input-label">Service Account JSON</label>
+          <label class="input-label">{{ t('admin.accounts.vertexSaJsonLabel') }}</label>
           <input
             ref="vertexServiceAccountFileInput"
             type="file"
@@ -1195,8 +1195,8 @@
               v-if="vertexClientEmail"
               class="mt-3 rounded-md border border-sky-200 bg-white px-3 py-2 text-xs text-sky-900 dark:border-sky-800/50 dark:bg-dark-800 dark:text-sky-200"
             >
-              <div class="truncate">Project ID: <span class="font-mono">{{ vertexProjectId }}</span></div>
-              <div class="truncate">Client Email: <span class="font-mono">{{ vertexClientEmail }}</span></div>
+              <div class="truncate">{{ t('admin.accounts.vertexProjectIdLabel') }}: <span class="font-mono">{{ vertexProjectId }}</span></div>
+              <div class="truncate">{{ t('admin.accounts.vertexClientEmailLabel') }}: <span class="font-mono">{{ vertexClientEmail }}</span></div>
             </div>
           </div>
           <p class="input-hint">{{ t('admin.accounts.vertexSaJsonUploadHint') }}</p>
@@ -1204,7 +1204,7 @@
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label class="input-label">Project ID</label>
+            <label class="input-label">{{ t('admin.accounts.vertexProjectIdLabel') }}</label>
             <input
               v-model="vertexProjectId"
               type="text"
@@ -1214,7 +1214,7 @@
             />
           </div>
           <div>
-            <label class="input-label">Location</label>
+            <label class="input-label">{{ t('admin.accounts.vertexLocationLabel') }}</label>
             <select
               v-model="vertexLocation"
               required
@@ -6210,7 +6210,7 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         const tokenInfo = await grokOAuth.authorizePassword(lines[i], form.proxy_id)
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${grokOAuth.error.value || 'Authorization failed'}`)
+          errors.push(`#${i + 1}: ${extractApiErrorMessage(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'))}`)
           grokOAuth.error.value = ''
           continue
         }

@@ -140,6 +140,40 @@ describe('Russian release review closure', () => {
     expect(modal).not.toContain('>Service Account</span>')
   })
 
+  it('localizes Vertex credential labels in create and edit forms', () => {
+    expect(ru.admin.accounts.vertexProjectIdLabel).toBe('ID проекта')
+    expect(ru.admin.accounts.vertexClientEmailLabel).toBe('Email клиента')
+    expect(ru.admin.accounts.vertexLocationLabel).toBe('Локация')
+    for (const filename of ['CreateAccountModal.vue', 'EditAccountModal.vue']) {
+      const form = source(`src/components/account/${filename}`)
+      expect(form).toContain("t('admin.accounts.vertexProjectIdLabel')")
+      expect(form).toContain("t('admin.accounts.vertexLocationLabel')")
+    }
+    const create = source('src/components/account/CreateAccountModal.vue')
+    expect(create).toContain("t('admin.accounts.vertexSaJsonLabel')")
+    expect(create).toContain("t('admin.accounts.vertexClientEmailLabel')")
+    expect(create).not.toContain('>Service Account JSON</label>')
+    expect(create).not.toContain('>Client Email:')
+  })
+
+  it('localizes the empty Grok batch authorization failure', () => {
+    const modal = source('src/components/account/CreateAccountModal.vue')
+    expect(modal).not.toContain("'Authorization failed'")
+    expect(modal).toContain("extractApiErrorMessage(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'))")
+  })
+
+  it('localizes GitHub and Google OAuth credential labels and placeholders', () => {
+    const settings = source('src/views/admin/SettingsView.vue')
+    expect(settings).not.toContain('>Client ID</label>')
+    expect(settings).not.toContain('>Client Secret</label>')
+    expect(settings).not.toContain('placeholder="GitHub OAuth Client ID"')
+    expect(settings).not.toContain('placeholder="Google OAuth Client ID"')
+    expect(settings).not.toContain(": 'GitHub OAuth Client Secret'")
+    expect(settings).not.toContain(": 'Google OAuth Client Secret'")
+    expect(settings).toContain("localText('客户端 ID', 'Client ID', 'ID клиента')")
+    expect(settings).toContain("localText('客户端密钥', 'Client Secret', 'Секрет клиента')")
+  })
+
   it('localizes common active configuration labels without changing API identifiers', () => {
     const text = JSON.stringify(ru)
     expect(text).not.toMatch(/"(?:baseUrl|apiKey|requestId|clientId|clientSecret|redirectUrl|siteKey|secretKey|appIdLabel|appSecretLabel)":"(?:Base URL|API Key|Request ID|Client ID|Client Secret|Redirect URL|Site Key|Secret Key|App ID|App Secret)"/)

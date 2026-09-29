@@ -178,6 +178,10 @@ def main() -> int:
             if not isinstance(entry, dict) or entry.get("severity") not in observed:
                 sys.stderr.write("pnpm audit advisory severity is malformed\n")
                 return 1
+            package_name = entry.get("module_name") or entry.get("name")
+            if not isinstance(package_name, str) or not package_name.strip():
+                sys.stderr.write("pnpm audit advisory package name is missing\n")
+                return 1
             observed[entry["severity"]] += 1
         if observed != {level: counts[level] for level in observed}:
             sys.stderr.write("pnpm audit advisory counts disagree with metadata\n")
@@ -231,7 +235,10 @@ def main() -> int:
     seen = set()
     for name, severity, advisory_id, title in iter_vulns(audit):
         sev = normalize_severity(severity)
-        if sev not in HIGH_SEVERITIES or not name:
+        if sev not in HIGH_SEVERITIES:
+            continue
+        if not normalize_package(name):
+            errors.append(f"High/Critical vulnerability missing package name ({sev})")
             continue
         advisory_key = normalize_advisory(advisory_id)
         if not advisory_key:
