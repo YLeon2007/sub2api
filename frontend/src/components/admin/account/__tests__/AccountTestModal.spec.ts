@@ -2,9 +2,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AccountTestModal from '../AccountTestModal.vue'
 
-const { getAvailableModels, copyToClipboard } = vi.hoisted(() => ({
+const { getAvailableModels, copyToClipboard, mockLocale } = vi.hoisted(() => ({
   getAvailableModels: vi.fn(),
-  copyToClipboard: vi.fn()
+  copyToClipboard: vi.fn(),
+  mockLocale: { value: 'en' }
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -31,12 +32,16 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
+      locale: mockLocale,
       t: (key: string, params?: Record<string, string | number>) => {
         if (key === 'admin.accounts.imageReceived' && params?.count) {
           return `received-${params.count}`
         }
         if (key === 'admin.accounts.imagePreviewAlt' && params?.index) {
           return `test-image-${params.index}`
+        }
+        if (key === 'admin.accounts.errorPrefix' && params?.message) {
+          return `Ошибка: ${params.message}`
         }
         return messages[key] || key
       }
@@ -93,6 +98,7 @@ function mountModal(account: Record<string, unknown> = {
 
 describe('AccountTestModal', () => {
   beforeEach(() => {
+    mockLocale.value = 'en'
     getAvailableModels.mockResolvedValue([
       { id: 'gemini-2.0-flash', display_name: 'Gemini 2.0 Flash' },
       { id: 'gemini-2.5-flash-image', display_name: 'Gemini 2.5 Flash Image' },
@@ -276,5 +282,22 @@ describe('AccountTestModal', () => {
 
     expect(wrapper.text()).toContain('Локализованный результат: compaction не поддерживается')
     expect(wrapper.text()).not.toContain('Upstream returned 2xx')
+  })
+
+  it('does not surface unknown backend status or errors in Russian', async () => {
+    mockLocale.value = 'ru'
+    global.fetch = vi.fn().mockResolvedValue(createStreamResponse([
+      'data: {"type":"status","text":"Negotiating upstream bearer token"}\n',
+      'data: {"type":"error","error":"upstream returned 402 for model"}\n'
+    ])) as any
+    const wrapper = mountModal()
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Ошибка: admin.accounts.testFailed')
+    expect(wrapper.text()).not.toContain('upstream returned 402')
+    expect(wrapper.text()).not.toContain('Negotiating upstream bearer token')
   })
 })

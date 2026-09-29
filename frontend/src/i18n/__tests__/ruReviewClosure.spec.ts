@@ -198,6 +198,21 @@ describe('Russian release review closure', () => {
     expect(referral).not.toContain("err.message || t('common.error')")
   })
 
+  it('sanitizes both active admin reauthorization and test-probe error paths', () => {
+    const view = source('src/views/admin/AccountsView.vue')
+    expect(view).toContain("import ReAuthAccountModal from '@/components/admin/account/ReAuthAccountModal.vue'")
+    expect(view).toContain("import AccountTestModal from '@/components/admin/account/AccountTestModal.vue'")
+    const reauth = source('src/components/admin/account/ReAuthAccountModal.vue')
+    const test = source('src/components/admin/account/AccountTestModal.vue')
+    expect(reauth).not.toContain('error.response?.data?.detail ||')
+    expect(reauth).not.toContain('error.response?.data?.message ||')
+    expect(reauth).not.toContain('error.message ||')
+    expect(reauth).toContain('extractApiErrorMessage(error,')
+    expect(test).not.toContain("addLine(t('admin.accounts.errorPrefix', { message: event.error })")
+    expect(test).not.toContain('error instanceof Error ? error.message')
+    expect(test).toContain('extractApiErrorMessage(')
+  })
+
   it('localizes Grok account defaults and optional Gemini project label', () => {
     const create = source('src/components/account/CreateAccountModal.vue')
     expect(ru.admin.accounts.oauth.gemini.projectIdLabel).toBe('ID проекта (необязательно)')

@@ -375,9 +375,10 @@ import { useClipboard } from '@/composables/useClipboard'
 import { buildApiUrl } from '@/api/client'
 import { ADMIN_UI_REQUEST_HEADER } from '@/api/adminUIRequest'
 import { adminAPI } from '@/api/admin'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import type { Account, ClaudeModel } from '@/types'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { copyToClipboard } = useClipboard()
 
 interface OutputLine {
@@ -932,7 +933,7 @@ const startTest = async () => {
       return
     }
     status.value = 'error'
-    const msg = error instanceof Error ? error.message : t('common.unknownError')
+    const msg = extractApiErrorMessage(error, t('common.unknownError'), undefined, locale.value)
     errorMessage.value = t('admin.accounts.testFailed')
     addLine(t('admin.accounts.errorPrefix', { message: msg }), 'text-red-400')
   }
@@ -953,6 +954,9 @@ const localizeKnownAccountTestText = (text: string) => {
   }
   return text
 }
+
+const primaryTestError = (message: string) =>
+  extractApiErrorMessage({ message }, t('admin.accounts.testFailed'), undefined, locale.value)
 
 const handleEvent = (event: {
   type: string
@@ -1034,7 +1038,7 @@ const handleEvent = (event: {
 
     case 'status':
       if (event.text) {
-        addLine(event.text, 'text-cyan-300')
+        addLine(locale.value === 'ru' ? t('admin.accounts.testing') : event.text, 'text-cyan-300')
       }
       break
 
@@ -1052,7 +1056,7 @@ const handleEvent = (event: {
           const localizedError = localizeKnownAccountTestText(event.error)
           if (localizedError === event.error) {
             errorMessage.value = t('admin.accounts.testFailed')
-            addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
+            addLine(t('admin.accounts.errorPrefix', { message: primaryTestError(event.error) }), 'text-red-400')
           } else {
             errorMessage.value = localizedError
           }
@@ -1068,7 +1072,7 @@ const handleEvent = (event: {
         const localizedEventError = localizeKnownAccountTestText(event.error)
         if (localizedEventError === event.error) {
           errorMessage.value = t('admin.accounts.testFailed')
-          addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
+          addLine(t('admin.accounts.errorPrefix', { message: primaryTestError(event.error) }), 'text-red-400')
         } else {
           errorMessage.value = localizedEventError
         }
