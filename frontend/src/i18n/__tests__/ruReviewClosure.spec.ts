@@ -213,6 +213,15 @@ describe('Russian release review closure', () => {
     expect(test).toContain('extractApiErrorMessage(')
   })
 
+  it('preserves the legacy EN/ZH reauth error precedence while sanitizing RU', () => {
+    const reauth = source('src/components/admin/account/ReAuthAccountModal.vue')
+    expect(reauth).toContain("if (locale.value === 'ru')")
+    expect(reauth).toContain("if (mode === 'detail') return detail || fallback")
+    expect(reauth).toContain("return detail || source.response?.data?.message || source.message || fallback")
+    expect(reauth).toContain("return detail || source.message || fallback")
+    expect(reauth).toContain("reauthErrorText(error, t('admin.accounts.oauth.authFailed'), 'detail-message-error')")
+  })
+
   it('localizes Grok account defaults and optional Gemini project label', () => {
     const create = source('src/components/account/CreateAccountModal.vue')
     expect(ru.admin.accounts.oauth.gemini.projectIdLabel).toBe('ID проекта (необязательно)')

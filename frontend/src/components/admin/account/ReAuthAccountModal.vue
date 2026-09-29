@@ -234,6 +234,30 @@ const emit = defineEmits<{
 const appStore = useAppStore()
 const { t, locale } = useI18n()
 
+// Keep the existing detail-first EN/ZH messages; only Russian users need a
+// localized primary message when the backend sends unrecognized English prose.
+type ReauthErrorSource = {
+  response?: { data?: { detail?: string; message?: string } }
+  message?: string
+}
+type ReauthErrorMode = 'detail' | 'detail-message-error' | 'detail-error'
+const reauthErrorText = (
+  error: unknown,
+  fallback: string,
+  mode: ReauthErrorMode = 'detail'
+): string => {
+  if (locale.value === 'ru') {
+    return extractApiErrorMessage(error, fallback, undefined, locale.value)
+  }
+  const source = (error || {}) as ReauthErrorSource
+  const detail = source.response?.data?.detail
+  if (mode === 'detail') return detail || fallback
+  if (mode === 'detail-message-error') {
+    return detail || source.response?.data?.message || source.message || fallback
+  }
+  return detail || source.message || fallback
+}
+
 // OAuth composables
 const claudeOAuth = useAccountOAuth()
 const openaiOAuth = useOpenAIOAuth()
@@ -427,7 +451,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized', updatedAccount)
       handleClose()
     } catch (error: any) {
-      oauthClient.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
+      oauthClient.error.value = reauthErrorText(error, t('admin.accounts.oauth.authFailed'))
       appStore.showError(oauthClient.error.value)
     }
   } else if (isGemini.value) {
@@ -460,7 +484,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized', updatedAccount)
       handleClose()
     } catch (error: any) {
-      geminiOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
+      geminiOAuth.error.value = reauthErrorText(error, t('admin.accounts.oauth.authFailed'))
       appStore.showError(geminiOAuth.error.value)
     }
   } else if (isAntigravity.value) {
@@ -492,7 +516,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized', updatedAccount)
       handleClose()
     } catch (error: any) {
-      antigravityOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
+      antigravityOAuth.error.value = reauthErrorText(error, t('admin.accounts.oauth.authFailed'))
       appStore.showError(antigravityOAuth.error.value)
     }
   } else if (isGrok.value) {
@@ -525,7 +549,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized', updatedAccount)
       handleClose()
     } catch (error: any) {
-      grokOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
+      grokOAuth.error.value = reauthErrorText(error, t('admin.accounts.oauth.authFailed'))
       appStore.showError(grokOAuth.error.value)
     }
   } else {
@@ -561,7 +585,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized', updatedAccount)
       handleClose()
     } catch (error: any) {
-      claudeOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
+      claudeOAuth.error.value = reauthErrorText(error, t('admin.accounts.oauth.authFailed'))
       appStore.showError(claudeOAuth.error.value)
     } finally {
       claudeOAuth.loading.value = false
@@ -601,7 +625,7 @@ const handleCookieAuth = async (sessionKey: string) => {
     handleClose()
   } catch (error: any) {
     claudeOAuth.error.value =
-      extractApiErrorMessage(error, t('admin.accounts.oauth.cookieAuthFailed'), undefined, locale.value)
+      reauthErrorText(error, t('admin.accounts.oauth.cookieAuthFailed'))
   } finally {
     claudeOAuth.loading.value = false
   }
@@ -658,7 +682,7 @@ const handleValidateRefreshToken = async (refreshTokenInput: string) => {
       handleClose()
     } catch (error: any) {
       openaiOAuth.error.value =
-        extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
+        reauthErrorText(error, t('admin.accounts.oauth.authFailed'), 'detail-message-error')
       appStore.showError(openaiOAuth.error.value)
     } finally {
       openaiOAuth.loading.value = false
@@ -682,7 +706,7 @@ const handleValidateRefreshToken = async (refreshTokenInput: string) => {
     handleClose()
   } catch (error: any) {
     antigravityOAuth.error.value =
-      extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
+      reauthErrorText(error, t('admin.accounts.oauth.authFailed'), 'detail-message-error')
     appStore.showError(antigravityOAuth.error.value)
   } finally {
     antigravityOAuth.loading.value = false
@@ -706,7 +730,7 @@ const handleGrokImportSSO = async (ssoInput: string) => {
     await applyGrokReauthTokenInfo(tokenInfo)
   } catch (error: any) {
     grokOAuth.error.value =
-      extractApiErrorMessage(error, t('admin.accounts.oauth.grok.failedToValidateSSO'), undefined, locale.value)
+      reauthErrorText(error, t('admin.accounts.oauth.grok.failedToValidateSSO', 'Failed to validate Grok SSO'), 'detail-error')
     appStore.showError(grokOAuth.error.value)
   } finally {
     grokOAuth.loading.value = false
@@ -733,7 +757,7 @@ const handleGrokValidateRefreshToken = async (refreshTokenInput: string) => {
     await applyGrokReauthTokenInfo(tokenInfo)
   } catch (error: any) {
     grokOAuth.error.value =
-      extractApiErrorMessage(error, t('admin.accounts.oauth.grok.failedToValidateRT'), undefined, locale.value)
+      reauthErrorText(error, t('admin.accounts.oauth.grok.failedToValidateRT'), 'detail-error')
     appStore.showError(grokOAuth.error.value)
   } finally {
     grokOAuth.loading.value = false
