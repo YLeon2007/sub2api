@@ -56,6 +56,7 @@ vi.mock('vue-router', () => ({
 vi.mock('vue-i18n', () => ({
   createI18n: () => ({
     global: {
+      locale: { value: 'ru' },
       t: (key: string) => key,
     },
   }),

@@ -1,3 +1,5 @@
+import { getLocale } from '@/i18n'
+
 /**
  * Centralized API error message extraction
  *
@@ -91,12 +93,14 @@ function localizeMetadata(metadata: Record<string, unknown>, t: TranslateFn): Re
  * @param t        - Vue i18n translate function
  * @param namespace- i18n key prefix, e.g. "payment.errors"
  * @param fallback - Fallback key or plain string if no localized mapping exists
+ * @param localizedFallbackOnly - Force the localized fallback even outside RU (legacy opt-in)
  */
 export function extractI18nErrorMessage(
   err: unknown,
   t: TranslateFn,
   namespace: string,
   fallback: string,
+  localizedFallbackOnly = false,
 ): string {
   const code = extractApiErrorCode(err)
   if (code) {
@@ -110,28 +114,39 @@ export function extractI18nErrorMessage(
     const te = (t as TranslateWithExistsFn).te
     if (te && te(key)) return translated
   }
-  return extractApiErrorMessage(err, fallback)
+  return localizedFallbackOnly ? fallback : extractApiErrorMessage(err, fallback)
 }
 
 /**
  * Extract a displayable error message from an API error.
  *
+ * RU uses the translated fallback for unknown errors: API prose is not a
+ * translation. EN/ZH keep their existing raw-detail behavior.
+ *
  * @param err - The caught error (unknown type)
  * @param fallback - Fallback message if none can be extracted (use t('common.error') or similar)
  * @param i18nMap - Optional map of error codes to i18n translated strings
+ * @param localeOverride - Component locale when it differs from the global locale
  */
 export function extractApiErrorMessage(
   err: unknown,
   fallback = 'Unknown error',
   i18nMap?: Record<string, string>,
+  localeOverride?: string,
 ): string {
   if (!err) return fallback
 
-  // Try i18n mapping by error code first
+  // Known error codes have explicit localized messages in all locales.
   if (i18nMap) {
     const code = extractApiErrorCode(err)
-    if (code && i18nMap[code]) return i18nMap[code]
+    if (code && Object.prototype.hasOwnProperty.call(i18nMap, code) && i18nMap[code]) {
+      return i18nMap[code]
+    }
   }
+
+  // Unknown backend text (including Error.message and stringified errors) is
+  // diagnostic data, not a Russian primary UI message. Keep EN/ZH behavior.
+  if ((localeOverride ?? getLocale()) === 'ru') return fallback
 
   // Plain object from API client interceptor (most common case)
   if (typeof err === 'object' && err !== null) {

@@ -251,9 +251,10 @@ import { Icon } from '@/components/icons'
 import { useClipboard } from '@/composables/useClipboard'
 import { buildApiUrl } from '@/api/client'
 import { adminAPI } from '@/api/admin'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import type { Account, ClaudeModel } from '@/types'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { copyToClipboard } = useClipboard()
 
 interface OutputLine {
@@ -476,9 +477,9 @@ const startTest = async () => {
       return
     }
     status.value = 'error'
-    const msg = error instanceof Error ? error.message : 'Unknown error'
-    errorMessage.value = msg
-    addLine(`Error: ${msg}`, 'text-red-400')
+    const msg = extractApiErrorMessage(error, t('common.unknownError'), undefined, locale.value)
+    errorMessage.value = t('admin.accounts.testFailed')
+    addLine(t('admin.accounts.errorPrefix', { message: msg }), 'text-red-400')
   }
 }
 
@@ -540,13 +541,23 @@ const handleEvent = (event: {
         status.value = 'success'
       } else {
         status.value = 'error'
-        errorMessage.value = event.error || 'Test failed'
+        errorMessage.value = t('admin.accounts.testFailed')
+        if (event.error) {
+          addLine(t('admin.accounts.errorPrefix', {
+            message: extractApiErrorMessage({ message: event.error }, t('common.error'), undefined, locale.value)
+          }), 'text-red-400')
+        }
       }
       break
 
     case 'error':
       status.value = 'error'
-      errorMessage.value = event.error || 'Unknown error'
+      errorMessage.value = t('admin.accounts.testFailed')
+      if (event.error) {
+        addLine(t('admin.accounts.errorPrefix', {
+          message: extractApiErrorMessage({ message: event.error }, t('common.error'), undefined, locale.value)
+        }), 'text-red-400')
+      }
       if (streamingContent.value) {
         addLine(streamingContent.value, 'text-green-300')
         streamingContent.value = ''

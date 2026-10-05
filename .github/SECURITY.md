@@ -1,6 +1,10 @@
 # Security Policy
 
-[English](#english) | [中文](#中文)
+[English](#english) | [中文](#中文) | [Русский](SECURITY_RU.md)
+
+This document describes the official Wei-Shaw/sub2api upstream security policy and upstream reporting contacts, not a separate policy for RU-fork modifications.
+
+本文说明官方 Wei-Shaw/sub2api 上游项目的安全政策和上游联系渠道，并非针对 RU 分支改动的独立政策。
 
 ## English
 

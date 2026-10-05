@@ -1,11 +1,23 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import AmountInput from '../AmountInput.vue'
+import ru from '@/i18n/locales/ru'
+
+const testLocale = vi.hoisted(() => ({ value: 'en' }))
+beforeEach(() => { testLocale.value = 'en' })
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string, params?: Record<string, unknown>) =>
-      params && 'amount' in params ? `${key} ${String(params.amount)}` : key,
+    locale: testLocale,
+    t: (key: string, params?: Record<string, unknown>) => {
+      if (key === 'payment.rechargeBonus.discountBadge') {
+        const message = testLocale.value === 'ru'
+          ? (ru.payment.rechargeBonus as Record<string, string>).discountBadge
+          : '{percent}% OFF'
+        return message?.replace('{percent}', String(params?.percent)) ?? key
+      }
+      return params && 'amount' in params ? `${key} ${String(params.amount)}` : key
+    },
   }),
 }))
 enableAutoUnmount(afterEach)
@@ -75,6 +87,24 @@ describe('recharge bonus hints on quick amounts', () => {
     expect(button.get('[data-testid="quick-amount-bonus-badge"]').text()).toBe('+30%')
     // 1000 × 0.14 = 140 base, +30% = 182
     expect(button.get('[data-testid="quick-amount-credited"]').text()).toContain('$182.00')
+  })
+
+  it('localizes the discount badge and payment amount for the selected Russian locale', () => {
+    testLocale.value = 'ru'
+    const wrapper = mount(AmountInput, {
+      props: { modelValue: null, amounts: [500], bonusTiers: tiers, bonusMode: 'discount', currency: 'USD' },
+    })
+    const button = wrapper.get('[data-testid="quick-amount-500"]')
+    expect(button.get('[data-testid="quick-amount-bonus-badge"]').text()).toBe('Скидка 30%')
+    expect(button.get('[data-testid="quick-amount-credited"]').text()).toContain('350,00')
+  })
+
+  it('localizes credited USD for the selected Russian locale without changing the credit amount', () => {
+    testLocale.value = 'ru'
+    const wrapper = mount(AmountInput, {
+      props: { modelValue: null, amounts: [100], bonusTiers: tiers },
+    })
+    expect(wrapper.get('[data-testid="quick-amount-credited"]').text()).toContain('120,00')
   })
 
   it('discount mode: tag reads N% OFF and the second line shows the discounted payment', () => {
