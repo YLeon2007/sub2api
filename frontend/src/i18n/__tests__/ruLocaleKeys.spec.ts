@@ -545,7 +545,7 @@ describe('Russian locale key coverage', () => {
 
     expect(ru.admin.settings.openaiFastPolicy.modelWhitelist).toBe('Целевые модели')
     expect(ru.admin.settings.openaiFastPolicy.modelWhitelistHint).toContain('Действие для других моделей')
-    expect(ru.admin.settings.openaiFastPolicy.modelPatternPlaceholder).toBe('e.g., gpt-5.6-sol or gpt-5.6*')
+    expect(ru.admin.settings.openaiFastPolicy.modelPatternPlaceholder).toBe('например, gpt-5.6-sol или gpt-5.6*')
     expect(ru.admin.settings.openaiFastPolicy.fallbackAction).toBe('Действие для других моделей')
     expect(ru.admin.settings.openaiFastPolicy.summaryTargetModels).toBe('Целевые модели')
   })

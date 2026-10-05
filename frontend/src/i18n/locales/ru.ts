@@ -3356,11 +3356,11 @@ export const ruOverrides = {
         "familyMappingTitle": "Маппинг семейств по умолчанию",
         "familyMappingHint": "Запросы семейств Opus, Sonnet или Haiku будут предпочитать целевую модель, заданную здесь.",
         "opusModel": "Целевая модель Opus",
-        "opusModelPlaceholder": "e.g., gpt-5.4",
+        "opusModelPlaceholder": "например, gpt-5.4",
         "sonnetModel": "Целевая модель Sonnet",
-        "sonnetModelPlaceholder": "e.g., gpt-5.3-codex",
+        "sonnetModelPlaceholder": "например, gpt-5.3-codex",
         "haikuModel": "Целевая модель Haiku",
-        "haikuModelPlaceholder": "e.g., gpt-5.4-mini",
+        "haikuModelPlaceholder": "например, gpt-5.4-mini",
         "exactMappingTitle": "Точные переопределения моделей",
         "exactMappingHint": "Точные переопределения моделей Claude имеют приоритет над семействами и могут направлять конкретную модель Claude на другую целевую модель.",
         "noExactMappings": "Точных переопределений моделей пока нет",
@@ -3368,7 +3368,7 @@ export const ruOverrides = {
         "claudeModel": "Модель Claude",
         "claudeModelPlaceholder": "например, claude-sonnet-4-5-20250929",
         "targetModel": "Целевая модель",
-        "targetModelPlaceholder": "e.g., gpt-5.4",
+        "targetModelPlaceholder": "например, gpt-5.4",
         "removeExactMapping": "Удалить точный маппинг"
       },
       "openaiLive": {
@@ -4349,7 +4349,7 @@ export const ruOverrides = {
       "syncFromCrsDesc": "Синхронизируйте аккаунты из claude-relay-service (CRS) в эту систему (CRS вызывается server-to-server).",
       "crsVersionRequirement": "⚠️ Примечание: для этой функции нужна версия CRS ≥ v1.1.240",
       "crsBaseUrl": "Базовый URL CRS",
-      "crsBaseUrlPlaceholder": "e.g. http://127.0.0.1:3000",
+      "crsBaseUrlPlaceholder": "например, http://127.0.0.1:3000",
       "crsUsername": "Имя пользователя",
       "crsPassword": "Пароль",
       "syncProxies": "Также синхронизировать proxy (сопоставить по host/port/auth или создать)",
@@ -4660,9 +4660,9 @@ export const ruOverrides = {
         "ruleOrder": "Порядок правил",
         "ruleIndex": "Правило #{index}",
         "errorCode": "Код ошибки",
-        "errorCodePlaceholder": "e.g. 429",
+        "errorCodePlaceholder": "например, 429",
         "durationMinutes": "Длительность (минуты)",
-        "durationPlaceholder": "e.g. 30",
+        "durationPlaceholder": "например, 30",
         "keywords": "Ключевые слова",
         "keywordsPlaceholder": "например: overloaded, too many requests",
         "keywordsHint": "Разделяйте ключевые слова запятыми; любое совпадение сработает.",
@@ -4772,7 +4772,7 @@ export const ruOverrides = {
       "bulkEdit": {
         "title": "Массовое редактирование аккаунтов",
         "selectionInfo": "Выбрано аккаунтов: {count}. Будут обновлены только отмеченные или заполненные поля; остальные останутся без изменений.",
-        "baseUrlPlaceholder": "https://api.anthropic.com or https://api.openai.com",
+        "baseUrlPlaceholder": "https://api.anthropic.com или https://api.openai.com",
         "baseUrlNotice": "Применяется только к аккаунтам API Key; оставьте пустым, чтобы сохранить текущее значение",
         "submit": "Обновить аккаунты",
         "updating": "Обновление...",
@@ -5536,7 +5536,7 @@ export const ruOverrides = {
           },
           "aiStudio": {
             "free": "Google AI Free",
-            "paid": "Google AI Pay-as-you-go"
+            "paid": "Google AI с оплатой по факту (pay-as-you-go)"
           }
         },
         "accountType": {
@@ -5608,7 +5608,7 @@ export const ruOverrides = {
           "simulatedNote": "Симулированная квота, только для справки",
           "rows": {
             "googleOne": {
-              "channel": "Google One OAuth (Individuals / Code Assist for Individuals)",
+              "channel": "Google One OAuth (для физических лиц / Code Assist для физических лиц)",
               "limitsFree": "Общий пул: 1000 RPD / 60 RPM",
               "limitsPro": "Общий пул: 1500 RPD / 120 RPM",
               "limitsUltra": "Общий пул: 2000 RPD / 120 RPM"
@@ -6744,7 +6744,7 @@ export const ruOverrides = {
         "memoryHigh": "Использование памяти повышено ({usage}%)",
         "memoryHighImpact": "Давление на память высокое, требуется внимание",
         "memoryHighAction": "Отслеживайте динамику памяти, проверьте утечки памяти",
-        "ttftHigh": "Time to first token повышен ({ttft}ms)",
+        "ttftHigh": "Время до первого токена повышено ({ttft} мс)",
         "ttftHighImpact": "Воспринимаемая пользователем задержка увеличилась",
         "ttftHighAction": "Оптимизируйте обработку запросов, сократите время предобработки",
         "upstreamCritical": "Доля ошибок upstream критически высокая ({rate}%)",
@@ -7169,7 +7169,7 @@ export const ruOverrides = {
             "empty": "Точечных записей нет",
             "entryTitle": "Запись #{n}",
             "ruleId": "Rule ID (необязательно)",
-            "ruleIdPlaceholder": "e.g., 1",
+            "ruleIdPlaceholder": "например, 1",
             "severities": "Уровни важности (необязательно)",
             "severitiesPlaceholder": "например, P0,P1 (пусто = все)",
             "until": "До (RFC3339)",
@@ -7381,7 +7381,7 @@ export const ruOverrides = {
         "db": "Статус пула подключений к базе данных, включая active, idle и waiting соединения.",
         "redis": "Статус пула подключений Redis, показывает active и idle соединения.",
         "jobs": "Статус выполнения фоновых задач, включая время последнего запуска, успешного выполнения и информацию об ошибках.",
-        "qps": "Queries Per Second (QPS) и Tokens Per Second (TPS), пропускная способность системы в realtime.",
+        "qps": "Запросы в секунду (QPS) и токены в секунду (TPS) — пропускная способность системы в реальном времени.",
         "tokens": "Общее количество токенов, обработанных в текущем временном окне.",
         "sla": "Доля успешности SLA, без учёта бизнес-лимитов (например, недостаточный баланс, превышена квота).",
         "errors": "Статистика ошибок, включая общее число ошибок, долю ошибок и долю ошибок upstream.",
@@ -7506,10 +7506,10 @@ export const ruOverrides = {
             "userPlaceholder": "Поиск по email или имени пользователя",
             "changeUser": "Сменить пользователя",
             "codeLabel": "Пользовательский код приглашения (необязательно)",
-            "codePlaceholder": "e.g. VIP2026",
+            "codePlaceholder": "например, VIP2026",
             "codeHint": "4–32 символа; A-Z, 0-9, подчёркивание, дефис. Оставьте пустым, чтобы сохранить текущее значение. Ввод приводится к верхнему регистру.",
             "rateLabel": "Эксклюзивная ставка вознаграждения (необязательно)",
-            "ratePlaceholder": "e.g. 30",
+            "ratePlaceholder": "например, 30",
             "rateHint": "0-100. Оставьте пустым (в режиме редактирования), чтобы очистить и вернуться к глобальной ставке.",
             "errorBadRate": "Введите число от 0 до 100",
             "errorEmpty": "Заполните хотя бы одно поле: пользовательский код приглашения или эксклюзивную ставку вознаграждения"
@@ -7517,7 +7517,7 @@ export const ruOverrides = {
           "batchModal": {
             "title": "Массово задать ставку (выбрано пользователей: {count})",
             "hint": "Применить одинаковую эксклюзивную ставку вознаграждения ко всем выбранным пользователям.",
-            "placeholder": "e.g. 30",
+            "placeholder": "например, 30",
             "clearHint": "Отправка пустого значения очистит эксклюзивную ставку для выбранных пользователей."
           }
         },
@@ -7689,7 +7689,7 @@ export const ruOverrides = {
         "enable": "Включить вход через LinuxDo",
         "enableHint": "Показывать вход через LinuxDo на страницах входа/регистрации",
         "clientId": "ID клиента",
-        "clientIdPlaceholder": "e.g., hprJ5pC3...",
+        "clientIdPlaceholder": "например, hprJ5pC3...",
         "clientIdHint": "Получите это в Connect.Linux.Do",
         "clientSecret": "Секрет клиента",
         "clientSecretPlaceholder": "********",
@@ -7708,7 +7708,7 @@ export const ruOverrides = {
         "enable": "Включить вход через DingTalk (внутреннее корпоративное приложение)",
         "enableHint": "Показывать вход через DingTalk на страницах входа/регистрации",
         "clientId": "Client ID (AppKey)",
-        "clientIdPlaceholder": "e.g., dingxxxxxxxxxxxxxxxx",
+        "clientIdPlaceholder": "например, dingxxxxxxxxxxxxxxxx",
         "clientIdHint": "Получите это в деталях приложения DingTalk Open Platform",
         "clientSecret": "Client Secret (AppSecret)",
         "clientSecretPlaceholder": "********",
@@ -7826,10 +7826,10 @@ export const ruOverrides = {
         "title": "Настройки Claude Code",
         "description": "Управляйте требованиями доступа клиента Claude Code",
         "minVersion": "Минимальная версия",
-        "minVersionPlaceholder": "e.g. 2.1.63",
+        "minVersionPlaceholder": "например, 2.1.63",
         "minVersionHint": "Отклонять клиентов Claude Code ниже этой версии (формат semver). Оставьте пустым, чтобы отключить проверку версии.",
         "maxVersion": "Максимальная версия",
-        "maxVersionPlaceholder": "e.g. 2.5.0",
+        "maxVersionPlaceholder": "например, 2.5.0",
         "maxVersionHint": "Отклонять клиентов Claude Code выше этой версии (формат semver). Оставьте пустым, чтобы разрешить любую версию."
       },
       "scheduling": {
@@ -7912,7 +7912,7 @@ export const ruOverrides = {
         "claudeCodeVersionAutoSync": "Авто-синхронизация версии Claude Code",
         "claudeCodeVersionAutoSyncHint": "Каждый час получает последнюю версию клиента Claude Code из официального канала релизов, поэтому не нужно обновлять этот сервис только ради актуальной версии. Когда выключено, получение прекращается, но ранее синхронизированная версия остаётся доступной. Ручная версия выше всегда имеет приоритет.",
         "claudeCodeVersionSyncedValue": "Сейчас синхронизировано: {version}",
-        "antigravityUserAgentVersion": "Antigravity UA Version",
+        "antigravityUserAgentVersion": "Версия User-Agent Antigravity",
         "antigravityUserAgentVersionPlaceholder": "1.23.2",
         "antigravityUserAgentVersionHint": "Оставьте пустым, чтобы использовать ANTIGRAVITY_USER_AGENT_VERSION или встроенное значение по умолчанию 1.23.2; если задано, настройка администратора имеет приоритет.",
         "openaiCodexUserAgent": "OpenAI Codex UA",
@@ -8034,7 +8034,7 @@ export const ruOverrides = {
           "add": "Добавить endpoint"
         },
         "contactInfo": "Контактная информация",
-        "contactInfoPlaceholder": "e.g., QQ: 123456789",
+        "contactInfoPlaceholder": "например, QQ: 123456789",
         "contactInfoHint": "Контактная информация поддержки, отображается на странице активации кодов, в профиле и т. д.",
         "docUrl": "URL документации",
         "docUrlPlaceholder": "https://docs.example.com",
@@ -8247,7 +8247,7 @@ export const ruOverrides = {
         "wxpayGuideNativeOpen": "Включите возможность оплаты Native или QR.",
         "wxpayGuideNativeCall": "Desktop-заказы по умолчанию используют Native, а frontend отображает QR payload.",
         "wxpayGuideNativeFallback": "Мобильные сценарии также переключаются сюда, когда JSAPI или H5 нельзя использовать.",
-        "wxpayGuideJsapiTitle": "JSAPI / Official Account",
+        "wxpayGuideJsapiTitle": "JSAPI / официальный аккаунт",
         "wxpayGuideJsapiOpen": "Включите оплату через Official Account и убедитесь, что браузер открыт внутри WeChat с доступным OpenID.",
         "wxpayGuideJsapiCall": "Внутри WeChat приложение вызывает JSAPI после авторизации и напрямую запускает WeChat Pay.",
         "wxpayGuideJsapiFallback": "Если конфигурация отсутствует, bridge недоступен или запуск завершается ошибкой, сценарий переключается на QR-оплату.",
@@ -8472,7 +8472,7 @@ export const ruOverrides = {
         "apikeySignatureHint": "Автоматически удаляет signatures и повторяет запрос, когда аккаунты API Key получают ошибки, связанные с signature (встроенные patterns применяются всегда)",
         "apikeyPatterns": "Пользовательские patterns сопоставления",
         "apikeyPatternsHint": "Дополнительные ключевые слова для сопоставления с телом ответа (без учёта регистра). Встроенные patterns применяются всегда; используйте эти для дополнительного сопоставления.",
-        "apikeyPatternPlaceholder": "e.g., thinking_error",
+        "apikeyPatternPlaceholder": "например, thinking_error",
         "addPattern": "Добавить pattern",
         "saved": "Настройки исправителя сохранены",
         "saveFailed": "Не удалось сохранить настройки исправителя"
@@ -8542,7 +8542,7 @@ export const ruOverrides = {
         "errorMessageHint": "Оставьте пустым для сообщения по умолчанию.",
         "modelWhitelist": "Целевые модели",
         "modelWhitelistHint": "Модели из этого списка используют основное Действие; модели вне списка используют Действие для других моделей. Оставьте пустым, чтобы применять основное Действие ко всем моделям. Поддерживает точные совпадения и wildcard-префиксы (например, gpt-5.6*).",
-        "modelPatternPlaceholder": "e.g., gpt-5.6-sol or gpt-5.6*",
+        "modelPatternPlaceholder": "например, gpt-5.6-sol или gpt-5.6*",
         "addModelPattern": "Добавить целевую модель",
         "fallbackAction": "Действие для других моделей",
         "fallbackActionHint": "Применяется только к моделям вне целевого списка.",
@@ -8588,7 +8588,7 @@ export const ruOverrides = {
         "description": "Настройте баланс, параллелизм, подписки и правила выдачи по умолчанию для каждого источника.",
         "requireEmailLabel": "Требовать email при сторонней регистрации",
         "requireEmailHint": "Когда включено, регистрации через Linux DO, OIDC и WeChat должны предоставить email перед созданием аккаунта.",
-        "enabledHint": "Эти значения по умолчанию применяются, когда новый пользователь регистрируется через этот источник. Grant on first bind применяется только когда существующий пользователь привязывает этот источник.",
+        "enabledHint": "Эти значения по умолчанию применяются, когда новый пользователь регистрируется через этот источник. Выдача при первой привязке применяется, только когда существующий пользователь привязывает этот источник.",
         "sources": {
           "email": {
             "title": "Регистрация через email",

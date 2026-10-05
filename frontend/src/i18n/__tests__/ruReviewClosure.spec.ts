@@ -243,4 +243,22 @@ describe('Russian release review closure', () => {
     expect(source('src/components/common/HelpTooltip.vue')).toContain(':aria-label="t(\'common.close\')"')
     expect(source('src/components/common/Pagination.vue')).toContain(':aria-label="t(\'pagination.navigation\')"')
   })
+
+  it('localizes the active WeChat native-app-only error branch and residual English prose', () => {
+    const callback = source('src/views/auth/WechatCallbackView.vue')
+    expect(callback).not.toContain('only available from the native mobile app')
+    expect(callback).toContain("t('auth.oauthFlow.wechatNativeAppOnly')")
+    expect(ru.auth.oauthFlow.wechatNativeAppOnly).toContain('мобильное приложение WeChat')
+    expect(en.auth.oauthFlow.wechatNativeAppOnly).toBeTruthy()
+    expect(zh.auth.oauthFlow.wechatNativeAppOnly).toBeTruthy()
+
+    expect(ru.admin.groups.openaiMessages.opusModelPlaceholder).toBe('например, gpt-5.4')
+    expect(ru.admin.accounts.gemini.quotaPolicy.rows.googleOne.channel).toContain('для физических лиц')
+    expect(ru.admin.settings.gatewayForwarding.antigravityUserAgentVersion).toBe('Версия User-Agent Antigravity')
+    expect(ru.admin.settings.payment.wxpayGuideJsapiTitle).toBe('JSAPI / официальный аккаунт')
+    expect(ru.admin.ops.diagnosis.ttftHigh).toBe('Время до первого токена повышено ({ttft} мс)')
+    expect(ru.admin.ops.tooltips.qps).toContain('Запросы в секунду (QPS)')
+    expect(ru.admin.settings.authSourceDefaults.enabledHint).toContain('Выдача при первой привязке')
+    expect(ru.admin.settings.authSourceDefaults.enabledHint).not.toContain('Grant on first bind')
+  })
 })
