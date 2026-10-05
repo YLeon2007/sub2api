@@ -465,13 +465,20 @@ func validateDownloadURL(rawURL string) error {
 		return fmt.Errorf("only HTTPS URLs are allowed")
 	}
 
+	// Reject URLs with embedded credentials
+	if parsedURL.User != nil {
+		return fmt.Errorf("URLs with userinfo are not allowed")
+	}
+
 	// Check against allowed hosts
 	host := parsedURL.Host
-	// GitHub release URLs can be from github.com or objects.githubusercontent.com
-	if host != allowedDownloadHost &&
-		!strings.HasSuffix(host, "."+allowedDownloadHost) &&
-		host != allowedAssetHost &&
-		!strings.HasSuffix(host, "."+allowedAssetHost) {
+	// GitHub release URLs can be from github.com or objects.githubusercontent.com.
+	// Arbitrary subdomains of these hosts are NOT trusted: only the exact
+	// authorities plus the well-known release-assets host are accepted, matching
+	// the download-boundary policy in github_release_service.go.
+	switch host {
+	case allowedDownloadHost, allowedAssetHost, "release-assets.githubusercontent.com":
+	default:
 		return fmt.Errorf("download from untrusted host: %s", host)
 	}
 

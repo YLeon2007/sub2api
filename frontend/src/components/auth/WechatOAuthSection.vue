@@ -51,10 +51,10 @@ const route = useRoute()
 const { t, locale } = useI18n()
 const providerName = computed(() => t('auth.wechatProviderName'))
 
-function localizeWeChatHint(zh: string, en: string, ru: string): string {
+function localizeWeChatHint(zh: string, en: string): string {
   const normalizedLocale = locale.value.toLowerCase()
   if (normalizedLocale.startsWith('zh')) return zh
-  if (normalizedLocale.startsWith('ru')) return ru
+  if (normalizedLocale.startsWith('ru')) return t('auth.oauthFlow.wechatNativeAppOnly')
   return en
 }
 
@@ -73,7 +73,6 @@ const disabledHint = computed(() => {
       return localizeWeChatHint(
         '当前仅配置微信移动应用登录，需要在原生 App 中通过微信 SDK 发起授权。',
         'This site only has WeChat mobile app login configured. Continue from the native app through the WeChat SDK.',
-        'На сайте настроен только вход через мобильное приложение WeChat. Продолжите в нативном приложении через WeChat SDK.',
       )
     case 'not_configured':
       return t('auth.oauthFlow.wechatNotConfigured')

@@ -736,3 +736,29 @@ func TestUpdateMutationsUseOperationLock(t *testing.T) {
 		t.Fatal("update mutation did not resume after operation lock release")
 	}
 }
+
+func TestValidateDownloadURLRejectsUserinfoAndArbitrarySubdomains(t *testing.T) {
+	allowed := []string{
+		"https://github.com/YLeon2007/sub2api/releases/download/v0.2.13-ru.1/sub2api_0.2.13-ru.1_linux_amd64.tar.gz",
+		"https://objects.githubusercontent.com/github-production-release-asset/test",
+		"https://release-assets.githubusercontent.com/github-production-release-asset/test",
+	}
+	for _, u := range allowed {
+		if err := validateDownloadURL(u); err != nil {
+			t.Fatalf("expected %q to be allowed, got %v", u, err)
+		}
+	}
+
+	rejected := []string{
+		"https://user:pass@github.com/YLeon2007/sub2api/releases/download/v0.2.13-ru.1/x.tar.gz",
+		"https://evil.github.com/YLeon2007/sub2api/releases/download/v0.2.13-ru.1/x.tar.gz",
+		"https://foo.objects.githubusercontent.com/x",
+		"https://github.com.evil.example/x.tar.gz",
+		"http://github.com/x.tar.gz",
+	}
+	for _, u := range rejected {
+		if err := validateDownloadURL(u); err == nil {
+			t.Fatalf("expected %q to be rejected", u)
+		}
+	}
+}

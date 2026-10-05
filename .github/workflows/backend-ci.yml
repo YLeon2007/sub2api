@@ -129,12 +129,6 @@ jobs:
           expected="go$(awk '/^go / {print $2; exit}' backend/go.mod)"
           actual="$(go env GOVERSION)"
           test "$actual" = "$expected"
-      - name: Preload pinned govulncheck module hashes
-        working-directory: backend
-        run: |
-          # Exact same module graph as tools/validate_govulncheck_identity.py.
-          go mod download golang.org/x/vuln@v1.6.0 golang.org/x/mod@v0.38.0 golang.org/x/sync@v0.22.0 golang.org/x/telemetry@v0.0.0-20260708182218-49f421fb7959 golang.org/x/tools@v0.48.0
-
       - name: Run backend unit tests
         working-directory: backend
         run: make test-unit
@@ -154,6 +148,12 @@ jobs:
           check-latest: false
           cache: true
           cache-dependency-path: backend/go.sum
+
+      - name: Preload pinned govulncheck module hashes
+        working-directory: backend
+        run: |
+          # Exact same module graph as tools/validate_govulncheck_identity.py.
+          go mod download golang.org/x/vuln@v1.6.0 golang.org/x/mod@v0.38.0 golang.org/x/sync@v0.22.0 golang.org/x/telemetry@v0.0.0-20260708182218-49f421fb7959 golang.org/x/tools@v0.48.0
 
       - name: Run govulncheck
         working-directory: backend

@@ -623,7 +623,8 @@ export const ruOverrides = {
       "wechatAvailabilityUnknown": "Не удалось проверить доступность входа через WeChat. Обновите страницу и повторите.",
       "wechatSystemBrowserOnly": "Вход через WeChat доступен только в системном браузере.",
       "wechatBrowserOnly": "Вход через WeChat доступен только в браузере WeChat.",
-      "wechatNotConfigured": "Вход через WeChat ещё не настроен."
+      "wechatNotConfigured": "Вход через WeChat ещё не настроен.",
+      "wechatNativeAppOnly": "На сайте настроен только вход через мобильное приложение WeChat. Продолжите в нативном приложении через WeChat SDK."
     },
     "linuxdoCallbackPageTitle": "Callback входа LinuxDo",
     "dingtalkCallbackPageTitle": "Callback входа DingTalk",

@@ -42,6 +42,9 @@ vi.mock('vue-i18n', async () => {
         if (key === 'auth.oauthFlow.wechatNotConfigured') {
           return 'MOCK-NOT-CONFIGURED'
         }
+        if (key === 'auth.oauthFlow.wechatNativeAppOnly') {
+          return 'MOCK-NATIVE-APP-ONLY'
+        }
         if (key === 'auth.oauthOrContinue') {
           return 'or continue'
         }
@@ -242,7 +245,7 @@ describe('WechatOAuthSection', () => {
     expect(wrapper.text()).toContain('MOCK-NOT-CONFIGURED')
   })
 
-  it('shows the native-app-only hint in Russian for the Russian locale', () => {
+  it('shows the native-app-only hint from the i18n key for the Russian locale', () => {
     localeRef.value = 'ru'
     seedPublicSettings({
       wechat_oauth_open_enabled: false,
@@ -254,9 +257,24 @@ describe('WechatOAuthSection', () => {
       global: { plugins: [pinia] },
     })
 
-    expect(wrapper.get('[data-testid="wechat-oauth-hint"]').text()).toContain(
-      'Продолжите в нативном приложении через WeChat SDK',
-    )
+    expect(wrapper.text()).toContain('MOCK-NATIVE-APP-ONLY')
     expect(wrapper.text()).not.toContain('This site only has WeChat mobile app login configured')
+    expect(wrapper.text()).not.toContain('当前仅配置微信移动应用登录')
+  })
+
+  it('keeps the English native-app-only hint for the English locale', () => {
+    localeRef.value = 'en'
+    seedPublicSettings({
+      wechat_oauth_open_enabled: false,
+      wechat_oauth_mp_enabled: false,
+      wechat_oauth_mobile_enabled: true,
+    })
+
+    const wrapper = mount(WechatOAuthSection, {
+      global: { plugins: [pinia] },
+    })
+
+    expect(wrapper.text()).toContain('This site only has WeChat mobile app login configured')
+    expect(wrapper.text()).not.toContain('MOCK-NATIVE-APP-ONLY')
   })
 })
