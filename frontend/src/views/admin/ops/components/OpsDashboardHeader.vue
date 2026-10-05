@@ -1249,11 +1249,11 @@ function handleToolbarRefresh() {
               <span class="font-bold text-gray-900 dark:text-white">{{ totalTokensLabel }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.avgQps') }}:</span>
+              <span class="text-gray-500">{{ t('admin.ops.avgLabelQps') }}:</span>
               <span class="font-bold text-gray-900 dark:text-white">{{ qpsAvgLabel }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.avgTps') }}:</span>
+              <span class="text-gray-500">{{ t('admin.ops.avgLabelTps') }}:</span>
               <span class="font-bold text-gray-900 dark:text-white">{{ tpsAvgLabel }}</span>
             </div>
           </div>
@@ -1329,12 +1329,12 @@ function handleToolbarRefresh() {
               <span class="text-gray-400">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">{{ t('admin.ops.avg') }}</span>
+              <span class="text-gray-500">{{ t('admin.ops.avgLabel') }}</span>
               <span class="font-bold text-gray-900 dark:text-white">{{ durationAvgMs ?? '-' }}</span>
               <span class="text-gray-400">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">{{ t('admin.ops.max') }}</span>
+              <span class="text-gray-500">{{ t('admin.ops.maxLabel') }}</span>
               <span class="font-bold text-gray-900 dark:text-white">{{ durationMaxMs ?? '-' }}</span>
               <span class="text-gray-400">ms</span>
             </div>
@@ -1380,12 +1380,12 @@ function handleToolbarRefresh() {
               <span class="text-gray-400">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">{{ t('admin.ops.avg') }}</span>
+              <span class="text-gray-500">{{ t('admin.ops.avgLabel') }}</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftAvgMs))">{{ ttftAvgMs ?? '-' }}</span>
               <span class="text-gray-400">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">{{ t('admin.ops.max') }}</span>
+              <span class="text-gray-500">{{ t('admin.ops.maxLabel') }}</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftMaxMs))">{{ ttftMaxMs ?? '-' }}</span>
               <span class="text-gray-400">ms</span>
             </div>
