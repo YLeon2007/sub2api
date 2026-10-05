@@ -7825,7 +7825,7 @@ export const ruOverrides = {
         "platform": "Платформа",
         "daily": "Дневная (USD)",
         "weekly": "Недельная (USD)",
-        "monthly": "Месячная (USD, 30d rolling)",
+        "monthly": "Месячная (USD, скользящие 30 дней)",
         "placeholder": "Безлимитно"
       },
       "claudeCode": {
