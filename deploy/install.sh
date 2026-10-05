@@ -735,7 +735,15 @@ extract_json_root_string() {
       for (i=1; i<=n; i++) {
         c=substr($0,i,1)
         if (instr) {
-          if (esc) { esc=0; str=str c; continue }
+          if (esc) {
+            if (c=="u") {
+              hex=substr($0,i+1,4)
+              if (hex ~ /^[0-9a-fA-F]{4}$/) { str=str c hex; i+=4; esc=0; continue }
+              bad=1; esc=0; continue
+            }
+            if (index("\"\\/bfnrt", c) > 0) { esc=0; str=str c; continue }
+            bad=1; esc=0; continue
+          }
           if (c=="\\") { esc=1; str=str c; continue }
           if (c=="\"") {
             instr=0
@@ -808,6 +816,7 @@ extract_json_root_string() {
         }
         bad=1
       }
+      if (instr) bad=1
     }
     END { if (found && !bad && !instr && started && length(stk)==0) { print result; exit 0 } else { exit 1 } }
 '

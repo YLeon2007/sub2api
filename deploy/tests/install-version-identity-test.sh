@@ -40,6 +40,10 @@ printf '%s' '{"tag_name":"v0.2.13-ru.1",garbage}' > "$TEST_ROOT/payload-garbage-
 printf '%s' '{"tag_name":"v0.2.13-ru.1","html_url":"'"$HTML"'"]' > "$TEST_ROOT/payload-mismatched-bracket.json"
 printf '%s' '{"html_url":"'"$HTML"'"} {"tag_name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-trailing-second-root.json"
 printf '%s' 'garbage{"tag_name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-bare-garbage.json"
+printf '%s' '{"note":"bad\q","tag_name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-bad-escape.json"
+printf '%s' '{"note":"bad\uZZZZ","tag_name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-bad-unicode.json"
+printf '%s' "$(printf '{"note":"bad\nraw\nnewline","tag_name":"v0.2.13-ru.1","html_url":"%s"}' "$HTML")" > "$TEST_ROOT/payload-raw-newline.json"
+printf '%s' '{"note":"valid\"\\\u0041","tag_name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-valid-escapes.json"
 
 ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" bash -c '
     set -euo pipefail
@@ -89,7 +93,7 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" ba
     fi
 
     # adversarial payloads must all be rejected
-    for fixture in payload-shadowed-by-name payload-nested-tag payload-null-tag payload-missing-tag payload-nonru-tag payload-nested-only payload-null-plus-nested payload-nested-before-root payload-mismatched-html payload-no-html payload-array payload-dup-null-first payload-no-colon payload-unterminated payload-trailing-garbage payload-missing-comma payload-trailing-comma payload-garbage-in-root payload-mismatched-bracket payload-trailing-second-root payload-bare-garbage; do
+    for fixture in payload-shadowed-by-name payload-nested-tag payload-null-tag payload-missing-tag payload-nonru-tag payload-nested-only payload-null-plus-nested payload-nested-before-root payload-mismatched-html payload-no-html payload-array payload-dup-null-first payload-no-colon payload-unterminated payload-trailing-garbage payload-missing-comma payload-trailing-comma payload-garbage-in-root payload-mismatched-bracket payload-trailing-second-root payload-bare-garbage payload-bad-escape payload-bad-unicode payload-raw-newline; do
         github_api_curl() { cat "$PAYLOAD_DIR/$fixture.json"; }
         if (get_latest_version >/dev/null 2>&1); then
             printf "get_latest_version accepted adversarial fixture: %s\n" "$fixture" >&2
@@ -110,6 +114,14 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" ba
     get_latest_version >/dev/null 2>&1
     if [ "$LATEST_VERSION" != "v0.2.13-ru.1" ]; then
         printf "get_latest_version rejected realistic author payload, got %s\n" "$LATEST_VERSION" >&2
+        exit 1
+    fi
+
+    # payload with valid JSON escapes is accepted
+    github_api_curl() { cat "$PAYLOAD_DIR/payload-valid-escapes.json"; }
+    get_latest_version >/dev/null 2>&1
+    if [ "$LATEST_VERSION" != "v0.2.13-ru.1" ]; then
+        printf "get_latest_version rejected valid-escapes payload, got %s\n" "$LATEST_VERSION" >&2
         exit 1
     fi
 '
