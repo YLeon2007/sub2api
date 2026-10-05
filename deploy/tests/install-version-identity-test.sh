@@ -14,7 +14,16 @@ printf '%s\n' '2026-09-05T20:00:00+03:00	INFO	stdlog	Sub2API 0.2.13-ru.1 (commit
 EOF
 chmod +x "$INSTALL_DIR/sub2api"
 
-ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" bash -c '
+# Latest-release API fixtures live in real files so the mocks below cannot be
+# defeated by quoting mistakes.
+printf '%s' '{"tag_name":"v0.2.13-ru.1","name":"Sub2API RU v0.2.13-ru.1"}' > "$TEST_ROOT/payload-canonical.json"
+printf '%s' '{"tag_name":"v0.2.13-ru.1-debug","name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-shadowed-by-name.json"
+printf '%s' '{"tag_name":"v0.2.13-ru.1-debug","release":{"tag_name":"v0.2.13-ru.1"}}' > "$TEST_ROOT/payload-nested-tag.json"
+printf '%s' '{"tag_name":null,"name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-null-tag.json"
+printf '%s' '{"name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-missing-tag.json"
+printf '%s' '{"tag_name":"v0.2.13","name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-nonru-tag.json"
+
+ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" bash -c '
     set -euo pipefail
     source <(head -n -1 "$ROOT_DIR/deploy/install.sh")
     INSTALL_DIR=$CASE_INSTALL_DIR
@@ -45,23 +54,32 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" bash -c '
         fi
     done
 
+    # malformed tag_name values must be rejected
     for malformed in v00.2.13-ru.1 v0.2.13-ru.1-debug v0.2.13-rc.1; do
         if (github_api_curl() { printf "{\"tag_name\": \"%s\"}" "$malformed"; }; get_latest_version >/dev/null 2>&1); then
             printf "get_latest_version accepted malformed tag_name: %s\n" "$malformed" >&2
             exit 1
         fi
     done
-    github_api_curl() { printf "{\"tag_name\": \"v0.2.13-ru.1\"}"; return 28; }
-    github_api_curl() { printf \"{\\\"tag_name\\\": \\\"v0.2.13-ru.1-debug\\\", \\\"name\\\": \\\"v0.2.13-ru.1\\\"}\"; }
-    if (get_latest_version >/dev/null 2>&1); then
-        printf "get_latest_version accepted tag shadowed by later name field\n" >&2
-        exit 1
-    fi
+
+    # transport error after a partial valid stdout write must be rejected
+    github_api_curl() { cat "$PAYLOAD_DIR/payload-canonical.json"; return 28; }
     if (get_latest_version >/dev/null 2>&1); then
         printf "get_latest_version accepted tag despite transport error\n" >&2
         exit 1
     fi
-    github_api_curl() { printf "{\"tag_name\": \"v0.2.13-ru.1\"}"; }
+
+    # adversarial payloads must all be rejected
+    for fixture in payload-shadowed-by-name payload-nested-tag payload-null-tag payload-missing-tag payload-nonru-tag; do
+        github_api_curl() { cat "$PAYLOAD_DIR/$fixture.json"; }
+        if (get_latest_version >/dev/null 2>&1); then
+            printf "get_latest_version accepted adversarial fixture: %s\n" "$fixture" >&2
+            exit 1
+        fi
+    done
+
+    # canonical payload is accepted
+    github_api_curl() { cat "$PAYLOAD_DIR/payload-canonical.json"; }
     get_latest_version >/dev/null 2>&1
     if [ "$LATEST_VERSION" != "v0.2.13-ru.1" ]; then
         printf "get_latest_version rejected canonical tag, got %s\n" "$LATEST_VERSION" >&2

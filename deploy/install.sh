@@ -737,9 +737,10 @@ get_latest_version() {
         exit 1
     fi
 
-    # Extract strictly the value of the "tag_name" key — never the last quoted
-    # string on the line (a later "name" field must not shadow tag_name).
-    LATEST_VERSION=$(printf '%s' "$latest_response" | sed -nE 's/^.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]*)".*$/\1/p' | head -n 1)
+    # Extract strictly the FIRST "tag_name" key's value: grep -o scans left to
+    # right, so a later "name" field or a nested "tag_name" cannot shadow the
+    # root release tag.
+    LATEST_VERSION=$(printf '%s' "$latest_response" | grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -n 1 | sed -E 's/.*"([^"]*)"$/\1/')
 
     if [ -z "$LATEST_VERSION" ]; then
         print_error "$(msg 'failed_get_version')"
