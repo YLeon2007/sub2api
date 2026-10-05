@@ -1503,6 +1503,10 @@ export default {
           simulatedNote: 'Simulated quota, for reference only',
           tierFree: 'Free',
           tierPaid: 'Paid',
+          tierPro: 'Pro',
+          tierUltra: 'Ultra',
+          tierStandard: 'Standard',
+          tierEnterprise: 'Enterprise',
           rows: {
             googleOne: {
               channel: 'Google One OAuth (Individuals / Code Assist for Individuals)',

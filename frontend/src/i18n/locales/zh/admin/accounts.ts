@@ -1592,6 +1592,10 @@ export default {
           simulatedNote: '本地模拟配额，仅供参考',
           tierFree: '免费',
           tierPaid: '付费',
+          tierPro: 'Pro',
+          tierUltra: 'Ultra',
+          tierStandard: '标准版',
+          tierEnterprise: '企业版',
           rows: {
             googleOne: {
               channel: 'Google One OAuth（个人版 / Code Assist for Individuals）',

@@ -5607,7 +5607,11 @@ export const ruOverrides = {
           },
           "simulatedNote": "Симулированная квота, только для справки",
           "tierFree": "Бесплатно",
-          "tierPaid": "Платно",
+                  "tierPaid": "Платно",
+                  "tierPro": "Pro",
+                  "tierUltra": "Ultra",
+                  "tierStandard": "Стандартный",
+                  "tierEnterprise": "Корпоративный",
           "rows": {
             "googleOne": {
               "channel": "Google One OAuth (для физических лиц / Code Assist для физических лиц)",
