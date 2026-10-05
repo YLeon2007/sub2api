@@ -1590,6 +1590,8 @@ export default {
             vertex: 'Vertex AI 配额'
           },
           simulatedNote: '本地模拟配额，仅供参考',
+          tierFree: '免费',
+          tierPaid: '付费',
           rows: {
             googleOne: {
               channel: 'Google One OAuth（个人版 / Code Assist for Individuals）',

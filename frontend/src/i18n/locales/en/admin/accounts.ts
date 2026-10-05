@@ -1501,6 +1501,8 @@ export default {
             vertex: 'Vertex AI Quotas'
           },
           simulatedNote: 'Simulated quota, for reference only',
+          tierFree: 'Free',
+          tierPaid: 'Paid',
           rows: {
             googleOne: {
               channel: 'Google One OAuth (Individuals / Code Assist for Individuals)',

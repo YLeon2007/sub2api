@@ -727,7 +727,17 @@ download_github_release_asset() {
 # Get latest release version
 get_latest_version() {
     print_info "$(msg 'fetching_version')"
-    LATEST_VERSION=$(github_api_curl -s --connect-timeout 10 --max-time 30 "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+    # Capture the response and the transport exit status separately: a curl
+    # failure after a partial stdout write must not be mistaken for a valid
+    # latest-release payload (fail closed on any transport error).
+    local latest_response
+    if ! latest_response=$(github_api_curl -s --connect-timeout 10 --max-time 30 "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" 2>/dev/null); then
+        print_error "$(msg 'failed_get_version')"
+        print_info "Please check your network connection or try again later."
+        exit 1
+    fi
+
+    LATEST_VERSION=$(printf '%s' "$latest_response" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/' || true)
 
     if [ -z "$LATEST_VERSION" ]; then
         print_error "$(msg 'failed_get_version')"
