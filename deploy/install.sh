@@ -724,6 +724,38 @@ download_github_release_asset() {
     done
 }
 
+# Print the string value of the FIRST occurrence of key $1 at JSON root depth.
+# Non-string values (null/number/object) and nested keys print nothing, so
+# callers fail closed on smuggled or malformed payloads.
+extract_json_root_string() {
+    awk -v want="$1" '
+    BEGIN { depth=0; instr=0; esc=0; str=""; state=0 }
+    {
+      n=length($0)
+      for (i=1; i<=n; i++) {
+        c=substr($0,i,1)
+        if (instr) {
+          if (esc) { esc=0; str=str c; continue }
+          if (c=="\\") { esc=1; str=str c; continue }
+          if (c=="\"") {
+            instr=0
+            if (state==1) { found=1; print str; exit 0 }
+            if (depth==1 && str==want) { state=1 } else { state=0 }
+            str=""
+            continue
+          }
+          str=str c
+          continue
+        }
+        if (c=="\"") { instr=1; str=""; continue }
+        if (c=="{") { depth++; state=0; continue }
+        if (c=="}") { depth--; state=0; continue }
+        if (state==1 && c !~ /^[ \t:]$/) { state=0 }
+      }
+    }
+    END { if (!found) exit 1 }'
+}
+
 # Get latest release version
 get_latest_version() {
     print_info "$(msg 'fetching_version')"
@@ -737,10 +769,9 @@ get_latest_version() {
         exit 1
     fi
 
-    # Extract strictly the FIRST "tag_name" key's value: grep -o scans left to
-    # right, so a later "name" field or a nested "tag_name" cannot shadow the
-    # root release tag.
-    LATEST_VERSION=$(printf '%s' "$latest_response" | grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -n 1 | sed -E 's/.*"([^"]*)"$/\1/')
+    # Extract strictly the ROOT "tag_name" key's value: the awk scanner tracks
+    # JSON depth, so a nested "tag_name" cannot shadow the root release tag.
+    LATEST_VERSION=$(printf '%s' "$latest_response" | extract_json_root_string tag_name || true)
 
     if [ -z "$LATEST_VERSION" ]; then
         print_error "$(msg 'failed_get_version')"
@@ -752,6 +783,17 @@ get_latest_version() {
     # trust a malformed or non-RU tag_name from the latest-release endpoint.
     if [[ ! "$LATEST_VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-ru\.([1-9][0-9]*)$ ]]; then
         print_error "Invalid RU release version from latest release: $LATEST_VERSION"
+        exit 1
+    fi
+
+    # Cross-check the tag against the release html_url: a legitimate
+    # latest-release payload links to /releases/tag/<tag_name>. Payloads with a
+    # missing/null/non-RU root tag_name that smuggle a canonical nested key, or
+    # with a mismatched html_url, fail closed here.
+    LATEST_HTML_URL=$(printf '%s' "$latest_response" | extract_json_root_string html_url || true)
+    LATEST_HTML_TAG=${LATEST_HTML_URL##*/releases/tag/}
+    if [ -z "$LATEST_HTML_TAG" ] || [ "$LATEST_HTML_TAG" = "$LATEST_HTML_URL" ] || [ "$LATEST_HTML_TAG" != "$LATEST_VERSION" ]; then
+        print_error "Latest release html_url does not confirm tag_name: $LATEST_VERSION"
         exit 1
     fi
 

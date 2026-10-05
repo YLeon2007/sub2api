@@ -16,12 +16,18 @@ chmod +x "$INSTALL_DIR/sub2api"
 
 # Latest-release API fixtures live in real files so the mocks below cannot be
 # defeated by quoting mistakes.
-printf '%s' '{"tag_name":"v0.2.13-ru.1","name":"Sub2API RU v0.2.13-ru.1"}' > "$TEST_ROOT/payload-canonical.json"
-printf '%s' '{"tag_name":"v0.2.13-ru.1-debug","name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-shadowed-by-name.json"
-printf '%s' '{"tag_name":"v0.2.13-ru.1-debug","release":{"tag_name":"v0.2.13-ru.1"}}' > "$TEST_ROOT/payload-nested-tag.json"
-printf '%s' '{"tag_name":null,"name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-null-tag.json"
-printf '%s' '{"name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-missing-tag.json"
-printf '%s' '{"tag_name":"v0.2.13","name":"v0.2.13-ru.1"}' > "$TEST_ROOT/payload-nonru-tag.json"
+HTML='https://github.com/YLeon2007/sub2api/releases/tag/v0.2.13-ru.1'
+printf '%s' '{"tag_name":"v0.2.13-ru.1","name":"Sub2API RU v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-canonical.json"
+printf '%s' '{"tag_name":"v0.2.13-ru.1-debug","name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-shadowed-by-name.json"
+printf '%s' '{"tag_name":"v0.2.13-ru.1-debug","release":{"tag_name":"v0.2.13-ru.1"},"html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-nested-tag.json"
+printf '%s' '{"tag_name":null,"name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-null-tag.json"
+printf '%s' '{"name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-missing-tag.json"
+printf '%s' '{"tag_name":"v0.2.13","name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-nonru-tag.json"
+printf '%s' '{"release":{"tag_name":"v0.2.13-ru.1"},"html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-nested-only.json"
+printf '%s' '{"tag_name":null,"release":{"tag_name":"v0.2.13-ru.1"},"html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-null-plus-nested.json"
+printf '%s' '{"release":{"tag_name":"v0.2.13-ru.1"},"tag_name":"v0.2.13","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-nested-before-root.json"
+printf '%s' '{"tag_name":"v0.2.13-ru.1","html_url":"https://github.com/YLeon2007/sub2api/releases/tag/v0.2.13-ru.2"}' > "$TEST_ROOT/payload-mismatched-html.json"
+printf '%s' '{"tag_name":"v0.2.13-ru.1","name":"Sub2API RU v0.2.13-ru.1"}' > "$TEST_ROOT/payload-no-html.json"
 
 ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" bash -c '
     set -euo pipefail
@@ -38,6 +44,7 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" ba
     msg() { printf "%s" "$1"; }
     list_versions() { :; }
     github_api_curl() { printf "200"; }
+    PAYLOAD_HTML="https://github.com/YLeon2007/sub2api/releases/tag/v0.2.13-ru.1"
 
     for valid in 0.2.13-ru.1 v0.2.13-ru.1; do
         normalized=$(validate_version "$valid")
@@ -56,7 +63,7 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" ba
 
     # malformed tag_name values must be rejected
     for malformed in v00.2.13-ru.1 v0.2.13-ru.1-debug v0.2.13-rc.1; do
-        if (github_api_curl() { printf "{\"tag_name\": \"%s\"}" "$malformed"; }; get_latest_version >/dev/null 2>&1); then
+        if (github_api_curl() { printf "{\"tag_name\": \"%s\", \"html_url\": \"%s\"}" "$malformed" "$PAYLOAD_HTML"; }; get_latest_version >/dev/null 2>&1); then
             printf "get_latest_version accepted malformed tag_name: %s\n" "$malformed" >&2
             exit 1
         fi
@@ -70,7 +77,7 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" ba
     fi
 
     # adversarial payloads must all be rejected
-    for fixture in payload-shadowed-by-name payload-nested-tag payload-null-tag payload-missing-tag payload-nonru-tag; do
+    for fixture in payload-shadowed-by-name payload-nested-tag payload-null-tag payload-missing-tag payload-nonru-tag payload-nested-only payload-null-plus-nested payload-nested-before-root payload-mismatched-html payload-no-html; do
         github_api_curl() { cat "$PAYLOAD_DIR/$fixture.json"; }
         if (get_latest_version >/dev/null 2>&1); then
             printf "get_latest_version accepted adversarial fixture: %s\n" "$fixture" >&2

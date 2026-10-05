@@ -134,6 +134,8 @@ export default {
       retryFailed: 'Retry failed',
       tpsK: 'TPS (K)',
       top: 'Top:',
+      avg: 'Avg:',
+      max: 'Max:',
       throughputTrend: 'Throughput Trend',
       switchRateTrend: 'Avg Account Switches',
       latencyHistogram: 'Request Duration Histogram',
