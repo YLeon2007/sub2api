@@ -28,6 +28,11 @@ printf '%s' '{"tag_name":null,"release":{"tag_name":"v0.2.13-ru.1"},"html_url":"
 printf '%s' '{"release":{"tag_name":"v0.2.13-ru.1"},"tag_name":"v0.2.13","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-nested-before-root.json"
 printf '%s' '{"tag_name":"v0.2.13-ru.1","html_url":"https://github.com/YLeon2007/sub2api/releases/tag/v0.2.13-ru.2"}' > "$TEST_ROOT/payload-mismatched-html.json"
 printf '%s' '{"tag_name":"v0.2.13-ru.1","name":"Sub2API RU v0.2.13-ru.1"}' > "$TEST_ROOT/payload-no-html.json"
+printf '%s' '[{"tag_name":"v0.2.13-ru.1"},{"html_url":"'"$HTML"'"}]' > "$TEST_ROOT/payload-array.json"
+printf '%s' '{"tag_name":null,"tag_name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-dup-null-first.json"
+printf '%s' '{"tag_name" "v0.2.13-ru.1","html_url":"'"$HTML"'"}' > "$TEST_ROOT/payload-no-colon.json"
+printf '%s' '{"tag_name":"v0.2.13-ru.1","html_url":"'"$HTML"'' > "$TEST_ROOT/payload-unterminated.json"
+printf '%s' '{"tag_name":"v0.2.13-ru.1","html_url":"'"$HTML"'"}}' > "$TEST_ROOT/payload-trailing-garbage.json"
 
 ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" bash -c '
     set -euo pipefail
@@ -77,7 +82,7 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" PAYLOAD_DIR="$TEST_ROOT" ba
     fi
 
     # adversarial payloads must all be rejected
-    for fixture in payload-shadowed-by-name payload-nested-tag payload-null-tag payload-missing-tag payload-nonru-tag payload-nested-only payload-null-plus-nested payload-nested-before-root payload-mismatched-html payload-no-html; do
+    for fixture in payload-shadowed-by-name payload-nested-tag payload-null-tag payload-missing-tag payload-nonru-tag payload-nested-only payload-null-plus-nested payload-nested-before-root payload-mismatched-html payload-no-html payload-array payload-dup-null-first payload-no-colon payload-unterminated payload-trailing-garbage; do
         github_api_curl() { cat "$PAYLOAD_DIR/$fixture.json"; }
         if (get_latest_version >/dev/null 2>&1); then
             printf "get_latest_version accepted adversarial fixture: %s\n" "$fixture" >&2

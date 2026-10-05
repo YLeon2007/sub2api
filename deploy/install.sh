@@ -729,7 +729,7 @@ download_github_release_asset() {
 # callers fail closed on smuggled or malformed payloads.
 extract_json_root_string() {
     awk -v want="$1" '
-    BEGIN { depth=0; instr=0; esc=0; str=""; state=0 }
+    BEGIN { depth=0; instr=0; esc=0; str=""; state=0; seen=0; found=0; bad=0; started=0; result="" }
     {
       n=length($0)
       for (i=1; i<=n; i++) {
@@ -739,21 +739,26 @@ extract_json_root_string() {
           if (c=="\\") { esc=1; str=str c; continue }
           if (c=="\"") {
             instr=0
-            if (state==1) { found=1; print str; exit 0 }
-            if (depth==1 && str==want) { state=1 } else { state=0 }
+            if (state==2) { found=1; result=str; state=3 }
+            else if (depth==1 && str==want && !seen) { seen=1; state=1 }
+            else if (state!=3) { state=0 }
             str=""
             continue
           }
           str=str c
           continue
         }
+        if (depth==0 && c !~ /^[ \t\r\n]$/) {
+          if (!started && c=="{") { started=1 } else { bad=1 }
+        }
         if (c=="\"") { instr=1; str=""; continue }
-        if (c=="{") { depth++; state=0; continue }
-        if (c=="}") { depth--; state=0; continue }
-        if (state==1 && c !~ /^[ \t:]$/) { state=0 }
+        if (c=="{" || c=="[") { depth++; if (state!=3) state=0; continue }
+        if (c=="}" || c=="]") { depth--; if (state!=3) state=0; continue }
+        if (state==1) { if (c==":") { state=2 } else if (c !~ /^[ \t]$/) { state=0 } ; continue }
+        if (state==2 && c !~ /^[ \t]$/) { state=0 }
       }
     }
-    END { if (!found) exit 1 }'
+    END { if (found && !bad && !instr && depth==0) { print result; exit 0 } else { exit 1 } }'
 }
 
 # Get latest release version
