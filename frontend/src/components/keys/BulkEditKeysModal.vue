@@ -149,6 +149,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { keysAPI } from '@/api'
@@ -252,7 +253,7 @@ const close = () => {
 
 const errorMessage = (error: unknown): string => {
   const message = (error as { message?: unknown } | null)?.message
-  return typeof message === 'string' && message ? message : t('keys.failedToSave')
+  return localizeApiErrorFallback(typeof message === 'string' ? message : '', t('keys.failedToSave'))
 }
 
 const submit = async () => {

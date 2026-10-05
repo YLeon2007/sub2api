@@ -193,6 +193,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -574,7 +576,7 @@ async function handleUnbind(provider: BindableProvider, providerLabel: string): 
     applyUpdatedUser(user)
     appStore.showSuccess(t('profile.authBindings.unbindSuccess', { providerName: providerLabel }))
   } catch (error) {
-    appStore.showError((error as { message?: string }).message || t('common.tryAgain'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string }).message, t('common.tryAgain')))
   } finally {
     unbindingProvider.value = null
   }
@@ -621,7 +623,7 @@ async function sendEmailCode(): Promise<void> {
     await sendEmailBindingCode(emailBindingForm.email)
     appStore.showSuccess(t('profile.authBindings.codeSentTo', { email: emailBindingForm.email }))
   } catch (error) {
-    appStore.showError((error as { message?: string }).message || t('auth.sendCodeFailed'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string }).message, t('auth.sendCodeFailed')))
   } finally {
     isSendingEmailCode.value = false
   }
@@ -652,7 +654,7 @@ async function bindEmail(): Promise<void> {
         : t('profile.authBindings.bindSuccess')
     )
   } catch (error) {
-    appStore.showError((error as { message?: string }).message || t('common.tryAgain'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string }).message, t('common.tryAgain')))
   } finally {
     isBindingEmail.value = false
   }

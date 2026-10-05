@@ -90,6 +90,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
@@ -203,9 +205,8 @@ const handleSubmit = async () => {
     emit('close')
   } catch (error: any) {
     appStore.showError(
-      error.response?.data?.message
-      || error.response?.data?.detail
-      || t('admin.users.bulkLimits.failed')
+      localizeApiErrorFallback(error.response?.data?.message
+      || error.response?.data?.detail, t('admin.users.bulkLimits.failed'))
     )
   } finally {
     submitting.value = false

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -109,7 +111,7 @@ async function loadData() {
   } catch (err: any) {
     console.error('[OpsOpenAITokenStatsCard] Failed to load data', err)
     response.value = null
-    errorMessage.value = err?.message || t('admin.ops.openaiTokenStats.failedToLoad')
+    errorMessage.value = localizeApiErrorFallback(err?.message, t('admin.ops.openaiTokenStats.failedToLoad'))
   } finally {
     loading.value = false
   }

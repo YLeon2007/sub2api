@@ -168,6 +168,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
@@ -261,7 +262,7 @@ const handleTestProxy = async (proxy: Proxy) => {
   } catch (error: any) {
     testResults[proxy.id] = {
       success: false,
-      message: error.response?.data?.detail || 'Test failed'
+      message: localizeApiErrorFallback(error.response?.data?.detail || 'Test failed', t('admin.proxies.proxyTestFailed'))
     }
   } finally {
     testingProxyIds.delete(proxy.id)

@@ -430,6 +430,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -612,7 +614,7 @@ const handleSubmit = async () => {
     closeFormModal()
     loadRules()
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.errorPassthrough.failedToSave'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.errorPassthrough.failedToSave')))
     console.error('Error saving rule:', error)
   } finally {
     submitting.value = false
@@ -624,7 +626,7 @@ const toggleEnabled = async (rule: ErrorPassthroughRule) => {
     await adminAPI.errorPassthrough.toggleEnabled(rule.id, !rule.enabled)
     rule.enabled = !rule.enabled
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.errorPassthrough.failedToToggle'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.errorPassthrough.failedToToggle')))
     console.error('Error toggling rule:', error)
   }
 }
@@ -639,7 +641,7 @@ const confirmDelete = async () => {
     deletingRule.value = null
     loadRules()
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.errorPassthrough.failedToDelete'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.errorPassthrough.failedToDelete')))
     console.error('Error deleting rule:', error)
   }
 }

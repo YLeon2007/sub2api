@@ -333,6 +333,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -384,7 +386,7 @@ const pendingBridgeRequests = new Map<string, number>();
 function errorMessage(error: unknown): string {
   if (typeof error === "object" && error !== null && "message" in error) {
     return String(
-      (error as { message?: unknown }).message || t("common.unknownError"),
+      localizeApiErrorFallback(String((error as { message?: unknown }).message || t("common.unknownError")), t("common.unknownError")),
     );
   }
   return t("common.unknownError");
@@ -559,7 +561,7 @@ async function testPlugin(plugin: PluginInstallation): Promise<void> {
     );
     if (result.success)
       appStore.showSuccess(result.message || t("admin.plugins.testSuccess"));
-    else appStore.showError(result.message || t("common.error"));
+    else appStore.showError(localizeApiErrorFallback(result.message, t("common.error")));
   } catch (error: unknown) {
     reportSensitiveActionError(error);
   } finally {
@@ -702,7 +704,7 @@ async function handleBridgeMessage(event: MessageEvent): Promise<void> {
         // may call config.test for lightweight status polling, not just as an
         // explicit "test" action, and those must not spam a success toast.
         if (!result.success)
-          appStore.showError(result.message || t("common.error"));
+          appStore.showError(localizeApiErrorFallback(result.message, t("common.error")));
         break;
       }
       case "plugin.status": {

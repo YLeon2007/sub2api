@@ -57,6 +57,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
@@ -142,13 +144,12 @@ const extractErrorMessage = (e: unknown): string => {
     response?: { data?: { detail?: string; message?: string; error?: string; code?: string } }
   }
   return (
-    err?.response?.data?.detail ||
+    localizeApiErrorFallback(err?.response?.data?.detail ||
     err?.response?.data?.message ||
     err?.response?.data?.error ||
     err?.response?.data?.code ||
     err?.reason ||
-    err?.message ||
-    t('common.error')
+    err?.message, t('common.error'))
   )
 }
 
@@ -170,7 +171,7 @@ const handleProbe = async () => {
     if (result.success) {
       data.value = result
     } else {
-      error.value = result.error || t('common.error')
+      error.value = localizeApiErrorFallback(result.error, t('common.error'))
     }
   } catch (e) {
     error.value = extractErrorMessage(e)

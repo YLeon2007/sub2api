@@ -7,6 +7,20 @@ import { getLocale } from '@/i18n'
  * This utility extracts the user-facing message from any error shape.
  */
 
+/**
+ * Keep a caller's existing raw-error precedence for EN/ZH, but use only
+ * translated primary copy in RU. The fallback must never contain API prose.
+ * This does not inspect the text or modify error codes/diagnostic metadata.
+ */
+export function localizeApiErrorFallback(
+  raw: string | null | undefined,
+  fallback: string,
+  localeOverride?: string,
+): string {
+  const locale = (localeOverride ?? getLocale()).toLowerCase().split(/[-_]/)[0]
+  return locale === 'ru' ? fallback : raw || fallback
+}
+
 interface ApiErrorLike {
   status?: number
   code?: number | string

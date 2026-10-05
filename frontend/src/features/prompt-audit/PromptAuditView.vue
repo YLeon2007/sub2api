@@ -144,6 +144,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -333,7 +334,7 @@ async function runProbe(endpoint: PromptAuditEndpointDraft) {
     const result = await promptAuditAPI.probeEndpoint(endpoint)
     probeResults[endpoint.id] = result
     if (result.ok) appStore.showSuccess(t('admin.promptAudit.messages.probeSucceeded'))
-    else appStore.showError(`${result.error_code || result.status}: ${result.message}`)
+    else appStore.showError(localizeApiErrorFallback(`${result.error_code || result.status}: ${result.message}`, t('admin.promptAudit.errors.probe')))
   } catch (error) {
     appStore.showError(errorMessage(error, 'admin.promptAudit.errors.probe'))
   } finally {
