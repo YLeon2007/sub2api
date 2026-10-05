@@ -729,7 +729,7 @@ download_github_release_asset() {
 # callers fail closed on smuggled or malformed payloads.
 extract_json_root_string() {
     awk -v want="$1" '
-    BEGIN { depth=0; instr=0; esc=0; str=""; state=0; seen=0; found=0; bad=0; started=0; result="" }
+    BEGIN { stk=""; instr=0; esc=0; str=""; mode="val"; emptyok=0; seen=0; armed=0; found=0; bad=0; started=0; result="" }
     {
       n=length($0)
       for (i=1; i<=n; i++) {
@@ -739,26 +739,78 @@ extract_json_root_string() {
           if (c=="\\") { esc=1; str=str c; continue }
           if (c=="\"") {
             instr=0
-            if (state==2) { found=1; result=str; state=3 }
-            else if (depth==1 && str==want && !seen) { seen=1; state=1 }
-            else if (state!=3) { state=0 }
+            if (role=="key") {
+              if (length(stk)==1 && str==want && !seen) { seen=1; armed=1 }
+              mode="colon"
+            } else {
+              if (armed && length(stk)==1) { found=1; result=str }
+              armed=0
+              mode="after"
+            }
             str=""
             continue
           }
           str=str c
           continue
         }
-        if (depth==0 && c !~ /^[ \t\r\n]$/) {
-          if (!started && c=="{") { started=1 } else { bad=1 }
+        if (c ~ /^[ \t\r\n]$/) continue
+        if (!started) {
+          if (c=="{") { started=1; stk="{"; mode="key"; emptyok=1; continue }
+          bad=1; continue
         }
-        if (c=="\"") { instr=1; str=""; continue }
-        if (c=="{" || c=="[") { depth++; if (state!=3) state=0; continue }
-        if (c=="}" || c=="]") { depth--; if (state!=3) state=0; continue }
-        if (state==1) { if (c==":") { state=2 } else if (c !~ /^[ \t]$/) { state=0 } ; continue }
-        if (state==2 && c !~ /^[ \t]$/) { state=0 }
+        if (length(stk)==0) { bad=1; continue }
+        if (c=="\"") {
+          if (mode=="key" || mode=="val") { instr=1; str=""; role=(mode=="key" ? "key" : "val"); emptyok=0; continue }
+          bad=1; continue
+        }
+        if (c=="{") {
+          if (mode=="val") { stk=stk "{"; mode="key"; emptyok=1; armed=0; continue }
+          bad=1; continue
+        }
+        if (c=="[") {
+          if (mode=="val") { stk=stk "["; mode="val"; emptyok=1; armed=0; continue }
+          bad=1; continue
+        }
+        if (c=="}") {
+          if (substr(stk,length(stk),1)=="{" && (mode=="after" || (mode=="key" && emptyok))) {
+            stk=substr(stk,1,length(stk)-1); mode="after"; emptyok=0; continue
+          }
+          bad=1; continue
+        }
+        if (c=="]") {
+          if (substr(stk,length(stk),1)=="[" && (mode=="after" || (mode=="val" && emptyok))) {
+            stk=substr(stk,1,length(stk)-1); mode="after"; emptyok=0; continue
+          }
+          bad=1; continue
+        }
+        if (c==":") {
+          if (mode=="colon") { mode="val"; emptyok=0; continue }
+          bad=1; continue
+        }
+        if (c==",") {
+          if (mode=="after") {
+            if (substr(stk,length(stk),1)=="{") { mode="key" } else { mode="val" }
+            emptyok=0; continue
+          }
+          bad=1; continue
+        }
+        if (c ~ /[-0-9ntf]/) {
+          if (mode=="val") {
+            rest=substr($0,i)
+            if (match(rest, /^(null|true|false|-?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?)/)) {
+              i += RLENGTH - 1
+              armed=0
+              mode="after"; emptyok=0
+              continue
+            }
+          }
+          bad=1; continue
+        }
+        bad=1
       }
     }
-    END { if (found && !bad && !instr && depth==0) { print result; exit 0 } else { exit 1 } }'
+    END { if (found && !bad && !instr && started && length(stk)==0) { print result; exit 0 } else { exit 1 } }
+'
 }
 
 # Get latest release version
