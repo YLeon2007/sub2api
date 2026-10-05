@@ -735,6 +735,13 @@ get_latest_version() {
         exit 1
     fi
 
+    # This fork publishes only canonical immutable RU release tags; never
+    # trust a malformed or non-RU tag_name from the latest-release endpoint.
+    if [[ ! "$LATEST_VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-ru\.([1-9][0-9]*)$ ]]; then
+        print_error "Invalid RU release version from latest release: $LATEST_VERSION"
+        exit 1
+    fi
+
     print_info "$(msg 'latest_version'): $LATEST_VERSION"
 }
 

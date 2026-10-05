@@ -44,6 +44,19 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" bash -c '
             exit 1
         fi
     done
+
+    for malformed in v00.2.13-ru.1 v0.2.13-ru.1-debug v0.2.13-rc.1; do
+        if (github_api_curl() { printf "{\"tag_name\": \"%s\"}" "$malformed"; }; get_latest_version >/dev/null 2>&1); then
+            printf "get_latest_version accepted malformed tag_name: %s\n" "$malformed" >&2
+            exit 1
+        fi
+    done
+    github_api_curl() { printf "{\"tag_name\": \"v0.2.13-ru.1\"}"; }
+    get_latest_version >/dev/null 2>&1
+    if [ "$LATEST_VERSION" != "v0.2.13-ru.1" ]; then
+        printf "get_latest_version rejected canonical tag, got %s\n" "$LATEST_VERSION" >&2
+        exit 1
+    fi
 '
 
 MARKER="$TEST_ROOT/download-called"

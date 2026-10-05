@@ -5601,9 +5601,9 @@ export const ruOverrides = {
             "docs": "Официальная документация"
           },
           "docs": {
-            "codeAssist": "Code Assist Quotas",
-            "aiStudio": "AI Studio Pricing",
-            "vertex": "Vertex AI Quotas"
+            "codeAssist": "Квоты Code Assist",
+            "aiStudio": "Тарифы AI Studio",
+            "vertex": "Квоты Vertex AI"
           },
           "simulatedNote": "Симулированная квота, только для справки",
           "rows": {
@@ -7370,7 +7370,7 @@ export const ruOverrides = {
       },
       "tooltips": {
         "totalRequests": "Общее количество запросов (успешных и неуспешных) в выбранном временном окне.",
-        "throughputTrend": "Requests/QPS + Tokens/TPS в выбранном окне.",
+        "throughputTrend": "Запросы/QPS + токены/TPS в выбранном окне.",
         "switchRateTrend": "Динамика переключений аккаунтов / всего запросов за последние 5 часов (средние переключения).",
         "latencyHistogram": "Распределение длительности запросов (ms) для успешных запросов.",
         "errorTrend": "Количество ошибок во времени (область SLA исключает бизнес-лимиты; upstream исключает 429/529).",
@@ -8610,10 +8610,10 @@ export const ruOverrides = {
         "grantOnFirstBindLabel": "Выдать при первой привязке",
         "grantOnFirstBindHint": "Выдавать права по умолчанию, когда существующий пользователь впервые привязывает этот источник.",
         "defaultSubscriptionsLabel": "Подписки по умолчанию",
-        "defaultSubscriptionsHint": "Применяется только к этому auth source. Оставьте пустым, чтобы пропустить подписки для конкретного источника.",
+        "defaultSubscriptionsHint": "Применяется только к этому источнику авторизации. Оставьте пустым, чтобы пропустить подписки для конкретного источника.",
         "noSourceSubscriptions": "Подписки по умолчанию для конкретного источника не настроены.",
         "platformQuotasOverride": "Переопределения квот платформ",
-        "platformQuotasOverrideHint": "Пустые поля наследуют системное значение по умолчанию. Установите 0, чтобы полностью заблокировать это окно для данного auth source."
+        "platformQuotasOverrideHint": "Пустые поля наследуют системное значение по умолчанию. Установите 0, чтобы полностью заблокировать это окно для данного источника авторизации."
       },
       "paymentVisibleMethods": {
         "methodLabel": "Видимый метод {title}",
@@ -9557,7 +9557,7 @@ export const ruOverrides = {
     "errors": {
       "tooManyPending": "Слишком много ожидающих заказов (макс. {max}). Сначала завершите или отмените существующие заказы.",
       "cancelRateLimited": "Слишком много отмен. Повторите попытку позже.",
-      "wechatH5NotAuthorized": "Этот merchant не включил WeChat H5 payment. Откройте эту страницу в WeChat, чтобы продолжить.",
+      "wechatH5NotAuthorized": "Этот продавец не включил оплату WeChat H5. Откройте эту страницу в WeChat, чтобы продолжить.",
       "wechatPaymentMpNotConfigured": "На этом сайте настройка оплаты WeChat MP/JSAPI ещё не завершена, поэтому оплата внутри WeChat сейчас недоступна.",
       "wechatJsapiUnavailable": "Не удалось вызвать WeChat Pay в текущей среде. Откройте эту страницу внутри WeChat и повторите попытку.",
       "wechatJsapiFailed": "Оплата WeChat Pay не завершена. Попробуйте вызвать её снова или переключитесь на оплату по QR.",
@@ -9565,7 +9565,7 @@ export const ruOverrides = {
       "wechatOpenInWeChatHint": "Откройте текущую страницу внутри WeChat или переключитесь на оплату WeChat по QR на компьютере.",
       "wechatScanOnDesktopHint": "На компьютере используйте сканирование WeChat для оплаты; на мобильном откройте текущую страницу внутри WeChat.",
       "wechatSwitchBrowserHint": "Переключитесь на оплату WeChat по QR на компьютере или откройте страницу во внешнем браузере и повторите попытку.",
-      "mobilePaymentFallbackToQr": "Этот merchant не включил мобильную оплату. Поток автоматически переключён на оплату по QR.",
+      "mobilePaymentFallbackToQr": "Этот продавец не включил мобильную оплату. Поток автоматически переключён на оплату по QR.",
       "alipayDesktopUnavailable": "Desktop-потоку Alipay не удалось сгенерировать QR-код.",
       "alipayDesktopQrHint": "Desktop Alipay должен показать QR-код. Обновите страницу и повторите попытку либо убедитесь, что страница оплаты не заблокирована.",
       "alipayMobileUnavailable": "Эта страница не смогла передать оплату в Alipay.",
