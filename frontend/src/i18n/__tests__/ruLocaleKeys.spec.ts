@@ -722,7 +722,7 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.accounts.quotaControl.rpmLimit.strategyTiered).toBe('Многоуровневая модель')
     expect(ru.admin.accounts.quotaControl.rpmLimit.strategyStickyExempt).toBe('Исключать sticky-сессии')
     expect(ru.admin.accounts.affinityBuffer).toBe('Буфер (жёлтая зона)')
-    expect(ru.admin.settings.oidc.frontendRedirectUrl).toBe('Путь обратного вызова frontend')
+    expect(ru.admin.settings.oidc.frontendRedirectUrl).toBe('Путь обратного вызова фронтенда')
     expect(ru.admin.settings.oidc.tokenAuthMethod).toBe('Метод аутентификации токена')
     expect(ru.admin.settings.oidc.clockSkewSeconds).toBe('Допуск расхождения часов (сек.)')
     expect(ru.admin.settings.oidc.allowedSigningAlgs).toBe('Разрешённые алгоритмы подписи')

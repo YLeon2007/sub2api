@@ -1249,11 +1249,11 @@ function handleToolbarRefresh() {
               <span class="font-bold text-gray-900 dark:text-white">{{ totalTokensLabel }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.avgLabelQps') }}:</span>
+              <span class="text-gray-500">{{ t('admin.ops.avgQps') }}:</span>
               <span class="font-bold text-gray-900 dark:text-white">{{ qpsAvgLabel }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">{{ t('admin.ops.avgLabelTps') }}:</span>
+              <span class="text-gray-500">{{ t('admin.ops.avgTps') }}:</span>
               <span class="font-bold text-gray-900 dark:text-white">{{ tpsAvgLabel }}</span>
             </div>
           </div>
