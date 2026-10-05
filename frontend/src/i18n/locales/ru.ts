@@ -3262,7 +3262,7 @@ export const ruOverrides = {
         "peakStart": "Начало пика",
         "peakEnd": "Конец пика",
         "peakMultiplier": "Пиковый коэффициент",
-        "multiplierHint": "Применяется к token billing multiplier; image tokens в token billing тоже учитываются. 0 означает тарификацию пиковых token-запросов по 0x."
+        "multiplierHint": "Применяется к множителю тарификации по токенам; токены изображений при тарификации по токенам тоже учитываются. 0 означает тарификацию пиковых запросов по токенам с коэффициентом 0x."
       },
       "profitControl": {
         "enable": "Включить контроль прибыльности",
@@ -5257,7 +5257,7 @@ export const ruOverrides = {
       "bedrockSecretAccessKey": "Секретный ключ доступа AWS",
       "bedrockSessionToken": "Токен сессии AWS",
       "bedrockRegion": "Регион AWS",
-      "bedrockRegionHint": "e.g. us-east-1, us-west-2, eu-west-1",
+      "bedrockRegionHint": "например, us-east-1, us-west-2, eu-west-1",
       "bedrockForceGlobal": "Принудительный global cross-region inference",
       "bedrockForceGlobalHint": "Если включено, model IDs используют префикс global. (например, global.anthropic.claude-...), направляя запросы в любой поддерживаемый регион по всему миру для более высокой доступности",
       "bedrockAccessKeyIdRequired": "Введите AWS Access Key ID",
@@ -5266,7 +5266,7 @@ export const ruOverrides = {
       "bedrockSessionTokenHint": "Необязательно, для временных учётных данных",
       "bedrockSecretKeyLeaveEmpty": "Оставьте пустым, чтобы сохранить текущий ключ",
       "bedrockAuthMode": "Режим аутентификации",
-      "bedrockAuthModeSigv4": "SigV4 Signing",
+      "bedrockAuthModeSigv4": "Подпись SigV4",
       "bedrockAuthModeApikey": "API-ключ Bedrock",
       "bedrockApiKeyLabel": "API-ключ Bedrock",
       "bedrockApiKeyDesc": "Токен Bearer",
@@ -6132,7 +6132,7 @@ export const ruOverrides = {
       "proxyTestFailed": "Проверка proxy не удалась",
       "qualityCheckDone": "Проверка качества завершена: оценка {score} ({grade})",
       "qualityCheckFailed": "Не удалось запустить проверку качества proxy",
-      "batchQualityDone": "Массовая проверка качества завершена для proxy: {count}; healthy {healthy}, warn {warn}, challenge {challenge}, abnormal {failed}",
+      "batchQualityDone": "Массовая проверка качества завершена для прокси: {count}; исправны {healthy}, предупреждения {warn}, проверка доступа {challenge}, неполадки {failed}",
       "batchQualityFailed": "Массовая проверка качества не удалась",
       "batchQualityEmpty": "Нет proxy для проверки качества",
       "qualityReportTitle": "Отчёт качества proxy",
@@ -7387,7 +7387,7 @@ export const ruOverrides = {
         "errors": "Статистика ошибок, включая общее число ошибок, долю ошибок и долю ошибок upstream.",
         "upstreamErrors": "Статистика ошибок upstream, без ошибок rate limit (429/529).",
         "latency": "Статистика длительности запросов, включая процентили p50, p90, p95, p99.",
-        "ttft": "Time To First Token, измеряет скорость возврата первого токена в streaming-ответах.",
+        "ttft": "Время до первого токена (TTFT), измеряет скорость возврата первого токена в потоковых ответах.",
         "health": "Оценка состояния системы (0-100), учитывает SLA, долю ошибок и использование ресурсов."
       },
       "charts": {
@@ -8264,7 +8264,7 @@ export const ruOverrides = {
         "rechargeBonus": {
           "addTier": "Добавить уровень",
           "duplicateMinAmount": "Такой порог уже существует",
-          "empty": "Уровни акций не настроены; пополнения зачисляются по номиналу.",
+          "empty": "Уровни акций не настроены; пополнения зачисляются без акции, с применением настроенного множителя пополнения баланса.",
           "hint": "Пополнение баланса выбирает уровень по введённой пользователем сумме (максимальный порог, не превышающий её). Оставьте пустым, чтобы отключить акцию. На подписки не влияет.",
           "incompleteRow": "Для применения уровня укажите и сумму, и процент",
           "invalidDiscountPercent": "Процент скидки должен быть меньше 100",
@@ -8637,7 +8637,7 @@ export const ruOverrides = {
         "subscriptionPriorityDescription": "Когда включено, scheduler сначала оценивает аккаунты с подпиской ChatGPT и переключается на не-подписочные аккаунты только если не удаётся занять ни один subscription slot.",
         "weightsTitle": "Переопределения весов scheduler",
         "weightsDescription": "Пустые значения используют config/environment настройки; если в config ничего не задано, применяются встроенные значения по умолчанию. Непустые значения на странице имеют приоритет.",
-        "defaultPlaceholder": "config/default: {value}",
+        "defaultPlaceholder": "Из конфигурации / по умолчанию: {value}",
         "topKLabel": "TopK",
         "priorityWeight": "Приоритет",
         "loadWeight": "Нагрузка",
@@ -8782,10 +8782,10 @@ export const ruOverrides = {
         "curvesHint": "Curve IDs через запятую",
         "pointFormats": "Форматы точек",
         "signatureAlgorithms": "Алгоритмы подписи",
-        "alpnProtocols": "ALPN Protocols",
+        "alpnProtocols": "Протоколы ALPN",
         "alpnProtocolsHint": "Через запятую, например h2, http/1.1",
         "supportedVersions": "Поддерживаемые TLS Versions",
-        "keyShareGroups": "Key Share Groups",
+        "keyShareGroups": "Группы обмена ключами",
         "pskModes": "Режимы PSK",
         "extensions": "Расширения"
       },

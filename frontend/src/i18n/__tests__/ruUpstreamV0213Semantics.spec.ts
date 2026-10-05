@@ -170,7 +170,7 @@ const expected = {
     "admin.settings.payment.rechargeBonus.empty": {
       "en": "No promotion tiers configured; top-ups are credited at face value.",
       "zh": "尚未配置优惠档位，充值按原价到账。",
-      "ru": "Уровни акций не настроены; пополнения зачисляются по номиналу."
+      "ru": "Уровни акций не настроены; пополнения зачисляются без акции, с применением настроенного множителя пополнения баланса."
     },
     "admin.settings.payment.rechargeBonus.hint": {
       "en": "Balance top-ups match a tier by the amount the user enters (highest threshold not above it). Leave empty for no promotion. Subscriptions are not affected.",
@@ -438,6 +438,15 @@ describe('Russian v0.2.13 upstream locale delta', () => {
     expect(unknown).toContain('Результат не подтверждён')
     expect(unknown).toContain('заблокировано')
     expect(unknown).toContain('Проверьте позже')
+  })
+
+  it('RU-PAYMENT-EMPTY keeps the configured balance multiplier when no promotion tiers exist', () => {
+    // quoteRechargeBonus applies BalanceRechargeMultiplier before returning the no-tier quote.
+    const empty = ruOverrides.admin.settings.payment.rechargeBonus.empty
+    expect(empty).toContain('Уровни акций не настроены')
+    expect(empty).toContain('без акции')
+    expect(empty).toContain('с применением настроенного множителя пополнения баланса')
+    expect(empty).not.toContain('по номиналу')
   })
 
   it('keeps bonus and discount tier modes semantically distinct', () => {
