@@ -52,6 +52,11 @@ ROOT_DIR="$ROOT_DIR" CASE_INSTALL_DIR="$INSTALL_DIR" bash -c '
         fi
     done
     github_api_curl() { printf "{\"tag_name\": \"v0.2.13-ru.1\"}"; return 28; }
+    github_api_curl() { printf \"{\\\"tag_name\\\": \\\"v0.2.13-ru.1-debug\\\", \\\"name\\\": \\\"v0.2.13-ru.1\\\"}\"; }
+    if (get_latest_version >/dev/null 2>&1); then
+        printf "get_latest_version accepted tag shadowed by later name field\n" >&2
+        exit 1
+    fi
     if (get_latest_version >/dev/null 2>&1); then
         printf "get_latest_version accepted tag despite transport error\n" >&2
         exit 1
