@@ -758,6 +758,7 @@ extract_json_root_string() {
             str=""
             continue
           }
+          if (c ~ /[[:cntrl:]]/) { bad=1; continue }
           str=str c
           continue
         }
