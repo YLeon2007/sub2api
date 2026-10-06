@@ -21,3 +21,17 @@ exceptions:
     mitigation: "No zero-size custom generators in codebase; override keeps vulnerable ranges off the resolved graph"
     expires_on: "2026-10-13"
     owner: "security@your-domain"
+  - package: source-map-js
+    advisory: "GHSA-68fv-2mgg-jv7q"
+    severity: high
+    reason: "Reached via @lobehub/icons/shiki-stream highlighting; no attacker-controlled source-map input is processed (event-loop DoS requires crafted source-map offsets)"
+    mitigation: "Source maps are build artifacts, not runtime user input; no fixed upstream release available"
+    expires_on: "2026-10-13"
+    owner: "security@your-domain"
+  - package: "@vue/server-renderer"
+    advisory: "GHSA-g2v6-rqmx-r4w6"
+    severity: high
+    reason: "Admin SPA is client-rendered; the vulnerable SSR attribute-serialization path is never executed"
+    mitigation: "No SSR usage in the codebase; @vue/server-renderer ships only as a transitive dep of @lobehub/icons"
+    expires_on: "2026-10-13"
+    owner: "security@your-domain"
