@@ -806,7 +806,7 @@ extract_json_root_string() {
         if (c ~ /[-0-9ntf]/) {
           if (mode=="val") {
             rest=substr($0,i)
-            if (match(rest, /^(null|true|false|-?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?)/)) {
+            if (match(rest, /^(null|true|false|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?)/)) {
               i += RLENGTH - 1
               armed=0
               mode="after"; emptyok=0
