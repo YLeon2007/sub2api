@@ -463,6 +463,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
@@ -550,7 +551,7 @@ const loadPlans = async () => {
   try {
     plans.value = await adminAPI.scheduledTests.listByAccount(props.accountId)
   } catch (error: any) {
-    appStore.showError(error?.message || 'Failed to load plans')
+    appStore.showError(localizeApiErrorFallback(error?.message || 'Failed to load plans', t('common.error')))
   } finally {
     loading.value = false
   }
@@ -574,7 +575,7 @@ const handleCreate = async () => {
     resetNewPlan()
     await loadPlans()
   } catch (error: any) {
-    appStore.showError(error?.message || 'Failed to create plan')
+    appStore.showError(localizeApiErrorFallback(error?.message || 'Failed to create plan', t('common.error')))
   } finally {
     creating.value = false
   }
@@ -589,7 +590,7 @@ const handleToggleEnabled = async (plan: ScheduledTestPlan, enabled: boolean) =>
     }
     appStore.showSuccess(t('admin.scheduledTests.updateSuccess'))
   } catch (error: any) {
-    appStore.showError(error?.message || 'Failed to update plan')
+    appStore.showError(localizeApiErrorFallback(error?.message || 'Failed to update plan', t('common.error')))
   }
 }
 
@@ -624,7 +625,7 @@ const handleEdit = async () => {
     appStore.showSuccess(t('admin.scheduledTests.updateSuccess'))
     editingPlanId.value = null
   } catch (error: any) {
-    appStore.showError(error?.message || 'Failed to update plan')
+    appStore.showError(localizeApiErrorFallback(error?.message || 'Failed to update plan', t('common.error')))
   } finally {
     updating.value = false
   }
@@ -646,7 +647,7 @@ const handleDelete = async () => {
       results.value = []
     }
   } catch (error: any) {
-    appStore.showError(error?.message || 'Failed to delete plan')
+    appStore.showError(localizeApiErrorFallback(error?.message || 'Failed to delete plan', t('common.error')))
   } finally {
     showDeleteConfirm.value = false
     deletingPlan.value = null
@@ -667,7 +668,7 @@ const toggleExpand = async (planId: number) => {
   try {
     results.value = await adminAPI.scheduledTests.listResults(planId, 20)
   } catch (error: any) {
-    appStore.showError(error?.message || 'Failed to load results')
+    appStore.showError(localizeApiErrorFallback(error?.message || 'Failed to load results', t('common.error')))
     results.value = []
   } finally {
     loadingResults.value = false

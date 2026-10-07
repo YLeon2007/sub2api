@@ -706,6 +706,9 @@ export default {
       vertexAnthropicHint: '使用 Google Cloud Service Account JSON 通过 Vertex AI 调用 Anthropic Claude。建议配置模型映射，将客户端 Claude 模型名映射到 Vertex 模型 ID。',
       vertexGeminiHint: '使用 Google Cloud Service Account JSON 访问 Vertex AI Gemini。建议将 Vertex 账号放入独立分组，避免和 AI Studio/Gemini OAuth 同模型混调。',
       vertexSaJsonLabel: 'Service Account JSON',
+      vertexProjectIdLabel: '项目 ID',
+      vertexClientEmailLabel: '客户端邮箱',
+      vertexLocationLabel: '区域',
       vertexSaJsonLoaded: '已读取 Service Account JSON',
       vertexSaJsonDrop: '拖入 Service Account JSON',
       vertexSaJsonKeyHidden: '密钥内容不会在表单中显示。',
@@ -808,6 +811,8 @@ export default {
         codexFingerprintDevice: '仅设备',
         codexFingerprintSession: '设备+会话',
         codexFingerprintFull: '完全收敛',
+        compactProbeSuccess: 'Compact 探测成功（原生 remote compaction v2）',
+        compactProbeUnsupported: '上游返回 2xx，但没有 compaction 输出项（此链路不支持原生 remote compaction v2）',
         codexImageTool: 'Codex 图片桥接策略',
         codexImageToolDesc:
           '统一控制 Codex /responses 文本请求的 hosted image_generation 桥接和客户端图片工具声明。hosted 工具自动注入仅适用于非 Responses Lite 请求；账号级策略优先于渠道和全局配置，不影响独立图片生成接口。',
@@ -1199,6 +1204,7 @@ export default {
       pleaseSelectStatus: '请选择有效的账号状态',
       mixedChannelWarningTitle: '混合渠道警告',
       mixedChannelWarning: '警告：分组 "{groupName}" 中同时包含 {currentPlatform} 和 {otherPlatform} 账号。混合使用不同渠道可能导致 thinking block 签名验证问题，会自动回退到非 thinking 模式。确定要继续吗？',
+      mixedChannelWarningGeneric: '警告：混合使用不同渠道可能导致思考模式被禁用。确定要继续吗？',
       pleaseEnterAccountName: '请输入账号名称',
       pleaseEnterApiKey: '请输入 API Key',
       bedrockAccessKeyId: 'AWS Access Key ID',
@@ -1236,6 +1242,7 @@ export default {
       oauth: {
         title: 'Claude 账号授权',
         authMethod: '授权方式',
+        copyUrl: '复制链接',
         manualAuth: '手动授权',
         cookieAutoAuth: 'Cookie 自动授权',
         cookieAutoAuthDesc: '使用 claude.ai sessionKey 自动完成 OAuth 授权，无需手动打开浏览器。',
@@ -1272,6 +1279,9 @@ export default {
         verifying: '验证中...',
         pleaseEnterSessionKey: '请输入至少一个有效的 sessionKey',
         authFailed: '授权失败',
+        failedToGenerateUrl: '生成授权链接失败',
+        failedToExchangeCode: '交换授权码失败',
+        missingAuthCodeOrSession: '缺少授权码或会话 ID',
         cookieAuthFailed: 'Cookie 授权失败',
         keyAuthFailed: '密钥 {index}: {error}',
         successCreated: '成功创建 {count} 个账号',
@@ -1580,6 +1590,12 @@ export default {
             vertex: 'Vertex AI 配额'
           },
           simulatedNote: '本地模拟配额，仅供参考',
+          tierFree: '免费',
+          tierPaid: '付费',
+          tierPro: 'Pro',
+          tierUltra: 'Ultra',
+          tierStandard: '标准版',
+          tierEnterprise: '企业版',
           rows: {
             googleOne: {
               channel: 'Google One OAuth（个人版 / Code Assist for Individuals）',

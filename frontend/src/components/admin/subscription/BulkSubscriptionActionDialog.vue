@@ -115,6 +115,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, reactive, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
@@ -207,7 +209,7 @@ async function submit() {
     emit('completed', result.value)
   } catch (error: unknown) {
     const failure = error as { status?: number; message?: string; response?: { status?: number; data?: { message?: string } } }
-    requestError.value = failure?.message || failure?.response?.data?.message || t('admin.subscriptions.bulk.requestFailed')
+    requestError.value = localizeApiErrorFallback(failure?.message || failure?.response?.data?.message, t('admin.subscriptions.bulk.requestFailed'))
     const status = failure?.status ?? failure?.response?.status
     // A timeout, server error or in-progress conflict may arrive after writes.
     // Retry the frozen payload and key until a definitive result is available.

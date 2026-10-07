@@ -312,6 +312,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
@@ -375,7 +377,7 @@ async function markAsRead(id: number) {
   try {
     await announcementStore.markAsRead(id)
   } catch (err: any) {
-    appStore.showError(err?.message || t('common.unknownError'))
+    appStore.showError(localizeApiErrorFallback(err?.message, t('common.unknownError')))
   }
 }
 
@@ -390,7 +392,7 @@ async function markAllAsRead() {
     await announcementStore.markAllAsRead()
     appStore.showSuccess(t('announcements.allMarkedAsRead'))
   } catch (err: any) {
-    appStore.showError(err?.message || t('common.unknownError'))
+    appStore.showError(localizeApiErrorFallback(err?.message, t('common.unknownError')))
   }
 }
 

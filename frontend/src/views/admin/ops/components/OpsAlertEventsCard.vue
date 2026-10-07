@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, onMounted, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -9,6 +11,10 @@ import Icon from '@/components/icons/Icon.vue'
 import { opsAPI, type AlertEventsQuery } from '@/api/admin/ops'
 import type { AlertEvent } from '../types'
 import { formatDateTime } from '../utils/opsFormatters'
+import {
+  localizeOpsAlertEventDescription,
+  localizeOpsAlertEventTitle
+} from '../utils/opsAlertLocalization'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -99,7 +105,7 @@ async function loadFirstPage() {
     hasMore.value = data.length === PAGE_SIZE
   } catch (err: any) {
     console.error('[OpsAlertEventsCard] Failed to load alert events', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertEvents.loadFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.alertEvents.loadFailed')))
     events.value = []
     hasMore.value = false
   } finally {
@@ -192,6 +198,17 @@ function formatDimensionsSummary(event: AlertEvent): string {
   return parts.length ? parts.join(' ') : '-'
 }
 
+function localizedEventTitle(event: AlertEvent): string {
+  return localizeOpsAlertEventTitle(event.title, (key, params) => params ? t(key, params) : t(key)) || '-'
+}
+
+function localizedEventDescription(event: AlertEvent): string | undefined {
+  return localizeOpsAlertEventDescription(
+    event.description,
+    (key, params) => params ? t(key, params) : t(key)
+  )
+}
+
 function closeDetail() {
   showDetail.value = false
   selected.value = null
@@ -209,7 +226,7 @@ async function openDetail(row: AlertEvent) {
     selected.value = detail
   } catch (err: any) {
     console.error('[OpsAlertEventsCard] Failed to load alert detail', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertEvents.detail.loadFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.alertEvents.detail.loadFailed')))
   } finally {
     detailLoading.value = false
   }
@@ -288,7 +305,7 @@ async function silenceAlert() {
     appStore.showSuccess(t('admin.ops.alertEvents.detail.silenceSuccess'))
   } catch (err: any) {
     console.error('[OpsAlertEventsCard] Failed to silence alert', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertEvents.detail.silenceFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.alertEvents.detail.silenceFailed')))
   } finally {
     detailActionLoading.value = false
   }
@@ -309,7 +326,7 @@ async function manualResolve() {
     await loadHistory()
   } catch (err: any) {
     console.error('[OpsAlertEventsCard] Failed to resolve alert', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertEvents.detail.manualResolvedFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.alertEvents.detail.manualResolvedFailed')))
   } finally {
     detailActionLoading.value = false
   }
@@ -416,9 +433,9 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
                 {{ formatDateTime(row.fired_at || row.created_at) }}
               </span>
             </div>
-            <div class="text-xs font-semibold text-gray-900 dark:text-white">{{ row.title || '-' }}</div>
-            <div v-if="row.description" class="line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
-              {{ row.description }}
+            <div class="text-xs font-semibold text-gray-900 dark:text-white">{{ localizedEventTitle(row) }}</div>
+            <div v-if="localizedEventDescription(row)" class="line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
+              {{ localizedEventDescription(row) }}
             </div>
             <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
               <span><span class="font-mono">#{{ row.rule_id }}</span> · {{ formatDurationLabel(row) }}</span>
@@ -476,7 +493,7 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
               :key="row.id"
               class="cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700/50"
               @click="openDetail(row)"
-              :title="row.title || ''"
+              :title="localizedEventTitle(row)"
             >
               <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
                 {{ formatDateTime(row.fired_at || row.created_at) }}
@@ -498,9 +515,9 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
                 <span class="font-mono">#{{ row.rule_id }}</span>
               </td>
               <td class="min-w-[260px] px-4 py-3 text-xs text-gray-700 dark:text-gray-200">
-                <div class="font-semibold truncate max-w-[360px]">{{ row.title || '-' }}</div>
-                <div v-if="row.description" class="mt-0.5 line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
-                  {{ row.description }}
+                <div class="font-semibold truncate max-w-[360px]">{{ localizedEventTitle(row) }}</div>
+                <div v-if="localizedEventDescription(row)" class="mt-0.5 line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
+                  {{ localizedEventDescription(row) }}
                 </div>
               </td>
               <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
@@ -575,10 +592,10 @@ const empty = computed(() => events.value.length === 0 && !loading.value)
                 </span>
               </div>
               <div class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
-                {{ selected.title || '-' }}
+                {{ localizedEventTitle(selected) }}
               </div>
-              <div v-if="selected.description" class="mt-1 whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-300">
-                {{ selected.description }}
+              <div v-if="localizedEventDescription(selected)" class="mt-1 whitespace-pre-wrap text-xs text-gray-600 dark:text-gray-300">
+                {{ localizedEventDescription(selected) }}
               </div>
             </div>
 

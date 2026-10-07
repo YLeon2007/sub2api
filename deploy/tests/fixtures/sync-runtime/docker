@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${FAKE_SYNC_RUNTIME_DIR:?}"
+: "${FAKE_SYNC_LOG:?}"
+
+log() {
+  printf '%s\n' "$1" >> "${FAKE_SYNC_LOG}"
+}
+
+case "${1:-}" in
+  compose)
+    case "${2:-}" in
+      config)
+        exit 0
+        ;;
+      stop)
+        log compose-stop
+        exit 0
+        ;;
+      up)
+        log compose-up
+        exit 0
+        ;;
+    esac
+    ;;
+  pull)
+    log pull
+    exit 0
+    ;;
+  inspect)
+    if printf '%s\n' "$*" | grep -Fq '.Mounts'; then
+      printf '%s\n' fake-runtime-volume
+    else
+      printf '%s\n' healthy
+    fi
+    exit 0
+    ;;
+  run)
+    script=${*: -1}
+    if [[ "${script}" == *'cp /app/sub2api /runtime/.sub2api.image.new'* ]]; then
+      printf '%s\n' new-image-binary > "${FAKE_SYNC_RUNTIME_DIR}/.sub2api.image.new"
+      chmod 0755 "${FAKE_SYNC_RUNTIME_DIR}/.sub2api.image.new"
+      if [[ "${script}" == *'rm -f /runtime/sub2api.backup'* ]]; then
+        rm -f "${FAKE_SYNC_RUNTIME_DIR}/sub2api.backup"
+      fi
+      printf '%064d\n' 1
+      exit 0
+    fi
+    if [[ "${script}" == *'mv /runtime/sub2api /runtime/sub2api.backup'* ]]; then
+      if [[ "${script}" == *'rm -f /runtime/sub2api.backup'* ]]; then
+        rm -f "${FAKE_SYNC_RUNTIME_DIR}/sub2api.backup"
+      fi
+      mv "${FAKE_SYNC_RUNTIME_DIR}/sub2api" "${FAKE_SYNC_RUNTIME_DIR}/sub2api.backup"
+      log first-move-complete
+      if [[ "${FAKE_FAIL_SECOND_MV:-0}" == 1 ]]; then
+        log second-move-failed
+        exit 23
+      fi
+      mv "${FAKE_SYNC_RUNTIME_DIR}/.sub2api.image.new" "${FAKE_SYNC_RUNTIME_DIR}/sub2api"
+      chmod 0755 "${FAKE_SYNC_RUNTIME_DIR}/sub2api"
+      exit 0
+    fi
+    if [[ "${script}" == *'sub2api.failed'* ]]; then
+      if [[ -f "${FAKE_SYNC_RUNTIME_DIR}/sub2api.backup" ]]; then
+        rm -f "${FAKE_SYNC_RUNTIME_DIR}/sub2api.failed"
+        if [[ -f "${FAKE_SYNC_RUNTIME_DIR}/sub2api" ]]; then
+          mv "${FAKE_SYNC_RUNTIME_DIR}/sub2api" "${FAKE_SYNC_RUNTIME_DIR}/sub2api.failed"
+        fi
+        mv "${FAKE_SYNC_RUNTIME_DIR}/sub2api.backup" "${FAKE_SYNC_RUNTIME_DIR}/sub2api"
+        chmod 0755 "${FAKE_SYNC_RUNTIME_DIR}/sub2api"
+      fi
+      log restore-run
+      exit 0
+    fi
+    printf 'unexpected docker run script: %s\n' "${script}" >&2
+    exit 97
+    ;;
+  exec)
+    printf '%064d  /app/sub2api\n' 1
+    exit 0
+    ;;
+esac
+
+printf 'unexpected docker invocation: %s\n' "$*" >&2
+exit 98

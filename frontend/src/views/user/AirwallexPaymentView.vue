@@ -25,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -91,7 +92,12 @@ function restoreAirwallexSnapshot(): PaymentRecoverySnapshot | null {
 
 onMounted(async () => {
   const snapshot = restoreAirwallexSnapshot()
-  const checkoutLocale = locale.value.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+  const normalizedLocale = locale.value.toLowerCase()
+  const checkoutLocale = normalizedLocale.startsWith('zh')
+    ? 'zh'
+    : normalizedLocale.startsWith('ru')
+      ? 'ru'
+      : 'en'
 
   if (!snapshot) {
     loading.value = false
@@ -125,9 +131,7 @@ onMounted(async () => {
     }
   } catch (err: unknown) {
     loading.value = false
-    errorMessage.value = err instanceof Error && err.message
-      ? err.message
-      : t('payment.airwallexLoadFailed')
+    errorMessage.value = localizeApiErrorFallback(err instanceof Error ? err.message : '', t('payment.airwallexLoadFailed'))
   }
 })
 </script>

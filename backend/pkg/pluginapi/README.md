@@ -1,5 +1,7 @@
 # Sub2API 本地插件协议
 
+[中文](README.md) | [Русский](README_RU.md)
+
 本目录是插件开发者可以依赖的公开契约。`v1/plugin.proto` 和 `v1/runtime.go` 定义进程协议，`v1/manifest.schema.json` 定义包清单，`docs/` 记录开发和发布规范。Provider 私有实现不应放入本目录。
 
 ## 开发文档
