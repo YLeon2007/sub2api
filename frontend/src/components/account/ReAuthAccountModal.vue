@@ -183,6 +183,7 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import { adminAPI } from '@/api/admin'
 import {
   useAccountOAuth,
@@ -220,7 +221,7 @@ const emit = defineEmits<{
 }>()
 
 const appStore = useAppStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // OAuth composables
 const claudeOAuth = useAccountOAuth()
@@ -385,7 +386,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized')
       handleClose()
     } catch (error: any) {
-      oauthClient.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+      oauthClient.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
       appStore.showError(oauthClient.error.value)
     }
   } else if (isGemini.value) {
@@ -418,7 +419,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized')
       handleClose()
     } catch (error: any) {
-      geminiOAuth.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+      geminiOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
       appStore.showError(geminiOAuth.error.value)
     }
   } else if (isAntigravity.value) {
@@ -450,7 +451,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized')
       handleClose()
     } catch (error: any) {
-      antigravityOAuth.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+      antigravityOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
       appStore.showError(antigravityOAuth.error.value)
     }
   } else {
@@ -490,7 +491,7 @@ const handleExchangeCode = async () => {
       emit('reauthorized')
       handleClose()
     } catch (error: any) {
-      claudeOAuth.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+      claudeOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'), undefined, locale.value)
       appStore.showError(claudeOAuth.error.value)
     } finally {
       claudeOAuth.loading.value = false
@@ -534,7 +535,7 @@ const handleCookieAuth = async (sessionKey: string) => {
     handleClose()
   } catch (error: any) {
     claudeOAuth.error.value =
-      error.response?.data?.detail || t('admin.accounts.oauth.cookieAuthFailed')
+      extractApiErrorMessage(error, t('admin.accounts.oauth.cookieAuthFailed'), undefined, locale.value)
   } finally {
     claudeOAuth.loading.value = false
   }

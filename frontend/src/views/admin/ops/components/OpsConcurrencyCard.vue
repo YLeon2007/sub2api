@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { opsAPI, type OpsAccountAvailabilityStatsResponse, type OpsConcurrencyStatsResponse, type OpsUserConcurrencyStatsResponse } from '@/api/admin/ops'
@@ -278,7 +280,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error('[OpsConcurrencyCard] Failed to load data', err)
-    errorMessage.value = err?.response?.data?.detail || t('admin.ops.concurrency.loadFailed')
+    errorMessage.value = localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.concurrency.loadFailed'))
   } finally {
     loading.value = false
   }

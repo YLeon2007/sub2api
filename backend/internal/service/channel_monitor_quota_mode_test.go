@@ -327,10 +327,12 @@ func TestValidateCreateParams_CheckModeMatrix(t *testing.T) {
 		},
 		{
 			// quota_probe 仍要打真实探活请求：空模型必须报错，不再用 "quota" 占位。
+			// Keep the endpoint DNS-stable so this fixture verifies primary_model validation,
+			// not availability of a provider-owned hostname in CI.
 			name: "quota_probe requires primary model",
 			params: ChannelMonitorCreateParams{
 				Provider: MonitorProviderKimi, CheckMode: MonitorCheckModeQuotaProbe,
-				Endpoint: "https://api.kimi.com", APIKey: "sk",
+				Endpoint: "https://example.com", APIKey: "sk",
 				IntervalSeconds: 60, AccountID: &accountID,
 			},
 			wantErr: ErrChannelMonitorMissingPrimaryModel,

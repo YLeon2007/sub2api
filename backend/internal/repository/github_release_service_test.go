@@ -48,6 +48,15 @@ func newTestGitHubReleaseClient() *githubReleaseClient {
 	}
 }
 
+const (
+	testGitHubDownloadURL = "https://github.com/test/repo/releases/download/v1/asset"
+	testGitHubChecksumURL = "https://github.com/test/repo/releases/download/v1/checksums.txt"
+)
+
+func useGitHubDownloadTestServer(client *githubReleaseClient, server *httptest.Server) {
+	client.downloadHTTPClient.Transport = &testTransport{testServerURL: server.URL}
+}
+
 func TestGitHubReleaseClientAPIRequestAuthorization(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -106,6 +115,93 @@ func TestGitHubReleaseClientRedirectAuthorization(t *testing.T) {
 	}
 }
 
+func TestGitHubReleaseClientRejectsUntrustedDownloadAuthorities(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		allowed bool
+	}{
+		{name: "GitHub release", url: "https://github.com/test/repo/releases/download/v1/asset", allowed: true},
+		{name: "release assets CDN", url: "https://release-assets.githubusercontent.com/github-production-release-asset/1/2", allowed: true},
+		{name: "objects CDN", url: "https://objects.githubusercontent.com/github-production-release-asset/1/2", allowed: true},
+		{name: "HTTP", url: "http://github.com/test/repo/releases/download/v1/asset"},
+		{name: "userinfo", url: "https://user@github.com/test/repo/releases/download/v1/asset"},
+		{name: "explicit default port", url: "https://github.com:443/test/repo/releases/download/v1/asset"},
+		{name: "custom port", url: "https://github.com:8443/test/repo/releases/download/v1/asset"},
+		{name: "suffix confusion", url: "https://github.com.evil.example/test/repo/releases/download/v1/asset"},
+		{name: "prefix confusion", url: "https://notgithub.com/test/repo/releases/download/v1/asset"},
+		{name: "arbitrary GitHubusercontent subdomain", url: "https://evil.githubusercontent.com/asset"},
+	}
+
+	checkRedirect := githubDownloadCheckRedirect(nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, tt.url, nil)
+			require.NoError(t, err)
+			require.Equal(t, tt.allowed, isGitHubReleaseDownloadURL(req.URL))
+			redirectErr := checkRedirect(req, nil)
+			if tt.allowed {
+				require.NoError(t, redirectErr)
+			} else {
+				require.Error(t, redirectErr)
+			}
+		})
+	}
+
+	allowed, err := http.NewRequest(http.MethodGet, "https://github.com/test/repo/releases/download/v1/asset", nil)
+	require.NoError(t, err)
+	require.Error(t, checkRedirect(allowed, make([]*http.Request, 10)), "redirect chains must remain bounded")
+}
+
+func TestGitHubReleaseClientRejectsUntrustedInitialDownloads(t *testing.T) {
+	client := newTestGitHubReleaseClient()
+	requests := 0
+	transport := githubReleaseRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requests++
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader("unexpected")),
+			Request:    req,
+		}, nil
+	})
+	client.httpClient.Transport = transport
+	client.downloadHTTPClient.Transport = transport
+
+	dest := filepath.Join(t.TempDir(), "asset")
+	require.Error(t, client.DownloadFile(context.Background(), "https://example.com/asset", dest, 100))
+	_, err := client.FetchChecksumFile(context.Background(), "https://github.com.evil.example/checksums.txt")
+	require.Error(t, err)
+	require.Zero(t, requests, "untrusted initial URLs must fail before network I/O")
+}
+
+func TestGitHubReleaseClientLimitsChecksumBodies(t *testing.T) {
+	client := newTestGitHubReleaseClient()
+	client.downloadHTTPClient.Transport = githubReleaseRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode:    http.StatusOK,
+			Header:        make(http.Header),
+			ContentLength: -1,
+			Body:          io.NopCloser(strings.NewReader(strings.Repeat("a", (1<<20)+1))),
+			Request:       req,
+		}, nil
+	})
+
+	_, err := client.FetchChecksumFile(context.Background(), "https://github.com/test/repo/releases/download/v1/checksums.txt")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "maximum size")
+}
+
+func TestGitHubReleaseClientConstructorPinsDownloadRedirectPolicy(t *testing.T) {
+	client, ok := NewGitHubReleaseClient("", false).(*githubReleaseClient)
+	require.True(t, ok)
+	require.NotNil(t, client.downloadHTTPClient.CheckRedirect)
+
+	req, err := http.NewRequest(http.MethodGet, "https://example.com/asset", nil)
+	require.NoError(t, err)
+	require.Error(t, client.downloadHTTPClient.CheckRedirect(req, nil))
+}
+
 func TestGitHubReleaseClientDoesNotAuthorizeDownloads(t *testing.T) {
 	client := newTestGitHubReleaseClient()
 	client.updateGitHubToken = "update-secret"
@@ -158,9 +254,10 @@ func (s *GitHubReleaseServiceSuite) TestDownloadFile_EnforcesMaxSize_ContentLeng
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
 	dest := filepath.Join(s.tempDir, "file1.bin")
-	err := s.client.DownloadFile(context.Background(), s.srv.URL, dest, 10)
+	err := s.client.DownloadFile(context.Background(), testGitHubDownloadURL, dest, 10)
 	require.Error(s.T(), err, "expected error for oversized download with Content-Length")
 
 	_, statErr := os.Stat(dest)
@@ -183,9 +280,10 @@ func (s *GitHubReleaseServiceSuite) TestDownloadFile_EnforcesMaxSize_Chunked() {
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
 	dest := filepath.Join(s.tempDir, "file2.bin")
-	err := s.client.DownloadFile(context.Background(), s.srv.URL, dest, 10)
+	err := s.client.DownloadFile(context.Background(), testGitHubDownloadURL, dest, 10)
 	require.Error(s.T(), err, "expected error for oversized chunked download")
 
 	_, statErr := os.Stat(dest)
@@ -207,9 +305,10 @@ func (s *GitHubReleaseServiceSuite) TestDownloadFile_Success() {
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
 	dest := filepath.Join(s.tempDir, "file3.bin")
-	err := s.client.DownloadFile(context.Background(), s.srv.URL, dest, 200)
+	err := s.client.DownloadFile(context.Background(), testGitHubDownloadURL, dest, 200)
 	require.NoError(s.T(), err, "expected success")
 
 	b, err := os.ReadFile(dest)
@@ -224,9 +323,10 @@ func (s *GitHubReleaseServiceSuite) TestDownloadFile_404() {
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
 	dest := filepath.Join(s.tempDir, "notfound.bin")
-	err := s.client.DownloadFile(context.Background(), s.srv.URL, dest, 100)
+	err := s.client.DownloadFile(context.Background(), testGitHubDownloadURL, dest, 100)
 	require.Error(s.T(), err, "expected error for 404")
 
 	_, statErr := os.Stat(dest)
@@ -240,8 +340,9 @@ func (s *GitHubReleaseServiceSuite) TestFetchChecksumFile_Success() {
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
-	body, err := s.client.FetchChecksumFile(context.Background(), s.srv.URL)
+	body, err := s.client.FetchChecksumFile(context.Background(), testGitHubChecksumURL)
 	require.NoError(s.T(), err, "FetchChecksumFile")
 	require.Equal(s.T(), "sum", string(body), "checksum body mismatch")
 }
@@ -252,8 +353,9 @@ func (s *GitHubReleaseServiceSuite) TestFetchChecksumFile_Non200() {
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
-	_, err := s.client.FetchChecksumFile(context.Background(), s.srv.URL)
+	_, err := s.client.FetchChecksumFile(context.Background(), testGitHubChecksumURL)
 	require.Error(s.T(), err, "expected error for non-200")
 }
 
@@ -263,12 +365,13 @@ func (s *GitHubReleaseServiceSuite) TestDownloadFile_ContextCancel() {
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
 	dest := filepath.Join(s.tempDir, "cancelled.bin")
-	err := s.client.DownloadFile(ctx, s.srv.URL, dest, 100)
+	err := s.client.DownloadFile(ctx, testGitHubDownloadURL, dest, 100)
 	require.Error(s.T(), err, "expected error for cancelled context")
 }
 
@@ -287,10 +390,11 @@ func (s *GitHubReleaseServiceSuite) TestDownloadFile_InvalidDestPath() {
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
 	// Use a path that cannot be created (directory doesn't exist)
 	dest := filepath.Join(s.tempDir, "nonexistent", "subdir", "file.bin")
-	err := s.client.DownloadFile(context.Background(), s.srv.URL, dest, 100)
+	err := s.client.DownloadFile(context.Background(), testGitHubDownloadURL, dest, 100)
 	require.Error(s.T(), err, "expected error for invalid destination path")
 }
 
@@ -469,11 +573,12 @@ func (s *GitHubReleaseServiceSuite) TestFetchChecksumFile_ContextCancel() {
 	}))
 
 	s.client = newTestGitHubReleaseClient()
+	useGitHubDownloadTestServer(s.client, s.srv)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := s.client.FetchChecksumFile(ctx, s.srv.URL)
+	_, err := s.client.FetchChecksumFile(ctx, testGitHubChecksumURL)
 	require.Error(s.T(), err)
 }
 

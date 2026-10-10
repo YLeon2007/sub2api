@@ -594,6 +594,9 @@ export default {
       vertexAnthropicHint: 'Use a Google Cloud Service Account JSON to call Anthropic Claude via Vertex AI. It is recommended to configure model mapping to map client Claude model names to Vertex model IDs.',
       vertexGeminiHint: 'Use a Google Cloud Service Account JSON to access Vertex AI Gemini. It is recommended to place Vertex accounts in a separate group to avoid mixing with AI Studio/Gemini OAuth on the same models.',
       vertexSaJsonLabel: 'Service Account JSON',
+      vertexProjectIdLabel: 'Project ID',
+      vertexClientEmailLabel: 'Client Email',
+      vertexLocationLabel: 'Location',
       vertexSaJsonLoaded: 'Service Account JSON loaded',
       vertexSaJsonDrop: 'Drop Service Account JSON here',
       vertexSaJsonKeyHidden: 'Key content is not displayed in the form.',
@@ -705,6 +708,9 @@ export default {
         codexFingerprintDevice: 'Device only',
         codexFingerprintSession: 'Device + Session',
         codexFingerprintFull: 'Full convergence',
+        compactProbeSuccess: 'Compact probe succeeded (native remote compaction v2)',
+        compactProbeUnsupported:
+          'Upstream returned 2xx without a compaction output item (native remote compaction v2 unsupported on this chain)',
         codexImageTool: 'Codex image bridge policy',
         codexImageToolDesc:
           'Controls the hosted image_generation bridge and client-declared image tools on Codex /responses text requests. Hosted auto-injection applies only to non-Responses Lite requests. Account policy takes precedence over channel and global settings; standalone image-generation endpoints are unaffected.',
@@ -1103,6 +1109,7 @@ export default {
       pleaseSelectStatus: 'Please select a valid account status',
       mixedChannelWarningTitle: 'Mixed Channel Warning',
       mixedChannelWarning: 'Warning: Group "{groupName}" contains both {currentPlatform} and {otherPlatform} accounts. Mixing different channels may cause thinking block signature validation issues, which will fallback to non-thinking mode. Are you sure you want to continue?',
+      mixedChannelWarningGeneric: 'Warning: Mixing channels in this group may disable thinking mode. Continue?',
       pleaseEnterAccountName: 'Please enter account name',
       pleaseEnterApiKey: 'Please enter API Key',
       bedrockAccessKeyId: 'AWS Access Key ID',
@@ -1140,6 +1147,7 @@ export default {
       oauth: {
         title: 'Claude Account Authorization',
         authMethod: 'Authorization Method',
+        copyUrl: 'Copy URL',
         manualAuth: 'Manual Authorization',
         cookieAutoAuth: 'Cookie Auto-Auth',
         cookieAutoAuthDesc:
@@ -1180,6 +1188,9 @@ export default {
         verifying: 'Verifying...',
         pleaseEnterSessionKey: 'Please enter at least one valid sessionKey',
         authFailed: 'Authorization failed',
+        failedToGenerateUrl: 'Failed to generate authorization URL',
+        failedToExchangeCode: 'Failed to exchange authorization code',
+        missingAuthCodeOrSession: 'Authorization code or session ID is missing',
         cookieAuthFailed: 'Cookie authorization failed',
         keyAuthFailed: 'Key {index}: {error}',
         successCreated: 'Successfully created {count} account(s)',
@@ -1496,6 +1507,12 @@ export default {
             vertex: 'Vertex AI Quotas'
           },
           simulatedNote: 'Simulated quota, for reference only',
+          tierFree: 'Free',
+          tierPaid: 'Paid',
+          tierPro: 'Pro',
+          tierUltra: 'Ultra',
+          tierStandard: 'Standard',
+          tierEnterprise: 'Enterprise',
           rows: {
             googleOne: {
               channel: 'Google One OAuth (Individuals / Code Assist for Individuals)',

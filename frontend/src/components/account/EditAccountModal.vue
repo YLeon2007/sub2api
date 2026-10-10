@@ -917,7 +917,7 @@
       <div v-if="(account.platform === 'gemini' || account.platform === 'anthropic') && account.type === 'service_account'" class="space-y-4">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label class="input-label">Project ID</label>
+            <label class="input-label">{{ t('admin.accounts.vertexProjectIdLabel') }}</label>
             <input
               v-model="editVertexProjectId"
               type="text"
@@ -928,7 +928,7 @@
             <p class="input-hint">{{ t('admin.accounts.vertexSaJsonEditHint') }}</p>
           </div>
           <div>
-            <label class="input-label">Location</label>
+            <label class="input-label">{{ t('admin.accounts.vertexLocationLabel') }}</label>
             <select
               v-model="editVertexLocation"
               required
@@ -3242,7 +3242,7 @@ const emit = defineEmits<{
   updated: [account: Account]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 const browserTimeZone = getBrowserTimeZone()
 
@@ -3308,7 +3308,7 @@ const loadOpenCodeGoUsage = async () => {
   try {
     applyOpenCodeGoState(await adminAPI.accounts.getOpenCodeGoUsage(props.account!.id))
   } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.opencodeGo.loadFailed')))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.opencodeGo.loadFailed'), undefined, locale.value))
   } finally {
     opencodeGoLoading.value = false
   }
@@ -3319,7 +3319,7 @@ const setOpenCodeGoAutoRefresh = async (enabled: boolean) => {
   try {
     applyOpenCodeGoState(await adminAPI.accounts.setOpenCodeGoUsageAutoRefresh(props.account!.id, enabled))
   } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.opencodeGo.autoRefreshFailed')))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.opencodeGo.autoRefreshFailed'), undefined, locale.value))
   } finally {
     opencodeGoSaving.value = false
   }
@@ -3641,9 +3641,9 @@ const loadGrokMediaEligibility = async (accountID: number): Promise<GrokMediaEli
     grokMediaEligibilityMode.value = state.mode
     grokMediaEligibilityInitialMode.value = state.mode
     return state
-  } catch (error: any) {
+  } catch {
     if (requestVersion !== grokMediaEligibilityRequestVersion) return null
-    grokMediaEligibilityError.value = error?.message || t('admin.accounts.grokMediaEligibility.loadFailed')
+    grokMediaEligibilityError.value = t('admin.accounts.grokMediaEligibility.loadFailed')
     return null
   } finally {
     if (requestVersion === grokMediaEligibilityRequestVersion) {
@@ -4686,7 +4686,7 @@ const syncAntigravityUpstreamModels = async () => {
       appStore.showWarning(t('admin.accounts.syncUpstreamModelsMetadataPartial'))
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : t('admin.accounts.syncUpstreamModelsFailed')
+    const message = extractApiErrorMessage(error, t('admin.accounts.syncUpstreamModelsFailed'), undefined, locale.value)
     appStore.showError(t('admin.accounts.syncUpstreamModelsError', { message }))
   } finally {
     isSyncingAntigravityUpstream.value = false
@@ -5021,9 +5021,9 @@ const buildMixedChannelDetails = (resp?: CheckMixedChannelResponse) => {
     return null
   }
   return {
-    groupName: details.group_name || 'Unknown',
-    currentPlatform: details.current_platform || 'Unknown',
-    otherPlatform: details.other_platform || 'Unknown'
+    groupName: details.group_name || t('common.unknown'),
+    currentPlatform: details.current_platform || t('common.unknown'),
+    otherPlatform: details.other_platform || t('common.unknown')
   }
 }
 
@@ -5040,8 +5040,10 @@ const openMixedChannelDialog = (opts: {
   onConfirm: () => Promise<void>
 }) => {
   mixedChannelWarningDetails.value = buildMixedChannelDetails(opts.response)
-  mixedChannelWarningRawMessage.value =
-    opts.message || opts.response?.message || t('admin.accounts.failedToUpdate')
+  mixedChannelWarningRawMessage.value = extractApiErrorMessage(
+    { message: opts.message || opts.response?.message },
+    t('admin.accounts.mixedChannelWarningGeneric'), undefined, locale.value
+  )
   mixedChannelWarningAction.value = opts.onConfirm
   showMixedChannelWarning.value = true
 }
@@ -5087,7 +5089,7 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
     })
     return false
   } catch (error: any) {
-    appStore.showError(error.message || t('admin.accounts.failedToUpdate'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToUpdate'), undefined, locale.value))
     return false
   }
 }
@@ -5150,7 +5152,7 @@ const submitUpdateAccount = async (accountID: number, updatePayload: Record<stri
   } catch (error: any) {
     if (error.status === 409 && error.error === 'mixed_channel_warning' && needsMixedChannelCheck()) {
       openMixedChannelDialog({
-        message: error.message,
+        message: extractApiErrorMessage(error, t('admin.accounts.mixedChannelWarningGeneric'), undefined, locale.value),
         onConfirm: async () => {
           antigravityMixedChannelConfirmed.value = true
           await submitUpdateAccount(accountID, updatePayload)
@@ -5158,7 +5160,7 @@ const submitUpdateAccount = async (accountID: number, updatePayload: Record<stri
       })
       return
     }
-    appStore.showError(error.message || t('admin.accounts.failedToUpdate'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToUpdate'), undefined, locale.value))
   } finally {
     submitting.value = false
   }
@@ -5902,7 +5904,7 @@ const handleSubmit = async () => {
 
     await submitUpdateAccount(accountID, updatePayload)
   } catch (error: any) {
-    appStore.showError(error.message || t('admin.accounts.failedToUpdate'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToUpdate'), undefined, locale.value))
   }
 }
 
