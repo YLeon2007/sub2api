@@ -45,6 +45,24 @@ export default {
     fileRequired: '请选择 .s2plugin 文件',
     bridgeRejected: '插件 UI 消息校验失败',
     onlyOpenAI: '初期能力：仅 OpenAI OAuth 出站传输',
-    noAccountCoupling: '作用域为平台与账号类型，不修改账号数据，也不需要在账号页逐个开启。'
+    noAccountCoupling: '作用域为平台与账号类型，不修改账号数据，也不需要在账号页逐个开启。',
+    messages: {
+      compatibleTested: '插件已声明测试当前 Sub2API 版本。',
+      compatibleUntested: '版本范围兼容，但插件未声明已测试当前 Sub2API 版本。',
+      incompatibleProtocol: '插件协议版本与当前 Sub2API 宿主不兼容。',
+      incompatibleVersion: '当前 Sub2API {current} 不满足插件要求 {required}。',
+      runtimeRunning: '插件进程运行中。',
+      runtimeStateUnavailable: '插件启用状态暂时无法读取。',
+      runtimeStartingElsewhere: '插件正在其他实例中启动。',
+      multipleOpenAIEnabled: '检测到多个 OpenAI OAuth 出站插件同时启用。',
+      startupTimedOutDisabled: '插件启动超时，已自动恢复为停用状态。',
+      disableBeforeReplace: '请先停用当前插件，再上传同 ID 的新版本。',
+      installationMissing: '插件安装记录为空。',
+      artifactMissing: '插件包原件缺失，请重新上传插件。',
+      artifactMismatch: '数据库插件包与安装记录不一致。',
+      installPathRejected: '插件安装目录不在受管目录内。',
+      runtimeNotDeclared: '插件未声明当前平台运行时。',
+      backendDiagnostic: '后端诊断：{message}'
+    }
   }
 }

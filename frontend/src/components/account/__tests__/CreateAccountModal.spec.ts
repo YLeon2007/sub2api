@@ -12,6 +12,7 @@ const {
   probeUpstreamBillingMock,
   syncUpstreamModelsMock,
   showWarningMock,
+  showErrorMock,
   importCodexSessionMock,
   createOpenAICodexPATMock,
   authIsSimpleMode,
@@ -20,6 +21,7 @@ const {
   probeUpstreamBillingMock: vi.fn(),
   syncUpstreamModelsMock: vi.fn(),
   showWarningMock: vi.fn(),
+  showErrorMock: vi.fn(),
   importCodexSessionMock: vi.fn(),
   createOpenAICodexPATMock: vi.fn(),
   authIsSimpleMode: { value: true },
@@ -27,7 +29,7 @@ const {
 
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
-    showError: vi.fn(),
+    showError: showErrorMock,
     showSuccess: vi.fn(),
     showWarning: showWarningMock,
   }),
@@ -69,11 +71,16 @@ vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
     ...actual,
-    useI18n: () => ({ t: (key: string) => key }),
+    useI18n: () => ({
+      t: (key: string) => key === 'admin.accounts.oauth.openai.codexPatImportFailed'
+        ? 'Не удалось создать Codex PAT аккаунт'
+        : key,
+    }),
   }
 })
 
 import CreateAccountModal from '../CreateAccountModal.vue'
+import { i18n } from '@/i18n'
 
 const BaseDialogStub = defineComponent({
   name: 'BaseDialog',
@@ -206,6 +213,7 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
     probeUpstreamBillingMock.mockReset().mockResolvedValue({})
     syncUpstreamModelsMock.mockReset().mockResolvedValue({ models: [], metadata: {} })
     showWarningMock.mockReset()
+    showErrorMock.mockReset()
     importCodexSessionMock.mockReset().mockResolvedValue({
       created: 1,
       updated: 0,
@@ -861,6 +869,24 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
 
     expect(createOpenAICodexPATMock).toHaveBeenCalledTimes(1)
     expect(createOpenAICodexPATMock.mock.calls[0]?.[0]?.extra?.openai_long_context_billing_enabled).toBeUndefined()
+  })
+
+  it('shows a Russian primary error for a rejected Codex PAT import', async () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'ru'
+    try {
+      createOpenAICodexPATMock.mockRejectedValueOnce({
+        response: { data: { detail: 'Raw English backend detail' } }
+      })
+      const wrapper = await openCodexImportStep()
+      await wrapper.get('[data-testid="import-codex-pat"]').trigger('click')
+      await flushPromises()
+
+      expect(showErrorMock).toHaveBeenCalledWith('Не удалось создать Codex PAT аккаунт')
+      expect(showErrorMock).not.toHaveBeenCalledWith('Raw English backend detail')
+    } finally {
+      i18n.global.locale.value = previousLocale
+    }
   })
 
   it('sends explicit true for Codex session import after the toggle is enabled', async () => {

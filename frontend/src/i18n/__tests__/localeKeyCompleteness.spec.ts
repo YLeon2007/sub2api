@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import en from '../locales/en'
+import ru from '../locales/ru'
 import zh from '../locales/zh'
 
 type LocaleValue = Record<string, unknown>
@@ -62,6 +63,7 @@ function missingKeys(usedKeys: string[], availableKeys: Set<string>): string[] {
 
 describe('locale key completeness', () => {
   const enKeys = new Set(flattenLeafKeys(en))
+  const ruKeys = new Set(flattenLeafKeys(ru))
   const zhKeys = new Set(flattenLeafKeys(zh))
   const usedKeys = [...new Set(sourceKeys())].sort()
 
@@ -85,6 +87,7 @@ describe('locale key completeness', () => {
 
   it('contains every statically referenced production key', () => {
     expect(missingKeys(usedKeys, enKeys), 'English locale is missing referenced keys').toEqual([])
+    expect(missingKeys(usedKeys, ruKeys), 'Russian locale is missing referenced keys').toEqual([])
     expect(missingKeys(usedKeys, zhKeys), 'Chinese locale is missing referenced keys').toEqual([])
   })
 })

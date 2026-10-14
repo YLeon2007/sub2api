@@ -15,7 +15,8 @@ vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ user: null }) }))
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({ showSuccess: vi.fn(), showError: vi.fn() })
 }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-i18n')>()), useI18n: () => ({ t: (key: string) => key }) }))
 
 enableAutoUnmount(afterEach)
 

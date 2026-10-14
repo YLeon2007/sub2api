@@ -1,5 +1,7 @@
 # Asynchronous Image Tasks
 
+English | [Русский](ASYNC_IMAGE_TASKS_RU.md)
+
 Asynchronous image tasks let clients submit long-running OpenAI-compatible image requests without keeping one HTTP connection open. This avoids proxy/CDN response timeouts such as Cloudflare 524 while preserving the existing image routing, billing, moderation, concurrency, and failover behavior.
 
 ## Endpoints

@@ -1,8 +1,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
-import { extractApiErrorMessage } from '@/utils/apiError'
 import type { GeminiOAuthCapabilities } from '@/api/admin/gemini'
 
 export interface GeminiTokenInfo {
@@ -20,7 +20,7 @@ export interface GeminiTokenInfo {
 
 export function useGeminiOAuth() {
   const appStore = useAppStore()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
 
   const authUrl = ref('')
   const sessionId = ref('')
@@ -62,8 +62,8 @@ export function useGeminiOAuth() {
       sessionId.value = response.session_id
       state.value = response.state
       return true
-    } catch (err: unknown) {
-      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.gemini.failedToGenerateUrl'))
+    } catch (err: any) {
+      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.gemini.failedToGenerateUrl'), undefined, locale.value)
       appStore.showError(error.value)
       return false
     } finally {
@@ -102,12 +102,14 @@ export function useGeminiOAuth() {
       const tokenInfo = await adminAPI.gemini.exchangeCode(payload as any)
       return tokenInfo as GeminiTokenInfo
     } catch (err: any) {
-      // Check for specific missing project_id error
-      const errorMessage = err.message || err.response?.data?.message || ''
+      // Preserve the raw diagnostic only for recognizing this known error code.
+      const errorMessage = err.message || err.response?.data?.message || err.response?.data?.detail || ''
       if (errorMessage.includes('missing project_id')) {
         error.value = t('admin.accounts.oauth.gemini.missingProjectId')
       } else {
-        error.value = errorMessage || t('admin.accounts.oauth.gemini.failedToExchangeCode')
+        error.value = extractApiErrorMessage(
+          err, t('admin.accounts.oauth.gemini.failedToExchangeCode'), undefined, locale.value
+        )
       }
       appStore.showError(error.value)
       return null

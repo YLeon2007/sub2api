@@ -67,6 +67,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
@@ -115,7 +117,7 @@ async function submit(otp: string) {
     props.controller.onVerified()
   } catch (err: any) {
     verifying.value = false
-    appStore.showError(err?.message || t('stepUp.verifyFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.message, t('stepUp.verifyFailed')))
     resetInputs()
     nextTick(() => inputRefs.value[0]?.focus())
   }

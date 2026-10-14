@@ -94,6 +94,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -211,7 +213,7 @@ async function confirmAlipay(stripe: Stripe, clientSecret: string, orderId: numb
   const { error } = await stripe.confirmAlipayPayment(clientSecret, { return_url: returnUrl })
   if (error) {
     redirecting.value = false
-    stripeError.value = error.message || t('payment.result.failed')
+    stripeError.value = localizeApiErrorFallback(error.message, t('payment.result.failed'))
   }
   // 无错误时 Stripe 会自动跳转
 }
@@ -224,7 +226,7 @@ async function confirmWechatPay(stripe: Stripe, clientSecret: string) {
   })
 
   if (error) {
-    stripeError.value = error.message || t('payment.result.failed')
+    stripeError.value = localizeApiErrorFallback(error.message, t('payment.result.failed'))
     return
   }
 
@@ -271,7 +273,7 @@ async function handleGenericPay() {
       redirect: 'if_required',
     })
     if (error) {
-      stripeError.value = error.message || t('payment.result.failed')
+      stripeError.value = localizeApiErrorFallback(error.message, t('payment.result.failed'))
     } else {
       stripeSuccess.value = true
       scheduleClose()
