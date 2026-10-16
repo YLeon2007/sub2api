@@ -4271,6 +4271,7 @@ import { useAppStore } from "@/stores/app";
 import { useAuthStore } from "@/stores/auth";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { adminAPI } from "@/api/admin";
+import { extractI18nErrorMessage } from "@/utils/apiError";
 import type {
   AdminGroup,
   CodexModelsManifestConfig,
@@ -4321,7 +4322,6 @@ import {
 import type { ChannelModelPricing } from "@/api/admin/channels";
 import { VueDraggable } from "vue-draggable-plus";
 import { createStableObjectKeyResolver } from "@/utils/stableObjectKey";
-import { extractApiErrorMessage } from "@/utils/apiError";
 import { useKeyedDebouncedSearch } from "@/composables/useKeyedDebouncedSearch";
 import { getPersistedPageSize } from "@/composables/usePersistedPageSize";
 import {
@@ -6042,7 +6042,13 @@ const handleCreateGroup = async () => {
     }
   } catch (error: any) {
     appStore.showError(
-      extractApiErrorMessage(error, t("admin.groups.failedToCreate")),
+      extractI18nErrorMessage(
+        error,
+        t,
+        "admin.groups.errors",
+        t("admin.groups.failedToCreate"),
+        true,
+      ),
     );
     console.error("Error creating group:", error);
     // Don't advance tour on error
@@ -6395,7 +6401,13 @@ const handleUpdateGroup = async () => {
     loadGroups();
   } catch (error: any) {
     appStore.showError(
-      extractApiErrorMessage(error, t("admin.groups.failedToUpdate")),
+      extractI18nErrorMessage(
+        error,
+        t,
+        "admin.groups.errors",
+        t("admin.groups.failedToUpdate"),
+        true,
+      ),
     );
     console.error("Error updating group:", error);
   } finally {
@@ -6448,9 +6460,8 @@ const handleDuplicate = async (group: AdminGroup) => {
     );
     await loadGroups();
   } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(error, t("admin.groups.duplicateFailed")),
-    );
+    appStore.showError(t("admin.groups.duplicateFailed"));
+    console.error("Error duplicating group:", error);
   } finally {
     duplicatingGroupIds.delete(group.id);
   }
@@ -6512,11 +6523,7 @@ const loadCompositeRoutes = async () => {
       return a.id - b.id;
     });
   } catch (error: any) {
-    appStore.showError(
-      error.response?.data?.detail ||
-        error.response?.data?.message ||
-        t("admin.groups.compositeRoutes.failedToLoad"),
-    );
+    appStore.showError(t("admin.groups.compositeRoutes.failedToLoad"));
     console.error("Error loading composite routes:", error);
   } finally {
     compositeRoutesLoading.value = false;
@@ -6579,11 +6586,7 @@ const saveCompositeRoute = async () => {
     resetCompositeRouteForm();
     await loadCompositeRoutes();
   } catch (error: any) {
-    appStore.showError(
-      error.response?.data?.detail ||
-        error.response?.data?.message ||
-        t("admin.groups.compositeRoutes.failedToSave"),
-    );
+    appStore.showError(t("admin.groups.compositeRoutes.failedToSave"));
     console.error("Error saving composite route:", error);
   } finally {
     compositeRouteSaving.value = false;
@@ -6604,11 +6607,7 @@ const deleteCompositeRoute = async (route: CompositeModelRoute) => {
     appStore.showSuccess(t("admin.groups.compositeRoutes.routeDeleted"));
     await loadCompositeRoutes();
   } catch (error: any) {
-    appStore.showError(
-      error.response?.data?.detail ||
-        error.response?.data?.message ||
-        t("admin.groups.compositeRoutes.failedToDelete"),
-    );
+    appStore.showError(t("admin.groups.compositeRoutes.failedToDelete"));
     console.error("Error deleting composite route:", error);
   }
 };
@@ -6627,11 +6626,7 @@ const previewCompositeRoute = async () => {
       },
     );
   } catch (error: any) {
-    appStore.showError(
-      error.response?.data?.detail ||
-        error.response?.data?.message ||
-        t("admin.groups.compositeRoutes.failedToPreview"),
-    );
+    appStore.showError(t("admin.groups.compositeRoutes.failedToPreview"));
     console.error("Error previewing composite route:", error);
   } finally {
     compositePreviewLoading.value = false;
@@ -6653,9 +6648,7 @@ const confirmDelete = async () => {
     deletingGroup.value = null;
     loadGroups();
   } catch (error: any) {
-    appStore.showError(
-      error.response?.data?.detail || t("admin.groups.failedToDelete"),
-    );
+    appStore.showError(t("admin.groups.failedToDelete"));
     console.error("Error deleting group:", error);
   }
 };
@@ -6870,9 +6863,7 @@ const saveSortOrder = async () => {
     closeSortModal();
     loadGroups();
   } catch (error: any) {
-    appStore.showError(
-      error.response?.data?.detail || t("admin.groups.failedToUpdateSortOrder"),
-    );
+    appStore.showError(t("admin.groups.failedToUpdateSortOrder"));
     console.error("Error updating sort order:", error);
   } finally {
     sortSubmitting.value = false;

@@ -1,276 +1,108 @@
-# Vue Router Configuration
+# Vue Router configuration
 
-## Overview
+English | [Русский](README_RU.md)
 
-This directory contains the Vue Router configuration for the Sub2API frontend application. The router implements a comprehensive navigation system with authentication guards, role-based access control, and lazy loading.
+The router uses Vue Router history mode, lazy-loaded views, authentication/role/feature guards, localized document titles, navigation progress/prefetch and recovery from stale dynamic chunks.
 
-## Files
+Source of truth: [`index.ts`](index.ts). Metadata types: [`meta.d.ts`](meta.d.ts).
 
-- **index.ts**: Main router configuration with route definitions and navigation guards
-- **meta.d.ts**: TypeScript type definitions for route meta fields
+## Route groups
 
-## Route Structure
+The list below is a maintained overview, not a substitute for `routes` in `index.ts`.
 
-### Public Routes (No Authentication Required)
+### Setup and public
 
-| Path        | Component    | Description            |
-| ----------- | ------------ | ---------------------- |
-| `/login`    | LoginView    | User login page        |
-| `/register` | RegisterView | User registration page |
+- `/setup`: first-run setup; redirects away when setup is complete.
+- `/` redirects to `/home`.
+- `/home`, `/model-plaza`, `/key-usage`, `/legal/:documentId`.
+- Authentication: `/login`, `/register`, `/email-verify`, `/forgot-password`, `/reset-password`.
+- OAuth callbacks: `/auth/callback` (alias `/auth/oauth/callback`), LinuxDo, WeChat, WeChat Payment, DingTalk and OIDC callback paths.
+- Public payment result/hosted pages under `/payment/*` as declared in `index.ts`.
 
-### User Routes (Authentication Required)
+### Authenticated user
 
-| Path         | Component     | Description                  |
-| ------------ | ------------- | ---------------------------- |
-| `/`          | -             | Redirects to `/dashboard`    |
-| `/dashboard` | DashboardView | User dashboard with stats    |
-| `/keys`      | KeysView      | API key management           |
-| `/usage`     | UsageView     | Usage records and statistics |
-| `/redeem`    | RedeemView    | Redeem code interface        |
-| `/profile`   | ProfileView   | User profile settings        |
+Representative routes include `/dashboard`, `/keys`, `/batch-image` (alias `/docs/batch-image`), `/usage`, `/redeem`, `/affiliate`, `/available-channels`, `/profile`, `/subscriptions`, `/purchase`, `/orders`, `/monitor`, and `/custom/:id`.
 
-### Admin Routes (Admin Role Required)
+### Admin
 
-| Path               | Component          | Description                     |
-| ------------------ | ------------------ | ------------------------------- |
-| `/admin`           | -                  | Redirects to `/admin/dashboard` |
-| `/admin/dashboard` | AdminDashboardView | Admin dashboard                 |
-| `/admin/users`     | AdminUsersView     | User management                 |
-| `/admin/groups`    | AdminGroupsView    | Group management                |
-| `/admin/accounts`  | AdminAccountsView  | Account management              |
-| `/admin/proxies`   | AdminProxiesView   | Proxy management                |
-| `/admin/redeem`    | AdminRedeemView    | Redeem code management          |
+`/admin` redirects to `/admin/dashboard`. Admin routes cover operations, audit logs, users, groups, channels/monitoring, subscriptions, accounts, announcements, proxies, redeem/promo codes, settings, risk control, prompt audit, usage, affiliates and payment orders/plans.
 
-### Special Routes
+Unknown paths match `/:pathMatch(.*)*` and render `NotFoundView`.
 
-| Path              | Component    | Description    |
-| ----------------- | ------------ | -------------- |
-| `/:pathMatch(.*)` | NotFoundView | 404 error page |
+## Route metadata
 
-## Navigation Guards
-
-### Authentication Guard (beforeEach)
-
-The router implements a comprehensive navigation guard that:
-
-1. **Sets Page Title**: Updates document title based on route meta
-2. **Checks Authentication**:
-   - Public routes (`requiresAuth: false`) are accessible without login
-   - Protected routes require authentication
-   - Redirects to `/login` if not authenticated
-3. **Prevents Double Login**:
-   - Redirects authenticated users away from login/register pages
-4. **Role-Based Access Control**:
-   - Admin routes (`requiresAdmin: true`) require admin role
-   - Non-admin users are redirected to `/dashboard`
-5. **Preserves Intended Destination**:
-   - Saves original URL in query parameter for post-login redirect
-
-### Flow Diagram
-
-```
-User navigates to route
-        ↓
-Set page title from meta
-        ↓
-Is route public? ──Yes──→ Already authenticated? ──Yes──→ Redirect to /dashboard
-        ↓ No                                        ↓ No
-        ↓                                      Allow access
-        ↓
-Is user authenticated? ──No──→ Redirect to /login with redirect query
-        ↓ Yes
-        ↓
-Requires admin role? ──Yes──→ Is user admin? ──No──→ Redirect to /dashboard
-        ↓ No                                  ↓ Yes
-        ↓                                     ↓
-Allow access ←────────────────────────────────┘
-```
-
-## Route Meta Fields
-
-Each route can define the following meta fields:
-
-```typescript
+```ts
 interface RouteMeta {
-  requiresAuth?: boolean // Default: true (requires authentication)
-  requiresAdmin?: boolean // Default: false (admin access only)
-  title?: string // Page title
-  breadcrumbs?: Array<{
-    // Breadcrumb navigation
-    label: string
-    to?: string
-  }>
-  icon?: string // Icon for navigation menu
-  hideInMenu?: boolean // Hide from navigation menu
+  requiresAuth?: boolean       // default true
+  requiresAdmin?: boolean      // default false
+  requiresPayment?: boolean
+  requiresRiskControl?: boolean
+  title?: string
+  titleKey?: string
+  descriptionKey?: string
+  breadcrumbs?: Array<{ label: string; to?: string }>
+  icon?: string
+  hideInMenu?: boolean
 }
 ```
 
-## Lazy Loading
+Use lazy imports:
 
-All route components use dynamic imports for code splitting:
-
-```typescript
-component: () => import('@/views/user/DashboardView.vue')
+```ts
+{
+  path: '/example',
+  name: 'Example',
+  component: () => import('@/views/ExampleView.vue'),
+  meta: { requiresAuth: true, titleKey: 'example.title' }
+}
 ```
 
-Benefits:
+## Guard order and behavior
 
-- Reduced initial bundle size
-- Faster initial page load
-- Components loaded on-demand
-- Automatic code splitting by Vite
+The global `beforeEach` currently:
 
-## Authentication Store Integration
+1. starts navigation loading;
+2. restores `useAuthStore` from local storage on first navigation;
+3. resolves the localized document title;
+4. checks setup state for `/setup`;
+5. applies public-route, login/register and backend-mode rules;
+6. requires authentication and preserves `to.fullPath` in the login redirect;
+7. enforces admin role;
+8. loads/administers Admin Compliance state for admin routes;
+9. loads public settings before payment/risk-control feature gates;
+10. applies simple-mode restrictions;
+11. applies backend-mode restrictions.
 
-The router integrates with the Pinia auth store (`@/stores/auth`):
+Important special cases:
 
-```typescript
-const authStore = useAuthStore()
+- Authenticated admins go to `/admin/dashboard`; regular users go to `/dashboard` when redirected away from login/register.
+- Model Plaza is public only when enabled and may itself require authentication.
+- Backend mode has an explicit allowlist for login, setup, key usage, legal/payment callbacks and pending-auth flows.
+- Simple mode blocks selected subscription/redeem/group admin pages.
+- `requiresPayment` and `requiresRiskControl` are disabled only by an explicit successfully loaded setting; a transient settings failure is treated as unknown and backend authorization remains authoritative.
 
-// Check authentication status
-authStore.isAuthenticated
+`afterEach` ends loading and triggers idle route prefetch. `onError` detects dynamic import/chunk failures after a deployment and performs at most one timed reload attempt using `sessionStorage`.
 
-// Check admin role
-authStore.isAdmin
-```
+## Navigation
 
-## Usage Examples
-
-### Programmatic Navigation
-
-```typescript
-import { useRouter } from 'vue-router'
-
+```ts
 const router = useRouter()
-
-// Navigate to a route
-router.push('/dashboard')
-
-// Navigate with query parameters
-router.push({
-  path: '/usage',
-  query: { filter: 'today' }
-})
-
-// Navigate to admin route (will be blocked if not admin)
-router.push('/admin/users')
-```
-
-### Route Links
-
-```vue
-<template>
-  <!-- Simple link -->
-  <router-link to="/dashboard">Dashboard</router-link>
-
-  <!-- Named route -->
-  <router-link :to="{ name: 'Keys' }">API Keys</router-link>
-
-  <!-- With query parameters -->
-  <router-link :to="{ path: '/usage', query: { page: 1 } }"> Usage </router-link>
-</template>
-```
-
-### Checking Current Route
-
-```typescript
-import { useRoute } from 'vue-router'
+router.push({ path: '/usage', query: { page: 1 } })
 
 const route = useRoute()
-
-// Check if on admin page
 const isAdminPage = route.path.startsWith('/admin')
-
-// Get route meta
-const requiresAdmin = route.meta.requiresAdmin
 ```
 
-## Scroll Behavior
+The configured `scrollBehavior` restores browser history positions and otherwise scrolls to the top.
 
-The router implements automatic scroll management:
+## Testing
 
-- **Browser Navigation**: Restores saved scroll position
-- **New Routes**: Scrolls to top of page
-- **Hash Links**: Scrolls to anchor (when implemented)
+Router tests are under `__tests__/` and cover guards, feature access, WeChat routes and titles.
 
-## Error Handling
-
-The router includes error handling for navigation failures:
-
-```typescript
-router.onError((error) => {
-  console.error('Router error:', error)
-})
+```bash
+cd frontend
+pnpm test -- src/router/__tests__
+pnpm typecheck
 ```
 
-## Testing Routes
-
-To test navigation guards and route access:
-
-1. **Public Route Access**: Visit `/login` without authentication
-2. **Protected Route**: Try accessing `/dashboard` without login (should redirect)
-3. **Admin Access**: Login as regular user, try `/admin/users` (should redirect to dashboard)
-4. **Admin Success**: Login as admin, access `/admin/users` (should succeed)
-5. **404 Handling**: Visit non-existent route (should show 404 page)
-
-## Development Tips
-
-### Adding New Routes
-
-1. Add route definition in `routes` array
-2. Create corresponding view component
-3. Set appropriate meta fields (`requiresAuth`, `requiresAdmin`)
-4. Use lazy loading with `() => import()`
-5. Update this README with route documentation
-
-### Debugging Navigation
-
-Enable Vue Router debug mode:
-
-```typescript
-// In browser console
-window.__VUE_ROUTER__ = router
-
-// Check current route
-router.currentRoute.value
-```
-
-### Common Issues
-
-**Issue**: 404 on page refresh
-
-- **Cause**: Server not configured for SPA
-- **Solution**: Configure server to serve `index.html` for all routes
-
-**Issue**: Navigation guard runs twice
-
-- **Cause**: Multiple `next()` calls
-- **Solution**: Ensure only one `next()` call per code path
-
-**Issue**: User data not loaded
-
-- **Cause**: Auth store not initialized
-- **Solution**: Call `authStore.checkAuth()` in App.vue or main.ts
-
-## Security Considerations
-
-1. **Client-Side Only**: Navigation guards are client-side; server must also validate
-2. **Token Validation**: API should verify JWT token on every request
-3. **Role Checking**: Backend must verify admin role, not just frontend
-4. **XSS Protection**: Vue automatically escapes template content
-5. **CSRF Protection**: Use CSRF tokens for state-changing operations
-
-## Performance Optimization
-
-1. **Lazy Loading**: All routes use dynamic imports
-2. **Code Splitting**: Vite automatically splits route chunks
-3. **Prefetching**: Consider adding route prefetch for common paths
-4. **Route Caching**: Vue Router caches component instances
-
-## Future Enhancements
-
-- [ ] Add breadcrumb navigation system
-- [ ] Implement route-based permissions beyond admin/user
-- [ ] Add route transition animations
-- [ ] Implement route prefetching for anticipated navigation
-- [ ] Add navigation analytics tracking
+When adding or changing a route, update `index.ts`, relevant sidebar/navigation tests and both README languages. Client-side guards are UX only; backend endpoints must independently enforce authentication, roles and feature access.

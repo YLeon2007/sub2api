@@ -96,6 +96,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
@@ -318,7 +320,7 @@ const handleImport = async () => {
       emit('imported')
     }
   } catch (error: any) {
-    appStore.showError(error?.message || t('admin.accounts.dataImportFailed'))
+    appStore.showError(localizeApiErrorFallback(error?.message, t('admin.accounts.dataImportFailed')))
   } finally {
     importing.value = false
   }

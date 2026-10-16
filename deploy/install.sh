@@ -2,7 +2,7 @@
 #
 # Sub2API Installation Script
 # Sub2API 安装脚本
-# Usage: curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | bash
+# Usage: download an immutable-tagged script, inspect it, then run it with Bash.
 #
 
 set -e
@@ -31,7 +31,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="Wei-Shaw/sub2api"
+GITHUB_REPO="YLeon2007/sub2api"
 INSTALL_DIR="/opt/sub2api"
 SERVICE_NAME="sub2api"
 SERVICE_USER="sub2api"
@@ -325,16 +325,14 @@ print_error() {
     echo -e "${RED}[$(msg 'error')]${NC} $1"
 }
 
-# Check if running interactively (can access terminal)
-# When piped (curl | bash), stdin is not a terminal, but /dev/tty may still be available
+# Check if a controlling terminal is available.
 is_interactive() {
-    # Check if /dev/tty is available (works even when piped)
     [ -e /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]
 }
 
 # Select language
 select_language() {
-    # If not interactive (piped), use default language
+    # Use the default language when no controlling terminal is available.
     if ! is_interactive; then
         LANG_CHOICE="zh"
         return
@@ -473,11 +471,130 @@ check_dependencies() {
         missing+=("tar")
     fi
 
+    if ! command -v python3 &> /dev/null; then
+        missing+=("python3")
+    fi
+
     if [ ${#missing[@]} -gt 0 ]; then
         print_error "$(msg 'missing_deps'): ${missing[*]}"
         print_info "$(msg 'install_deps_first')"
         exit 1
     fi
+}
+
+cleanup_download_temp() {
+    if [ -n "${TEMP_DIR:-}" ]; then
+        rm -rf -- "$TEMP_DIR"
+        TEMP_DIR=""
+    fi
+}
+
+validate_and_extract_release_archive() {
+    local archive_path=$1 extract_dir=$2
+    python3 - "$archive_path" "$extract_dir" <<'PY'
+import gzip
+import os
+import posixpath
+import re
+import shutil
+import sys
+import tarfile
+import zlib
+from pathlib import Path, PurePosixPath
+
+archive_path = Path(sys.argv[1])
+extract_dir = Path(sys.argv[2])
+max_members = 1024
+max_member_bytes = 500 * 1024 * 1024
+max_total_bytes = 600 * 1024 * 1024
+max_trailing_bytes = 1024 * 1024
+
+
+def validate_single_gzip_member() -> None:
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    expanded = 0
+    expanded_limit = max_total_bytes + (max_members + 4) * 1024 + max_trailing_bytes
+    with archive_path.open("rb") as raw:
+        pending = b""
+        while not decompressor.eof:
+            if not pending:
+                pending = raw.read(64 * 1024)
+                if not pending:
+                    raise ValueError("truncated gzip stream")
+            output = decompressor.decompress(pending, 1024 * 1024)
+            pending = decompressor.unconsumed_tail
+            expanded += len(output)
+            if expanded > expanded_limit:
+                raise ValueError("gzip expanded size exceeds validation limit")
+        if decompressor.unused_data or pending or raw.read(1):
+            raise ValueError("data after first gzip member")
+
+
+def canonical(name: str) -> str:
+    if not name or "\\" in name or "\x00" in name or name.startswith("/"):
+        raise ValueError(f"unsafe archive member path: {name!r}")
+    value = name[:-1] if name.endswith("/") else name
+    if not value or re.match(r"^[A-Za-z]:", value):
+        raise ValueError(f"unsafe archive member path: {name!r}")
+    normalized = posixpath.normpath(value)
+    parts = PurePosixPath(normalized).parts
+    if normalized in ("", ".") or normalized != value or ".." in parts or any(part in ("", ".") for part in parts):
+        raise ValueError(f"non-canonical archive member path: {name!r}")
+    return normalized
+
+
+extract_dir.mkdir(mode=0o700, parents=True, exist_ok=False)
+validate_single_gzip_member()
+seen: set[str] = set()
+regular: list[tuple[tarfile.TarInfo, str]] = []
+total = 0
+with archive_path.open("rb") as raw, gzip.GzipFile(fileobj=raw, mode="rb") as stream, tarfile.open(fileobj=stream, mode="r|") as archive:
+    for count, member in enumerate(archive, 1):
+        if count > max_members:
+            raise ValueError("too many archive members")
+        name = canonical(member.name)
+        if name in seen:
+            raise ValueError(f"duplicate archive member: {name}")
+        seen.add(name)
+        if name == "deploy/sub2api" or name.startswith("deploy/sub2api/"):
+            raise ValueError("archive deploy tree must not occupy the executable destination")
+        if member.isdir():
+            continue
+        if not member.isreg():
+            raise ValueError(f"unsafe archive member type: {name}")
+        if member.size < 0 or member.size > max_member_bytes:
+            raise ValueError(f"archive member exceeds size budget: {name}")
+        total += member.size
+        if total > max_total_bytes:
+            raise ValueError("archive exceeds aggregate size budget")
+        regular.append((member, name))
+        source = archive.extractfile(member)
+        if source is None:
+            raise ValueError(f"cannot read archive member: {name}")
+        destination = extract_dir / name
+        destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        with destination.open("xb") as output:
+            shutil.copyfileobj(source, output, length=1024 * 1024)
+        if destination.stat().st_size != member.size:
+            raise ValueError(f"short archive member: {name}")
+        os.chmod(destination, 0o755 if name == "sub2api" else 0o644)
+    # Read through tarfile's stream adapter so buffered read-ahead after TAR EOF
+    # is validated before the underlying gzip stream is considered complete.
+    trailing = 0
+    while True:
+        chunk = archive.fileobj.read(min(1024 * 1024, max_trailing_bytes + 1 - trailing))
+        if not chunk:
+            break
+        trailing += len(chunk)
+        if trailing > max_trailing_bytes:
+            raise ValueError("excessive decompressed data after tar EOF")
+        if any(chunk):
+            raise ValueError("non-zero decompressed data after tar EOF")
+
+binary_members = [name for member, name in regular if PurePosixPath(name).name in ("sub2api", "sub2api.exe")]
+if binary_members != ["sub2api"]:
+    raise ValueError("archive must contain exactly one root sub2api binary and no shadow binary members")
+PY
 }
 
 # Authenticate only GitHub REST API requests. Release asset downloads must stay anonymous.
@@ -528,14 +645,222 @@ github_api_curl() {
     fi
 }
 
+is_trusted_github_release_asset_url() {
+    case "$1" in
+        https://github.com/*|https://release-assets.githubusercontent.com/*|https://objects.githubusercontent.com/*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+download_github_release_asset() {
+    local initial_url=$1 destination=$2 max_bytes=$3
+    local current_url=$initial_url redirect_count=0 status location location_count
+    local partial_path="${destination}.partial.$$" header_path="${destination}.headers.$$"
+    # Bash ulimit -f counts 1024-byte blocks on this supported installer shell.
+    local file_blocks=$(( (max_bytes + 1023) / 1024 ))
+
+    rm -f -- "$partial_path" "$header_path"
+    while :; do
+        if ! is_trusted_github_release_asset_url "$current_url"; then
+            echo "Refusing untrusted GitHub release asset URL: $current_url" >&2
+            rm -f -- "$partial_path" "$header_path"
+            return 1
+        fi
+
+        : > "$header_path"
+        rm -f -- "$partial_path"
+        if ! status=$(
+            (
+                ulimit -f "$file_blocks"
+                exec env UPDATE_GITHUB_TOKEN= GITHUB_TOKEN= GH_TOKEN= curl -q --globoff \
+                    --silent --show-error --proto '=https' --proto-redir '=https' --tlsv1.2 \
+                    --connect-timeout 20 --max-time 600 --max-filesize "$max_bytes" \
+                    --dump-header "$header_path" --output "$partial_path" \
+                    --write-out '%{http_code}' "$current_url"
+            )
+        ); then
+            rm -f -- "$partial_path" "$header_path"
+            return 1
+        fi
+        if [[ ! "$status" =~ ^[0-9]{3}$ ]]; then
+            rm -f -- "$partial_path" "$header_path"
+            return 1
+        fi
+
+        case "$status" in
+            200)
+                if [ ! -f "$partial_path" ] || [ "$(wc -c < "$partial_path")" -gt "$max_bytes" ]; then
+                    rm -f -- "$partial_path" "$header_path"
+                    return 1
+                fi
+                mv -f -- "$partial_path" "$destination"
+                rm -f -- "$header_path"
+                return 0
+                ;;
+            301|302|303|307|308)
+                location_count=$(awk 'tolower($0) ~ /^location:[[:space:]]*/ { count++ } END { print count + 0 }' "$header_path")
+                if [ "$location_count" -ne 1 ]; then
+                    rm -f -- "$partial_path" "$header_path"
+                    return 1
+                fi
+                location=$(awk 'tolower($0) ~ /^location:[[:space:]]*/ { sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print }' "$header_path")
+                redirect_count=$((redirect_count + 1))
+                if [ "$redirect_count" -gt 10 ] || ! is_trusted_github_release_asset_url "$location"; then
+                    rm -f -- "$partial_path" "$header_path"
+                    return 1
+                fi
+                current_url=$location
+                rm -f -- "$partial_path" "$header_path"
+                ;;
+            *)
+                rm -f -- "$partial_path" "$header_path"
+                return 1
+                ;;
+        esac
+    done
+}
+
+# Print the string value of the FIRST occurrence of key $1 at JSON root depth.
+# Non-string values (null/number/object) and nested keys print nothing, so
+# callers fail closed on smuggled or malformed payloads.
+extract_json_root_string() {
+    awk -v want="$1" '
+    BEGIN { stk=""; instr=0; esc=0; str=""; mode="val"; emptyok=0; seen=0; armed=0; found=0; bad=0; started=0; result="" }
+    {
+      n=length($0)
+      for (i=1; i<=n; i++) {
+        c=substr($0,i,1)
+        if (instr) {
+          if (esc) {
+            if (c=="u") {
+              hex=substr($0,i+1,4)
+              if (hex ~ /^[0-9a-fA-F]{4}$/) { str=str c hex; i+=4; esc=0; continue }
+              bad=1; esc=0; continue
+            }
+            if (index("\"\\/bfnrt", c) > 0) { esc=0; str=str c; continue }
+            bad=1; esc=0; continue
+          }
+          if (c=="\\") { esc=1; str=str c; continue }
+          if (c=="\"") {
+            instr=0
+            if (role=="key") {
+              if (length(stk)==1 && str==want && !seen) { seen=1; armed=1 }
+              mode="colon"
+            } else {
+              if (armed && length(stk)==1) { found=1; result=str }
+              armed=0
+              mode="after"
+            }
+            str=""
+            continue
+          }
+          if (c ~ /[[:cntrl:]]/) { bad=1; continue }
+          str=str c
+          continue
+        }
+        if (c ~ /^[ \t\r\n]$/) continue
+        if (!started) {
+          if (c=="{") { started=1; stk="{"; mode="key"; emptyok=1; continue }
+          bad=1; continue
+        }
+        if (length(stk)==0) { bad=1; continue }
+        if (c=="\"") {
+          if (mode=="key" || mode=="val") { instr=1; str=""; role=(mode=="key" ? "key" : "val"); emptyok=0; continue }
+          bad=1; continue
+        }
+        if (c=="{") {
+          if (mode=="val") { stk=stk "{"; mode="key"; emptyok=1; armed=0; continue }
+          bad=1; continue
+        }
+        if (c=="[") {
+          if (mode=="val") { stk=stk "["; mode="val"; emptyok=1; armed=0; continue }
+          bad=1; continue
+        }
+        if (c=="}") {
+          if (substr(stk,length(stk),1)=="{" && (mode=="after" || (mode=="key" && emptyok))) {
+            stk=substr(stk,1,length(stk)-1); mode="after"; emptyok=0; continue
+          }
+          bad=1; continue
+        }
+        if (c=="]") {
+          if (substr(stk,length(stk),1)=="[" && (mode=="after" || (mode=="val" && emptyok))) {
+            stk=substr(stk,1,length(stk)-1); mode="after"; emptyok=0; continue
+          }
+          bad=1; continue
+        }
+        if (c==":") {
+          if (mode=="colon") { mode="val"; emptyok=0; continue }
+          bad=1; continue
+        }
+        if (c==",") {
+          if (mode=="after") {
+            if (substr(stk,length(stk),1)=="{") { mode="key" } else { mode="val" }
+            emptyok=0; continue
+          }
+          bad=1; continue
+        }
+        if (c ~ /[-0-9ntf]/) {
+          if (mode=="val") {
+            rest=substr($0,i)
+            if (match(rest, /^(null|true|false|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?)/)) {
+              i += RLENGTH - 1
+              armed=0
+              mode="after"; emptyok=0
+              continue
+            }
+          }
+          bad=1; continue
+        }
+        bad=1
+      }
+      if (instr) bad=1
+    }
+    END { if (found && !bad && !instr && started && length(stk)==0) { print result; exit 0 } else { exit 1 } }
+'
+}
+
 # Get latest release version
 get_latest_version() {
     print_info "$(msg 'fetching_version')"
-    LATEST_VERSION=$(github_api_curl -s --connect-timeout 10 --max-time 30 "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+    # Capture the response and the transport exit status separately: a curl
+    # failure after a partial stdout write must not be mistaken for a valid
+    # latest-release payload (fail closed on any transport error).
+    local latest_response
+    if ! latest_response=$(github_api_curl -s --connect-timeout 10 --max-time 30 "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" 2>/dev/null); then
+        print_error "$(msg 'failed_get_version')"
+        print_info "Please check your network connection or try again later."
+        exit 1
+    fi
+
+    # Extract strictly the ROOT "tag_name" key's value: the awk scanner tracks
+    # JSON depth, so a nested "tag_name" cannot shadow the root release tag.
+    LATEST_VERSION=$(printf '%s' "$latest_response" | extract_json_root_string tag_name || true)
 
     if [ -z "$LATEST_VERSION" ]; then
         print_error "$(msg 'failed_get_version')"
         print_info "Please check your network connection or try again later."
+        exit 1
+    fi
+
+    # This fork publishes only canonical immutable RU release tags; never
+    # trust a malformed or non-RU tag_name from the latest-release endpoint.
+    if [[ ! "$LATEST_VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-ru\.([1-9][0-9]*)$ ]]; then
+        print_error "Invalid RU release version from latest release: $LATEST_VERSION"
+        exit 1
+    fi
+
+    # Cross-check the tag against the release html_url: a legitimate
+    # latest-release payload links to /releases/tag/<tag_name>. Payloads with a
+    # missing/null/non-RU root tag_name that smuggle a canonical nested key, or
+    # with a mismatched html_url, fail closed here.
+    LATEST_HTML_URL=$(printf '%s' "$latest_response" | extract_json_root_string html_url || true)
+    LATEST_HTML_TAG=${LATEST_HTML_URL##*/releases/tag/}
+    if [ -z "$LATEST_HTML_TAG" ] || [ "$LATEST_HTML_TAG" = "$LATEST_HTML_URL" ] || [ "$LATEST_HTML_TAG" != "$LATEST_VERSION" ]; then
+        print_error "Latest release html_url does not confirm tag_name: $LATEST_VERSION"
         exit 1
     fi
 
@@ -580,6 +905,12 @@ validate_version() {
         version="v$version"
     fi
 
+    # This fork publishes only canonical immutable RU release tags.
+    if [[ ! "$version" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-ru\.([1-9][0-9]*)$ ]]; then
+        print_error "Invalid RU release version: $version" >&2
+        exit 1
+    fi
+
     print_info "$(msg 'validating_version') $version" >&2
 
     # Check if the release exists
@@ -607,7 +938,7 @@ validate_version() {
 get_current_version() {
     if [ -f "$INSTALL_DIR/sub2api" ]; then
         # Use grep -E for better compatibility (works on macOS and Linux)
-        "$INSTALL_DIR/sub2api" --version 2>/dev/null | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown"
+        "$INSTALL_DIR/sub2api" --version 2>/dev/null | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+-ru\.[1-9][0-9]*' | head -1 || echo "unknown"
     else
         echo "not_installed"
     fi
@@ -624,46 +955,71 @@ download_and_extract() {
 
     # Create temp directory
     TEMP_DIR=$(mktemp -d)
-    trap "rm -rf $TEMP_DIR" EXIT
+    trap cleanup_download_temp EXIT
 
-    # Download archive
-    if ! curl -sL "$download_url" -o "$TEMP_DIR/$archive_name"; then
+    # Download archive with a hard compressed-byte budget and explicit authority checks on every redirect hop.
+    if ! download_github_release_asset "$download_url" "$TEMP_DIR/$archive_name" $((500 * 1024 * 1024)); then
         print_error "$(msg 'download_failed')"
         exit 1
     fi
 
-    # Download and verify checksum
+    # Download and verify the mandatory checksum manifest.
     print_info "$(msg 'verifying_checksum')"
-    if curl -sL "$checksum_url" -o "$TEMP_DIR/checksums.txt" 2>/dev/null; then
-        local expected_checksum=$(grep "$archive_name" "$TEMP_DIR/checksums.txt" | awk '{print $1}')
-        local actual_checksum=$(sha256sum "$TEMP_DIR/$archive_name" | awk '{print $1}')
-
-        if [ "$expected_checksum" != "$actual_checksum" ]; then
-            print_error "$(msg 'checksum_failed')"
-            print_error "Expected: $expected_checksum"
-            print_error "Actual: $actual_checksum"
-            exit 1
-        fi
-        print_success "$(msg 'checksum_verified')"
-    else
-        print_warning "$(msg 'checksum_not_found')"
+    if ! download_github_release_asset "$checksum_url" "$TEMP_DIR/checksums.txt" $((1024 * 1024)); then
+        print_error "$(msg 'checksum_not_found')"
+        exit 1
     fi
 
-    # Extract
+    local checksum_matches
+    checksum_matches=$(awk -v target="$archive_name" '
+        NF == 2 {
+            name = $2
+            sub(/^\*/, "", name)
+            if (name == target) print tolower($1)
+        }
+    ' "$TEMP_DIR/checksums.txt")
+    local checksum_match_count
+    checksum_match_count=$(printf '%s\n' "$checksum_matches" | awk 'NF { count++ } END { print count + 0 }')
+    if [ "$checksum_match_count" -ne 1 ]; then
+        print_error "Expected exactly one checksum for $archive_name, found $checksum_match_count"
+        exit 1
+    fi
+
+    local expected_checksum
+    expected_checksum=$(printf '%s\n' "$checksum_matches" | awk 'NF { print; exit }')
+    if ! printf '%s\n' "$expected_checksum" | grep -Eq '^[0-9a-f]{64}$'; then
+        print_error "Invalid SHA-256 checksum for $archive_name"
+        exit 1
+    fi
+
+    local actual_checksum
+    actual_checksum=$(sha256sum "$TEMP_DIR/$archive_name" | awk '{print $1}')
+    if [ "$expected_checksum" != "$actual_checksum" ]; then
+        print_error "$(msg 'checksum_failed')"
+        print_error "Expected: $expected_checksum"
+        print_error "Actual: $actual_checksum"
+        exit 1
+    fi
+    print_success "$(msg 'checksum_verified')"
+
+    # Validate every gzip/TAR member before installing anything.
     print_info "$(msg 'extracting')"
-    tar -xzf "$TEMP_DIR/$archive_name" -C "$TEMP_DIR"
+    local extract_dir="$TEMP_DIR/validated"
+    validate_and_extract_release_archive "$TEMP_DIR/$archive_name" "$extract_dir"
 
     # Create install directory
     mkdir -p "$INSTALL_DIR"
 
-    # Copy binary
-    cp "$TEMP_DIR/sub2api" "$INSTALL_DIR/sub2api"
-    chmod +x "$INSTALL_DIR/sub2api"
-
-    # Copy deploy files if they exist in the archive
-    if [ -d "$TEMP_DIR/deploy" ]; then
-        cp -r "$TEMP_DIR/deploy/"* "$INSTALL_DIR/" 2>/dev/null || true
+    # Copy validated deploy files first; a verified executable replacement must be the final executable write.
+    if [ -d "$extract_dir/deploy" ]; then
+        cp -R "$extract_dir/deploy/." "$INSTALL_DIR/"
     fi
+
+    # Prepare beside the live executable, then atomically replace it as the final executable-changing operation.
+    local staged_binary="$INSTALL_DIR/.sub2api.new.$$"
+    cp -- "$extract_dir/sub2api" "$staged_binary"
+    chmod 755 "$staged_binary"
+    mv -f -- "$staged_binary" "$INSTALL_DIR/sub2api"
 
     print_success "$(msg 'binary_installed') $INSTALL_DIR/sub2api"
 }
@@ -718,7 +1074,7 @@ install_service() {
     cat > /etc/systemd/system/sub2api.service << EOF
 [Unit]
 Description=Sub2API - AI API Gateway Platform
-Documentation=https://github.com/Wei-Shaw/sub2api
+Documentation=https://github.com/YLeon2007/sub2api
 After=network.target postgresql.service redis.service
 Wants=postgresql.service redis.service
 
@@ -863,7 +1219,7 @@ upgrade() {
     print_info "$(msg 'upgrading')"
 
     # Get current version
-    CURRENT_VERSION=$("$INSTALL_DIR/sub2api" --version 2>/dev/null | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+    CURRENT_VERSION=$(get_current_version)
     print_info "$(msg 'current_version'): $CURRENT_VERSION"
 
     # Stop service
@@ -970,10 +1326,10 @@ install_version() {
 uninstall() {
     print_warning "$(msg 'uninstall_confirm')"
 
-    # If not interactive (piped), require -y flag or skip confirmation
+    # If not interactive, require -y explicitly.
     if ! is_interactive; then
         if [ "${FORCE_YES:-}" != "true" ]; then
-            print_error "Non-interactive mode detected. Use 'curl ... | bash -s -- uninstall -y' to confirm."
+            print_error "Non-interactive mode detected. Run an already downloaded and inspected script as 'bash install.sh uninstall -y'."
             exit 1
         fi
     else
@@ -1181,10 +1537,10 @@ main() {
             echo ""
             echo "Examples:"
             echo "  $0                        # Install latest version"
-            echo "  $0 install -v v0.1.0      # Install specific version"
+            echo "  $0 install -v v0.1.0-ru.1 # Install specific version"
             echo "  $0 upgrade                # Upgrade to latest"
-            echo "  $0 upgrade -v v0.2.0      # Upgrade to specific version"
-            echo "  $0 rollback v0.1.0        # Rollback to v0.1.0"
+            echo "  $0 upgrade -v v0.2.0-ru.1 # Upgrade to specific version"
+            echo "  $0 rollback v0.1.0-ru.1   # Rollback to v0.1.0-ru.1"
             echo "  $0 list-versions          # List available versions"
             echo ""
             exit 0

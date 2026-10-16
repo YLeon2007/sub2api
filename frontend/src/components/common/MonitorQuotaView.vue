@@ -33,7 +33,7 @@
       </span>
     </div>
 
-    <div v-if="!snapshot.success" class="truncate text-[10px] text-red-600 dark:text-red-400" :title="snapshot.error" data-testid="monitor-quota-error">
+    <div v-if="!snapshot.success" class="truncate text-[10px] text-red-600 dark:text-red-400" :title="localizedError" data-testid="monitor-quota-error">
       {{ truncatedError }}
     </div>
   </div>
@@ -43,6 +43,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MonitorQuotaSnapshot, MonitorQuotaTier } from '@/api/admin/channelMonitor'
+import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
 import UsageProgressBar from '@/components/account/UsageProgressBar.vue'
 
 /**
@@ -124,8 +125,10 @@ const balanceRows = computed(() => {
   return []
 })
 
+const localizedError = computed(() => localizeQuotaDiagnostic(props.snapshot?.error, t) || t('monitorCommon.quota.unavailable'))
+
 const truncatedError = computed(() => {
-  const error = props.snapshot?.error || t('monitorCommon.quota.unavailable')
+  const error = localizedError.value
   return error.length > 48 ? `${error.slice(0, 48)}…` : error
 })
 </script>

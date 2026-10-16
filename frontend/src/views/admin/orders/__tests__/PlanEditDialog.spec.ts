@@ -5,7 +5,8 @@ import { mount } from '@vue/test-utils'
 import PlanEditDialog from '../PlanEditDialog.vue'
 import type { AdminGroup } from '@/types'
 
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-i18n')>()),
   useI18n: () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       if (key === 'payment.admin.subscriptionCnyPayPreview') return `preview ${params?.amount}`
@@ -150,9 +151,9 @@ describe('PlanEditDialog', () => {
     await wrapper.find('input[type="number"]').setValue('9.99')
 
     expect(wrapper.text()).toContain('preview')
-    expect(wrapper.text()).toContain('¥71.43')
+    expect(wrapper.text()).toMatch(/(?:¥\s?71\.43|71,43\s?¥)/)
     expect(wrapper.text()).toContain('fee 2.5')
-    expect(wrapper.text()).toContain('¥73.22')
+    expect(wrapper.text()).toMatch(/(?:¥\s?73\.22|73,22\s?¥)/)
   })
 
   it('hides the preview when the subscription rate is not configured', async () => {
@@ -166,7 +167,7 @@ describe('PlanEditDialog', () => {
     await wrapper.find('input[type="number"]').setValue('9.99')
 
     expect(wrapper.text()).not.toContain('preview')
-    expect(wrapper.text()).not.toContain('¥71.43')
+    expect(wrapper.text()).not.toMatch(/(?:¥\s?71\.43|71,43\s?¥)/)
   })
 
   it('allows composite subscription groups for payment plans', () => {

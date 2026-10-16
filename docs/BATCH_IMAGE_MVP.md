@@ -1,5 +1,7 @@
 # Batch Image MVP
 
+English | [Русский](BATCH_IMAGE_MVP_RU.md)
+
 Sub2API Batch Image MVP provides asynchronous Gemini image batch generation through a unified API surface backed by Redis workers, PostgreSQL state, and provider-specific batch backends.
 
 Supported providers:
@@ -201,7 +203,7 @@ For the managed Vertex/GCS batch bucket, disable Cloud Storage soft delete or co
 - Supports Gemini `apikey` upstream accounts with a configured API key.
 - Result file refs are internal.
 - API keys are never returned.
-- The provider can be selected and submitted through Sub2API when an administrator configures a Gemini API-key upstream account. In the 2026-07-07 PR validation, this path was verified as selectable/callable, but successful image generation was not continued because the test API key had no prepayment.
+- The provider can be selected and submitted through Sub2API when an administrator configures a Gemini API-key upstream account with the required Google-side access and billing/prepayment state.
 
 `vertex`:
 
@@ -212,7 +214,7 @@ For the managed Vertex/GCS batch bucket, disable Cloud Storage soft delete or co
 - Batch image output should be treated as `1K`/default only in MVP.
 - Do not promise `2K` or `4K`.
 
-Other Gemini account/login types are not selected by the current batch image providers unless they expose equivalent API-key or service-account credentials through the same provider flow. They were not covered by the 2026-07-07 PR validation.
+Other Gemini account/login types are not selected by the current batch image providers unless they expose equivalent API-key or service-account credentials through the same provider flow.
 
 ## Official Google Enablement
 
@@ -338,6 +340,7 @@ Feature flags default to disabled.
 Core smoke and compile commands:
 
 ```bash
+cd backend
 go test -tags=unit ./internal/service -run 'BatchImage' -count=1
 go test -tags=unit ./internal/config ./internal/service ./internal/repository -count=1
 go test ./internal/config ./internal/service ./internal/repository ./internal/handler ./internal/server/routes -run '^$'
@@ -346,13 +349,11 @@ go test ./... -run '^$'
 
 These commands should not require Docker, testcontainers, Redis, GCP, Gemini, Vertex, or GCS.
 
-## PR Hygiene Checklist
+## Maintenance Checklist
 
-- Do not accidentally commit `rfcs/batch-image-issue-draft.md` unless maintainers explicitly want it.
-- Keep migrations ordered: `159_batch_image_foundation.sql`, then `160_batch_image_provider_refs.sql`, then later migrations.
-- Include generated Ent code if generated code is committed in this repository.
-- Keep generated server and wire files updated.
-- Keep feature flags disabled by default unless maintainers ask otherwise.
-- Do not commit real secrets, API keys, service account JSON, or local machine paths.
-- Keep fixtures tiny and fake; no real cloud refs or credentials.
-- Do not add new public routes, providers, dashboards, queues, or billing behavior in this stabilization PR.
+- Never modify an applied migration; add a new ordered migration.
+- Include generated Ent, server, and wire code when their sources change.
+- Keep feature flags disabled by default unless a reviewed release explicitly changes the default.
+- Do not commit real secrets, API keys, service account JSON, provider refs, or local machine paths.
+- Keep fixtures tiny and synthetic; no real cloud objects or credentials.
+- Update this document, config examples, tests, and the Russian copy together when routes, limits, providers, billing, or retention behavior changes.

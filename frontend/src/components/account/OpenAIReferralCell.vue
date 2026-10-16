@@ -95,9 +95,10 @@ import type { Account } from '@/types'
 import type { OpenAIReferralEligibility } from '@/types/openaiReferrals'
 import { refreshOpenAIReferrals, sendOpenAIReferralInvite } from '@/api/admin/accounts'
 import BaseDialog from '@/components/common/BaseDialog.vue'
+import { extractApiErrorMessage } from '@/utils/apiError'
 
 const props = defineProps<{ account: Account }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const eligibility = ref<OpenAIReferralEligibility | null>(props.account.extra?.codex_referral_snapshot ?? null)
 const show = ref(false)
 const loading = ref(false)
@@ -143,7 +144,7 @@ function errorMessage(value: unknown, duringSend = false): string {
     OPENAI_REFERRAL_SEND_UNKNOWN: 'sendUnknown',
     OPENAI_REFERRAL_PROGRAM_CHANGED: 'programChanged', OPENAI_REFERRAL_CONFIRMATION_REQUIRED: 'consentRequired',
   }
-  return keys[key] ? t(`admin.accounts.openaiReferral.${keys[key]}`) : err.message || t('common.error')
+  return keys[key] ? t(`admin.accounts.openaiReferral.${keys[key]}`) : extractApiErrorMessage(err, t('common.error'), undefined, locale.value)
 }
 
 async function refresh() {

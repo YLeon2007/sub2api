@@ -8,7 +8,8 @@ const { bulkUpdate, showSuccess, showError } = vi.hoisted(() => ({
 }))
 vi.mock('@/api', () => ({ keysAPI: { bulkUpdate } }))
 vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showSuccess, showError }) }))
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async () => ({
+  ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')),
   useI18n: () => ({ t: (key: string, params?: Record<string, unknown>) => `${key} ${JSON.stringify(params ?? {})}` })
 }))
 
