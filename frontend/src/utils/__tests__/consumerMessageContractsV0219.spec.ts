@@ -304,3 +304,49 @@ describe('real SMTP and storage success handlers', () => {
     })
   }
 })
+
+describe('actual mixed-channel and unknown batch-error fallback copy contracts', () => {
+  it.each(['ru', 'ru-RU', 'en', 'zh'])('keeps create-dialog original EN/ZH fallback and callback identity (%s)', locale => {
+    language.current = locale
+    for (const input of [
+      { message: 'Outer warning', response: { message: 'Nested warning' } },
+      { response: { message: 'Nested warning' } },
+      { message: '', response: { message: '' } },
+    ]) {
+      const scope = { ...baseScope(), mixedChannelWarningDetails: ref<unknown>(null),
+        mixedChannelWarningRawMessage: ref(''), mixedChannelWarningAction: ref<unknown>(null),
+        showMixedChannelWarning: ref(false), buildMixedChannelDetails: (response: unknown) => response,
+      }
+      const onConfirm = vi.fn(async () => {})
+      const run = handler('components/account/CreateAccountModal.vue', 'openMixedChannelDialog', scope) as (...args: unknown[]) => unknown
+      run({ ...input, onConfirm })
+      const expected = locale.startsWith('ru') ? t('admin.accounts.mixedChannelWarningGeneric')
+        : input.message || input.response.message || t('admin.accounts.failedToCreate')
+      expect(scope.mixedChannelWarningRawMessage.value).toBe(expected)
+      expect(scope.mixedChannelWarningDetails.value).toBe(input.response)
+      expect(scope.mixedChannelWarningAction.value).toBe(onConfirm)
+      expect(scope.showMixedChannelWarning.value).toBe(true)
+    }
+  })
+  it.each(['ru', 'ru-RU', 'en', 'zh'])('keeps unknown batch error exact EN primary, ZH wrapper and RU fallback (%s)', locale => {
+    language.current = locale
+    const path = 'views/user/BatchImageGuideView.vue'
+    const scope: Record<string, unknown> = baseScope()
+    for (const name of ['isZhLocale', 'batchImageText', 'batchImageErrorReference', 'batchImagePlainError', 'batchImageAdminError']) {
+      scope[name] = handler(path, name, scope)
+    }
+    const run = handler(path, 'batchImageErrorMessage', scope) as unknown as (...args: unknown[]) => string
+    for (const message of [' Unknown upstream reason ', '']) {
+      const error = { code: 'FUTURE_ERROR', message, requestId: 'request-fixture', status: 422 }
+      const before = JSON.stringify(error)
+      const fallback = t('batchImage.messages.submitFailed')
+      const reference = (scope.batchImageErrorReference as (error: unknown) => string)(error)
+      const detail = message.trim() ? `${t('batchImage.messages.errorReference')}：${message.trim()}` : t('batchImage.messages.adminReference')
+      const expected = locale.startsWith('ru') ? fallback : locale === 'zh'
+        ? `${fallback}。${detail} ${reference}` : message.trim() || fallback
+      expect(run(error, fallback)).toBe(expected)
+      expect(JSON.stringify(error)).toBe(before)
+    }
+    expect(run({ code: 'API_KEY_REQUIRED', message: 'Raw authentication required' }, 'Fallback')).toBe(t('batchImage.messages.authRequired'))
+  })
+})

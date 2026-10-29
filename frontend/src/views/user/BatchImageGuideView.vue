@@ -388,8 +388,8 @@
             </colgroup>
             <thead class="bg-gray-50 dark:bg-dark-800/80">
               <tr>
-                <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">Custom ID</th>
-                <th class="px-3 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Prompt</th>
+                <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('runtimeUi.batchCustomId') }}</th>
+                <th class="px-3 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('runtimeUi.batchPrompt') }}</th>
                 <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('common.status') }}</th>
                 <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('batchImage.detail.preview') }}</th>
                 <th class="px-3 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('batchImage.detail.result') }}</th>
@@ -552,7 +552,7 @@
           </div>
 
           <div class="md:col-span-2">
-            <label class="input-label">API Key</label>
+            <label class="input-label">{{ t('batchImage.columns.apiKey') }}</label>
             <select v-model.number="form.apiKeyId" class="input" :disabled="loadingKeys">
               <option :value="0">{{ loadingKeys ? t('batchImage.create.loadingKeys') : t('batchImage.create.selectKeyPlaceholder') }}</option>
               <option v-for="key in geminiApiKeys" :key="key.id" :value="key.id">
@@ -608,7 +608,7 @@
 
         <div class="space-y-3">
           <div class="flex items-center justify-between gap-3">
-            <label class="input-label mb-0">Prompt</label>
+            <label class="input-label mb-0">{{ t('runtimeUi.batchPrompt') }}</label>
             <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('batchImage.create.promptAdded', { count: promptRows.length }) }}</span>
           </div>
           <div class="rounded-lg border border-gray-200 p-3 dark:border-dark-700">
@@ -754,6 +754,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -2582,8 +2583,11 @@ function batchImageErrorMessage(error: any, fallback: string) {
   if (code === 'INTERNAL_ERROR' || code === '500') {
     return batchImageAdminError(fallback, error)
   }
-  const detail = message ? `${batchImageText('errorReference')}：${message}` : batchImageText('adminReference')
-  return `${fallback}。${detail} ${batchImageErrorReference(error)}`
+  if (isZhLocale()) {
+    const detail = message ? `${batchImageText('errorReference')}：${message}` : batchImageText('adminReference')
+    return `${fallback}。${detail} ${batchImageErrorReference(error)}`
+  }
+  return localizeApiErrorFallback(message || fallback, fallback, locale.value)
 }
 
 function formatDate(timestamp: number) {

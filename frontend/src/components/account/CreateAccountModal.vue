@@ -4115,7 +4115,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { extractApiErrorMessage, localizeApiErrorFallback } from '@/utils/apiError'
 
 import {
   claudeModels,
@@ -4234,7 +4234,7 @@ interface OAuthFlowExposed {
   reset: () => void
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const commonErrorCodes = computed(() => getCommonErrorCodes(t))
 const browserTimeZone = getBrowserTimeZone()
 
@@ -5508,9 +5508,10 @@ const openMixedChannelDialog = (opts: {
 }) => {
   mixedChannelWarningDetails.value = buildMixedChannelDetails(opts.response)
   mixedChannelWarningRawMessage.value =
-    extractApiErrorMessage(
-      { message: opts.message || opts.response?.message },
-      t('admin.accounts.mixedChannelWarningGeneric')
+    localizeApiErrorFallback(
+      opts.message || opts.response?.message || t('admin.accounts.failedToCreate'),
+      t('admin.accounts.mixedChannelWarningGeneric'),
+      locale.value
     )
   mixedChannelWarningAction.value = opts.onConfirm
   showMixedChannelWarning.value = true
