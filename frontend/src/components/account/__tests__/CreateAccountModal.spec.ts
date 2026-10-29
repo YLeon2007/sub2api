@@ -72,6 +72,7 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
+      locale: i18n.global.locale,
       t: (key: string) => key === 'admin.accounts.oauth.openai.codexPatImportFailed'
         ? 'Не удалось создать Codex PAT аккаунт'
         : key,

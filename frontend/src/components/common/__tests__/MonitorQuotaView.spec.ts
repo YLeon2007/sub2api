@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { i18n } from '@/i18n'
 
 import type { MonitorQuotaSnapshot } from '@/api/admin/channelMonitor'
 import MonitorQuotaView from '../MonitorQuotaView.vue'
@@ -26,6 +27,15 @@ function makeSnapshot(overrides: Partial<MonitorQuotaSnapshot> = {}): MonitorQuo
 }
 
 describe('MonitorQuotaView', () => {
+  let previousLocale: string
+  beforeEach(() => {
+    previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'ru'
+  })
+  afterEach(() => {
+    i18n.global.locale.value = previousLocale as typeof i18n.global.locale.value
+  })
+
   it('renders nothing without a snapshot', () => {
     const wrapper = mount(MonitorQuotaView, { props: { snapshot: null } })
     expect(wrapper.find('[data-testid="monitor-quota-view"]').exists()).toBe(false)

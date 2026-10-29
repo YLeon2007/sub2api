@@ -4115,7 +4115,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
-import { extractApiErrorMessage, localizeApiErrorFallback } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 
 import {
   claudeModels,
@@ -5554,7 +5554,7 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
     })
     return false
   } catch (error: any) {
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToCreate')))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.message || error.response?.data?.detail, t('admin.accounts.failedToCreate'), locale.value))
     return false
   }
 }
@@ -5599,7 +5599,7 @@ const submitCreateAccount = async (payload: CreateAccountRequest) => {
   } catch (error: any) {
     if (error.response?.status === 409 && error.response?.data?.error === 'mixed_channel_warning' && needsMixedChannelCheck(form.platform)) {
       openMixedChannelDialog({
-        message: extractApiErrorMessage(error, t('admin.accounts.mixedChannelWarningGeneric')),
+        message: localizeApiErrorFallback(error.response?.data?.message, t('admin.accounts.mixedChannelWarningGeneric'), locale.value),
         onConfirm: async () => {
           antigravityMixedChannelConfirmed.value = true
           await submitCreateAccount(payload)
@@ -5607,7 +5607,7 @@ const submitCreateAccount = async (payload: CreateAccountRequest) => {
       })
       return
     }
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToCreate')))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.message || error.response?.data?.detail, t('admin.accounts.failedToCreate'), locale.value))
   } finally {
     submitting.value = false
   }
@@ -6392,7 +6392,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
         const tokenInfo = await grokOAuth.validateRefreshToken(refreshTokens[i], form.proxy_id)
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${extractApiErrorMessage(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'))}`)
+          errors.push(`#${i + 1}: ${localizeApiErrorFallback(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'), locale.value)}`)
           grokOAuth.error.value = ''
           continue
         }
@@ -6429,7 +6429,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.authFailed'), locale.value)
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -6510,17 +6510,17 @@ const handleGrokImportSSO = async (ssoInput: string) => {
         t('admin.accounts.oauth.batchPartialSuccess', { success: successCount, failed: failedCount })
       )
       grokOAuth.error.value = (result.failed || [])
-        .map((item) => `#${item.index}: ${extractApiErrorMessage({ message: item.error }, t('admin.accounts.oauth.grok.failedToConvertSSO'))}`)
+        .map((item) => `#${item.index}: ${localizeApiErrorFallback(item.error, t('admin.accounts.oauth.grok.failedToConvertSSO'), locale.value)}`)
         .join('\n')
       emit('created')
     } else {
       grokOAuth.error.value = (result.failed || [])
-        .map((item) => `#${item.index}: ${extractApiErrorMessage({ message: item.error }, t('admin.accounts.oauth.grok.failedToConvertSSO'))}`)
+        .map((item) => `#${item.index}: ${localizeApiErrorFallback(item.error, t('admin.accounts.oauth.grok.failedToConvertSSO'), locale.value)}`)
         .join('\n') || t('admin.accounts.oauth.grok.failedToConvertSSO')
       appStore.showError(t('admin.accounts.oauth.batchFailed'))
     }
   } catch (error: any) {
-    grokOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.grok.failedToConvertSSO'))
+    grokOAuth.error.value = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.grok.failedToConvertSSO'), locale.value)
     appStore.showError(grokOAuth.error.value)
   } finally {
     grokOAuth.loading.value = false
@@ -6562,7 +6562,7 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         const tokenInfo = await grokOAuth.authorizePassword(lines[i], form.proxy_id)
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${extractApiErrorMessage(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'))}`)
+          errors.push(`#${i + 1}: ${localizeApiErrorFallback(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'), locale.value)}`)
           grokOAuth.error.value = ''
           continue
         }
@@ -6606,7 +6606,7 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.authFailed'), locale.value)
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -6708,7 +6708,7 @@ const handleOpenAIExchange = async (authCode: string) => {
     emit('created')
     handleClose()
   } catch (error: any) {
-    oauthClient.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+    oauthClient.error.value = localizeApiErrorFallback(error.response?.data?.detail, t('admin.accounts.oauth.authFailed'), locale.value)
     appStore.showError(oauthClient.error.value)
   } finally {
     oauthClient.loading.value = false
@@ -6743,7 +6743,7 @@ const formatCodexImportMessages = (messages: CodexSessionImportMessage[] | undef
   return (messages || [])
     .map((item) => {
       const name = item.name ? ` ${item.name}` : ''
-      return `#${item.index}${name}: ${extractApiErrorMessage({ message: item.message }, t(fallbackKey))}`
+      return `#${item.index}${name}: ${localizeApiErrorFallback(item.message, t(fallbackKey), locale.value)}`
     })
     .join('\n')
 }
@@ -6843,9 +6843,10 @@ const handleOpenAIImportCodexSession = async (content: string) => {
 
     appStore.showError(t('admin.accounts.oauth.openai.codexSessionImportFailed'))
   } catch (error: any) {
-    oauthClient.error.value = extractApiErrorMessage(
-      error,
-      t('admin.accounts.oauth.openai.codexSessionImportFailed')
+    oauthClient.error.value = localizeApiErrorFallback(
+      error.response?.data?.detail || error.response?.data?.message || error.message,
+      t('admin.accounts.oauth.openai.codexSessionImportFailed'),
+      locale.value
     )
     appStore.showError(oauthClient.error.value)
   } finally {
@@ -6891,9 +6892,10 @@ const handleOpenAIImportCodexPAT = async (accessToken: string) => {
     emit('created')
     handleClose()
   } catch (error: any) {
-    oauthClient.error.value = extractApiErrorMessage(
-      error,
-      t('admin.accounts.oauth.openai.codexPatImportFailed')
+    oauthClient.error.value = localizeApiErrorFallback(
+      error.response?.data?.detail || error.response?.data?.message || error.message,
+      t('admin.accounts.oauth.openai.codexPatImportFailed'),
+      locale.value
     )
     appStore.showError(oauthClient.error.value)
   } finally {
@@ -6934,7 +6936,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
         )
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${extractApiErrorMessage(oauthClient.error.value, t('admin.accounts.oauth.authFailed'))}`)
+          errors.push(`#${i + 1}: ${localizeApiErrorFallback(oauthClient.error.value, t('admin.accounts.oauth.authFailed'), locale.value)}`)
           oauthClient.error.value = ''
           continue
         }
@@ -6986,7 +6988,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.authFailed'), locale.value)
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -7052,7 +7054,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
         )
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${extractApiErrorMessage(antigravityOAuth.error.value, t('admin.accounts.oauth.authFailed'))}`)
+          errors.push(`#${i + 1}: ${localizeApiErrorFallback(antigravityOAuth.error.value, t('admin.accounts.oauth.authFailed'), locale.value)}`)
           antigravityOAuth.error.value = ''
           continue
         }
@@ -7084,7 +7086,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.authFailed'), locale.value)
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -7143,7 +7145,7 @@ const handleGeminiExchange = async (authCode: string) => {
     const extra = geminiOAuth.buildExtraInfo(tokenInfo)
     await createAccountAndFinish('gemini', 'oauth', credentials, extra)
   } catch (error: any) {
-    geminiOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+    geminiOAuth.error.value = localizeApiErrorFallback(error.response?.data?.detail, t('admin.accounts.oauth.authFailed'), locale.value)
     appStore.showError(geminiOAuth.error.value)
   } finally {
     geminiOAuth.loading.value = false
@@ -7189,7 +7191,7 @@ const handleAntigravityExchange = async (authCode: string) => {
 		const extra = buildAntigravityExtra()
 		await createAccountAndFinish('antigravity', 'oauth', credentials, extra)
   } catch (error: any) {
-    antigravityOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+    antigravityOAuth.error.value = localizeApiErrorFallback(error.response?.data?.detail, t('admin.accounts.oauth.authFailed'), locale.value)
     appStore.showError(antigravityOAuth.error.value)
   } finally {
     antigravityOAuth.loading.value = false
@@ -7226,7 +7228,7 @@ const handleGrokExchange = async (authCode: string) => {
     const extra = grokOAuth.buildExtraInfo(tokenInfo)
     await createAccountAndFinish('grok', 'oauth', credentials, extra)
   } catch (error: any) {
-    grokOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+    grokOAuth.error.value = localizeApiErrorFallback(error.response?.data?.detail, t('admin.accounts.oauth.authFailed'), locale.value)
     appStore.showError(grokOAuth.error.value)
   } finally {
     grokOAuth.loading.value = false
@@ -7315,7 +7317,7 @@ const handleAnthropicExchange = async (authCode: string) => {
     applyInterceptWarmup(credentials, interceptWarmupRequests.value, 'create')
     await createAccountAndFinish(form.platform, addMethod.value as AccountType, credentials, extra)
   } catch (error: any) {
-    oauth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+    oauth.error.value = localizeApiErrorFallback(error.response?.data?.detail, t('admin.accounts.oauth.authFailed'), locale.value)
     appStore.showError(oauth.error.value)
   } finally {
     oauth.loading.value = false
@@ -7468,7 +7470,7 @@ const handleCookieAuth = async (sessionKey: string) => {
         errors.push(
           t('admin.accounts.oauth.keyAuthFailed', {
             index: i + 1,
-            error: extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
+            error: localizeApiErrorFallback(error.response?.data?.detail, t('admin.accounts.oauth.authFailed'), locale.value)
           })
         )
       }
@@ -7488,7 +7490,7 @@ const handleCookieAuth = async (sessionKey: string) => {
       oauth.error.value = errors.join('\n')
     }
   } catch (error: any) {
-    oauth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.cookieAuthFailed'))
+    oauth.error.value = localizeApiErrorFallback(error.response?.data?.detail, t('admin.accounts.oauth.cookieAuthFailed'), locale.value)
   } finally {
     oauth.loading.value = false
   }

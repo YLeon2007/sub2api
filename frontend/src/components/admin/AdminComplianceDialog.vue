@@ -106,6 +106,7 @@ import Input from '@/components/common/Input.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAdminComplianceStore, useAppStore, useAuthStore } from '@/stores'
 import { getLocale } from '@/i18n'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import zhDocument from '../../../../docs/legal/admin-compliance.zh.md?raw'
 import enDocument from '../../../../docs/legal/admin-compliance.en.md?raw'
 import ruDocument from '../../../../docs/legal/admin-compliance.ru.md?raw'
@@ -186,7 +187,7 @@ async function submit(): Promise<void> {
       attemptedSubmit.value = false
     }
   } catch (error) {
-    appStore.showError(t('adminCompliance.acceptFailed'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('adminCompliance.acceptFailed')))
   }
 }
 

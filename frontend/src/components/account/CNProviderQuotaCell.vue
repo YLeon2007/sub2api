@@ -147,19 +147,15 @@ const extractErrorMessage = (e: unknown): string => {
   const err = e as {
     message?: string
     reason?: string
-    response?: { data?: { detail?: string; message?: string; error?: string; code?: string } }
+    response?: { data?: { message?: string; error?: string } }
   }
-  return (
-    localizeApiErrorFallback(err?.response?.data?.detail ||
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    err?.response?.data?.code ||
-    err?.reason ||
-    err?.message, t('common.error'))
+  return localizeApiErrorFallback(
+    err?.message || err?.reason || err?.response?.data?.message || err?.response?.data?.error,
+    t('common.error'),
   )
 }
 
-const localizedError = computed(() => localizeQuotaDiagnostic(error.value, t))
+const localizedError = computed(() => localizeApiErrorFallback(error.value, localizeQuotaDiagnostic(error.value, t)))
 
 const truncatedError = computed(() => {
   const message = localizedError.value

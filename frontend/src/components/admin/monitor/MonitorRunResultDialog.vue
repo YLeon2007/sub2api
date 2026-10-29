@@ -44,6 +44,7 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import MonitorQuotaView from '@/components/common/MonitorQuotaView.vue'
 import { useChannelMonitorFormat } from '@/composables/useChannelMonitorFormat'
 import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 
 defineProps<{
   show: boolean
@@ -57,5 +58,8 @@ defineEmits<{
 const { t } = useI18n()
 const { statusLabel, statusBadgeClass, formatLatency, formatMonitorModel } = useChannelMonitorFormat()
 
-const displayMessage = (message: string) => localizeQuotaDiagnostic(message, t) || message
+const displayMessage = (message: string) => localizeApiErrorFallback(
+  message,
+  localizeQuotaDiagnostic(message, t) || t('monitorCommon.quota.errors.generic'),
+)
 </script>

@@ -191,7 +191,7 @@ import {
   type OpenAIQuotaResetResult
 } from '@/api/admin/accounts'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import OpenAIReferralCell from '@/components/account/OpenAIReferralCell.vue'
 
 const props = defineProps<{
@@ -413,6 +413,20 @@ const toggleResetCreditDetails = () => {
   showResetCreditDetails.value = !showResetCreditDetails.value
 }
 
+const extractErrorMessage = (e: unknown): string => {
+  // Preserve the flattened interceptor message/reason before raw axios fields.
+  const err = e as {
+    message?: string
+    reason?: string
+    response?: { data?: { message?: string; error?: string } }
+  }
+  return localizeApiErrorFallback(
+    err?.message || err?.reason || err?.response?.data?.message || err?.response?.data?.error,
+    t('common.error'),
+    locale.value,
+  )
+}
+
 const handleQuery = async () => {
   if (loading.value || resetting.value) return
   const accountID = props.account.id
@@ -438,7 +452,7 @@ const handleQuery = async () => {
     }
   } catch (e) {
     if (props.account.id !== accountID) return
-    error.value = extractApiErrorMessage(e, t('common.error'), undefined, locale.value)
+    error.value = extractErrorMessage(e)
   } finally {
     if (props.account.id === accountID) loading.value = false
   }
@@ -495,7 +509,7 @@ const confirmReset = async () => {
     }
   } catch (e) {
     if (props.account.id !== accountID) return
-    error.value = extractApiErrorMessage(e, t('common.error'), undefined, locale.value)
+    error.value = extractErrorMessage(e)
   } finally {
     if (props.account.id === accountID) resetting.value = false
   }

@@ -44,6 +44,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MonitorQuotaSnapshot, MonitorQuotaTier } from '@/api/admin/channelMonitor'
 import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import UsageProgressBar from '@/components/account/UsageProgressBar.vue'
 
 /**
@@ -125,7 +126,10 @@ const balanceRows = computed(() => {
   return []
 })
 
-const localizedError = computed(() => localizeQuotaDiagnostic(props.snapshot?.error, t) || t('monitorCommon.quota.unavailable'))
+const localizedError = computed(() => localizeApiErrorFallback(
+  props.snapshot?.error,
+  localizeQuotaDiagnostic(props.snapshot?.error, t) || t('monitorCommon.quota.unavailable'),
+))
 
 const truncatedError = computed(() => {
   const error = localizedError.value

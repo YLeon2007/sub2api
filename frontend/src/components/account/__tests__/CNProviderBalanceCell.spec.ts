@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { i18n } from '@/i18n'
 import CNProviderBalanceCell from '../CNProviderBalanceCell.vue'
 import type { Account } from '@/types'
 
@@ -32,8 +33,14 @@ const account = {
 } as Account
 
 describe('CNProviderBalanceCell', () => {
+  let previousLocale: string
   beforeEach(() => {
+    previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'ru'
     queryBalance.mockReset()
+  })
+  afterEach(() => {
+    i18n.global.locale.value = previousLocale as typeof i18n.global.locale.value
   })
 
   it('renders the persisted balance as static text with an explicit query action', async () => {

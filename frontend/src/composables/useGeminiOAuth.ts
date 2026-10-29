@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { extractApiErrorMessage, localizeApiErrorFallback } from '@/utils/apiError'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
 import type { GeminiOAuthCapabilities } from '@/api/admin/gemini'
@@ -63,7 +63,11 @@ export function useGeminiOAuth() {
       state.value = response.state
       return true
     } catch (err: any) {
-      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.gemini.failedToGenerateUrl'), undefined, locale.value)
+      error.value = localizeApiErrorFallback(
+        extractApiErrorMessage(err, t('admin.accounts.oauth.gemini.failedToGenerateUrl'), undefined, locale.value),
+        t('admin.accounts.oauth.gemini.failedToGenerateUrl'),
+        locale.value
+      )
       appStore.showError(error.value)
       return false
     } finally {
@@ -103,12 +107,12 @@ export function useGeminiOAuth() {
       return tokenInfo as GeminiTokenInfo
     } catch (err: any) {
       // Preserve the raw diagnostic only for recognizing this known error code.
-      const errorMessage = err.message || err.response?.data?.message || err.response?.data?.detail || ''
+      const errorMessage = err.message || err.response?.data?.message || ''
       if (errorMessage.includes('missing project_id')) {
         error.value = t('admin.accounts.oauth.gemini.missingProjectId')
       } else {
-        error.value = extractApiErrorMessage(
-          err, t('admin.accounts.oauth.gemini.failedToExchangeCode'), undefined, locale.value
+        error.value = localizeApiErrorFallback(
+          errorMessage, t('admin.accounts.oauth.gemini.failedToExchangeCode'), locale.value
         )
       }
       appStore.showError(error.value)

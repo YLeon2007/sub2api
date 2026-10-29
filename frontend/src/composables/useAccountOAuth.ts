@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 
 export type AddMethod = 'oauth' | 'setup-token'
 export type AuthInputMethod =
@@ -78,7 +78,7 @@ export function useAccountOAuth() {
       sessionId.value = response.session_id
       return true
     } catch (err: any) {
-      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.failedToGenerateUrl'), undefined, locale.value)
+      error.value = localizeApiErrorFallback(err.response?.data?.detail, t('admin.accounts.oauth.failedToGenerateUrl'), locale.value)
       appStore.showError(error.value)
       return false
     } finally {
@@ -114,7 +114,7 @@ export function useAccountOAuth() {
 
       return tokenInfo as TokenInfo
     } catch (err: any) {
-      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.failedToExchangeCode'), undefined, locale.value)
+      error.value = localizeApiErrorFallback(err.response?.data?.detail, t('admin.accounts.oauth.failedToExchangeCode'), locale.value)
       appStore.showError(error.value)
       return null
     } finally {
@@ -151,7 +151,7 @@ export function useAccountOAuth() {
 
       return tokenInfo as TokenInfo
     } catch (err: any) {
-      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.cookieAuthFailed'), undefined, locale.value)
+      error.value = localizeApiErrorFallback(err.response?.data?.detail, t('admin.accounts.oauth.cookieAuthFailed'), locale.value)
       return null
     } finally {
       loading.value = false

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
 import type { AntigravityTokenInfo } from '@/api/admin/antigravity'
@@ -40,8 +40,8 @@ export function useAntigravityOAuth() {
       state.value = response.state
       return true
     } catch (err: any) {
-      error.value = extractApiErrorMessage(
-        err, t('admin.accounts.oauth.antigravity.failedToGenerateUrl'), undefined, locale.value
+      error.value = localizeApiErrorFallback(
+        err.response?.data?.detail, t('admin.accounts.oauth.antigravity.failedToGenerateUrl'), locale.value
       )
       appStore.showError(error.value)
       return false
@@ -76,8 +76,8 @@ export function useAntigravityOAuth() {
       const tokenInfo = await adminAPI.antigravity.exchangeCode(payload as any)
       return tokenInfo as AntigravityTokenInfo
     } catch (err: any) {
-      error.value = extractApiErrorMessage(
-        err, t('admin.accounts.oauth.antigravity.failedToExchangeCode'), undefined, locale.value
+      error.value = localizeApiErrorFallback(
+        err.response?.data?.detail, t('admin.accounts.oauth.antigravity.failedToExchangeCode'), locale.value
       )
       appStore.showError(error.value)
       return null
@@ -105,8 +105,8 @@ export function useAntigravityOAuth() {
       )
       return tokenInfo as AntigravityTokenInfo
     } catch (err: any) {
-      error.value = extractApiErrorMessage(
-        err, t('admin.accounts.oauth.antigravity.failedToValidateRT'), undefined, locale.value
+      error.value = localizeApiErrorFallback(
+        err.response?.data?.detail, t('admin.accounts.oauth.antigravity.failedToValidateRT'), locale.value
       )
       // Don't show global error toast for batch validation to avoid spamming
       // appStore.showError(error.value)

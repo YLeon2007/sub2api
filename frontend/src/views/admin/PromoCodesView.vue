@@ -393,6 +393,7 @@ import { useClipboard } from '@/composables/useClipboard'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { adminAPI } from '@/api/admin'
 import { formatDateTime, formatDateTimeLocalInput } from '@/utils/format'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import type { PromoCode, PromoCodeUsage } from '@/types'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -607,7 +608,7 @@ const handleCreate = async () => {
     resetCreateForm()
     loadCodes()
   } catch (error: any) {
-    appStore.showError(t('admin.promo.failedToCreate'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.promo.failedToCreate')))
   } finally {
     creating.value = false
   }
@@ -657,7 +658,7 @@ const handleUpdate = async () => {
     closeEditDialog()
     loadCodes()
   } catch (error: any) {
-    appStore.showError(t('admin.promo.failedToUpdate'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.promo.failedToUpdate')))
   } finally {
     updating.value = false
   }
@@ -699,7 +700,7 @@ const confirmDelete = async () => {
     deletingCode.value = null
     loadCodes()
   } catch (error: any) {
-    appStore.showError(t('admin.promo.failedToDelete'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.promo.failedToDelete')))
   }
 }
 
@@ -725,7 +726,7 @@ const loadUsages = async () => {
     usages.value = response.items
     usagesTotal.value = response.total
   } catch (error: any) {
-    appStore.showError(t('admin.promo.failedToLoadUsages'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.promo.failedToLoadUsages')))
   } finally {
     usagesLoading.value = false
   }

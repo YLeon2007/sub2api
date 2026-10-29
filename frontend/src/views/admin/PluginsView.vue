@@ -484,10 +484,10 @@ function localizedCompatibilityMessage(plugin: PluginInstallation): string {
       if (compatibility.message in pluginBackendMessageKeys) {
         return localizedPluginBackendMessage(compatibility.message);
       }
-      return t("admin.plugins.messages.incompatibleVersion", {
+      return localizeApiErrorFallback(compatibility.message, t("admin.plugins.messages.incompatibleVersion", {
         current: compatibility.current_sub2api_version || "-",
         required: compatibility.required_sub2api_version || "-",
-      });
+      }));
     default:
       return localizedPluginBackendMessage(compatibility.message);
   }

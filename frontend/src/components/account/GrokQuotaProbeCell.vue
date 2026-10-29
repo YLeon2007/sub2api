@@ -43,7 +43,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
 import type { GrokQuotaProbeResult } from '@/api/admin/grok'
 import type { Account } from '@/types'
@@ -83,6 +83,19 @@ const truncatedError = computed(() => {
   return error.value.length > 80 ? `${error.value.slice(0, 80)}...` : error.value
 })
 
+const extractErrorMessage = (e: unknown): string => {
+  const err = e as {
+    message?: string
+    reason?: string
+    response?: { data?: { message?: string; error?: string } }
+  }
+  return localizeApiErrorFallback(
+    err?.message || err?.reason || err?.response?.data?.message || err?.response?.data?.error,
+    t('common.error'),
+    locale.value,
+  )
+}
+
 const handleProbe = async () => {
   if (loading.value) return
   loading.value = true
@@ -94,7 +107,7 @@ const handleProbe = async () => {
       : null
     emit('probed', data.value)
   } catch (e) {
-    error.value = extractApiErrorMessage(e, t('common.error'), undefined, locale.value)
+    error.value = extractErrorMessage(e)
   } finally {
     loading.value = false
   }

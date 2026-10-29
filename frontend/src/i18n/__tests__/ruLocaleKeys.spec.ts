@@ -753,7 +753,9 @@ describe('Russian locale key coverage', () => {
     expect(navigation).toContain(":aria-label=\"t('common.loading')\"")
     expect(batchImage).not.toContain('return message || fallback')
     expect(batchImage).not.toContain('return error.message || error.code')
-    expect(batchImage).toContain("return batchImageText('errorReference')")
+    // RU gets the translated primary; EN/ZH retain the exact original selector.
+    // The actual SFC function is executed for all four locales by the quota suite.
+    expect(batchImage).toContain("return localizeApiErrorFallback(error.message || error.code || '-', batchImageText('errorReference'), locale.value)")
     expect(batchImage).not.toContain("t('batchImage.itemResult.errorReference')")
     expect(versionBadge.match(/(?:updateError|rollbackVersionsError|rollbackError)\.value\s*=\s*localizeApiErrorFallback\(/g)).toHaveLength(3)
     expect(versionBadge).not.toMatch(/(?:updateError|rollbackVersionsError|rollbackError)\.value\s*=\s*err\./)
