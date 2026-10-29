@@ -182,7 +182,7 @@ const expectedAdded: Record<string, string> = {
     'Не удалось загрузить конфигурацию логов. Обновите страницу и попробуйте снова.',
   'admin.settings.gatewayForwarding.claudeCodeClientVersion': 'Версия клиента Claude Code',
   'admin.settings.gatewayForwarding.claudeCodeClientVersionHint':
-    'Версия клиента, которую этот шлюз объявляет upstream, impersonируя официальный Claude Code CLI. Оставьте пустым, чтобы использовать автоматически синхронизируемую последнюю официальную версию; заданное значение фиксирует её и прекращает отслеживание авто-синхронизации. Переменная окружения SUB2API_CLAUDE_CLI_VERSION или встроенная версия используется, только когда недействительны и ручное, и синхронизированное значения.',
+    'Версия клиента, которую этот шлюз объявляет вышестоящему сервису, имитируя официальный Claude Code CLI. Оставьте пустым, чтобы использовать автоматически синхронизируемую последнюю официальную версию; заданное значение фиксирует её и прекращает отслеживание автосинхронизации. Переменная окружения SUB2API_CLAUDE_CLI_VERSION или встроенная версия используется, только когда недействительны и ручное, и синхронизированное значения.',
   'admin.settings.gatewayForwarding.claudeCodeVersionAutoSync': 'Авто-синхронизация версии Claude Code',
   'admin.settings.gatewayForwarding.claudeCodeVersionAutoSyncHint':
     'Каждый час получает последнюю версию клиента Claude Code из официального канала релизов, поэтому не нужно обновлять этот сервис только ради актуальной версии. Когда выключено, получение прекращается, но ранее синхронизированная версия остаётся доступной. Ручная версия выше всегда имеет приоритет.',
@@ -239,9 +239,9 @@ const expectedModified: Record<string, string> = {
   'admin.ops.systemLogs.retentionDaysHint':
     'Применяется по расписанию очистки данных, когда очистка включена в настройках операций.',
   'admin.settings.openaiExperimentalScheduler.oauthRatePriorityDescription':
-    'OAuth-аккаунты используют этот опорный тариф для упорядочения «сначала низкий тариф». Оставьте пустым, чтобы использовать собственный тариф каждого аккаунта. API Key аккаунты используют действительный обнаруженный (probed) тариф, если он есть, иначе — тариф аккаунта.',
+    'OAuth-аккаунты используют этот опорный тариф для упорядочения «сначала низкий тариф». Оставьте пустым, чтобы использовать собственный тариф каждого аккаунта. Аккаунты с API-ключом используют действительный тариф, полученный проверкой, если он есть, иначе — тариф аккаунта.',
   'admin.settings.openaiExperimentalScheduler.oauthRateWeightedDescription':
-    'OAuth-аккаунты используют этот опорный тариф для оценки по тарифу биллинга. Оставьте пустым, чтобы использовать собственный тариф каждого аккаунта. API Key аккаунты используют действительный обнаруженный (probed) тариф, если он есть, иначе — тариф аккаунта.',
+    'OAuth-аккаунты используют этот опорный тариф для оценки по тарифу биллинга. Оставьте пустым, чтобы использовать собственный тариф каждого аккаунта. Аккаунты с API-ключом используют действительный тариф, полученный проверкой, если он есть, иначе — тариф аккаунта.',
 }
 
 describe('Russian v0.2.8 upstream locale delta', () => {
@@ -324,9 +324,9 @@ describe('Russian v0.2.8 upstream locale delta', () => {
   it('describes the OAuth scheduling reference rate for both policies', () => {
     const scheduler = ru.admin.settings.openaiExperimentalScheduler
     expect(scheduler.oauthRatePriorityDescription).toContain('опорный тариф')
-    expect(scheduler.oauthRatePriorityDescription).toContain('probed')
+    expect(scheduler.oauthRatePriorityDescription).toContain('тариф, полученный проверкой')
     expect(scheduler.oauthRateWeightedDescription).toContain('опорный тариф')
-    expect(scheduler.oauthRateWeightedDescription).toContain('probed')
+    expect(scheduler.oauthRateWeightedDescription).toContain('тариф, полученный проверкой')
     expect(scheduler.oauthRateInvalid).toContain('неотрицательным числом')
   })
 })

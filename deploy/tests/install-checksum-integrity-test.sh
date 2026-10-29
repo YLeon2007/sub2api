@@ -56,6 +56,19 @@ write(
         (member("deploy/sub2api/payload", b"UNVERIFIED\n"), b"UNVERIFIED\n"),
     ],
 )
+# Reject executable destination aliases even on a case-sensitive test host.
+# Include explicit and implicit directories and case variants of the deploy root.
+case_aliases = {
+    "deploy-uppercase-directory": [(member("deploy/SUB2API", kind=tarfile.DIRTYPE), b"")],
+    "deploy-uppercase-prefix": [(member("deploy/SUB2API/payload", b"UNVERIFIED\n"), b"UNVERIFIED\n")],
+    "deploy-mixed-prefix": [(member("DePlOy/SuB2ApI/payload", b"UNVERIFIED\n"), b"UNVERIFIED\n")],
+    "deploy-uppercase-binary": [(member("deploy/SUB2API", b"UNVERIFIED\n"), b"UNVERIFIED\n")],
+    "root-uppercase-binary": [(member("SUB2API", b"UNVERIFIED\n"), b"UNVERIFIED\n")],
+    "nested-uppercase-binary": [(member("nested/SuB2ApI", b"UNVERIFIED\n"), b"UNVERIFIED\n")],
+    "nested-uppercase-exe": [(member("nested/SUB2API.EXE", b"UNVERIFIED\n"), b"UNVERIFIED\n")],
+}
+for name, aliases in case_aliases.items():
+    write(name, valid + aliases)
 write("special", valid + [(member("deploy/fifo", kind=tarfile.FIFOTYPE), b"")])
 write("member-budget", valid + [(member(f"deploy/f{index}", b""), b"") for index in range(1025)])
 corrupt = bytearray((root / "exact.tar.gz").read_bytes())
@@ -185,6 +198,24 @@ run_case() {
             download_and_extract
         '
 }
+
+for mode in deploy-uppercase-directory deploy-uppercase-prefix deploy-mixed-prefix deploy-uppercase-binary root-uppercase-binary nested-uppercase-binary nested-uppercase-exe; do
+    for fresh in true false; do
+        name="casefold-$mode-$fresh"
+        if run_case "$name" exact "$mode" "" exact "$fresh"; then
+            echo "installer accepted case-folded executable destination alias: $mode (fresh=$fresh)" >&2
+            exit 1
+        fi
+        if [ "$fresh" = true ]; then
+            shopt -s nullglob dotglob
+            installed=("$TEST_ROOT/$name/install/"*)
+            test "${#installed[@]}" -eq 0
+            shopt -u nullglob dotglob
+        else
+            grep -Fxq 'ORIGINAL' "$TEST_ROOT/$name/install/sub2api"
+        fi
+    done
+done
 
 for mode in missing confusable duplicate; do
     if run_case "checksum-$mode" "$mode" exact; then

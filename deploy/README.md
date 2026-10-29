@@ -145,12 +145,49 @@ Replace `<NEW_RU_VERSION>` only with a published immutable tag from [fork Releas
    image: ghcr.io/yleon2007/sub2api:<NEW_RU_VERSION>
    ```
 
-2. Validate, pull, and recreate the app:
+2. From the deployment directory, select the actual Compose file, validate it and inspect the **existing** container's `/app` mount (the preparation script saves the local variant as `docker-compose.yml`):
 
    ```bash
+   export COMPOSE_FILE=docker-compose.yml
    docker compose config --quiet
    docker compose pull sub2api
+   docker inspect sub2api --format '{{range .Mounts}}{{if eq .Destination "/app"}}{{.Type}} {{.Name}}{{end}}{{end}}'
+   ```
+
+   Set `COMPOSE_FILE` to `docker-compose.local.yml` or `docker-compose.standalone.yml` instead when that is the deployed filename. Keep this selection for every command, including the helper below.
+
+3. **Named volume mounted at `/app`: synchronize the runtime before declaring the upgrade complete.** The standard `sub2api_runtime` volume (also used by the standalone variant) hides `/app` from the new image. Pulling/recreating alone preserves the old binary; the entrypoint does not replace it. Do not delete the volume to update it.
+
+   Download the release-pinned helper, inspect it and explicitly approve execution:
+
+   ```bash
+   umask 077
+   tmpdir="$(mktemp -d)"
+   curl -fsSLo "$tmpdir/sync-runtime-from-image.sh" \
+     https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.19-ru.1/deploy/sync-runtime-from-image.sh
+   less "$tmpdir/sync-runtime-from-image.sh"
+   read -r -p "Run the inspected runtime sync helper? [y/N] " confirm
+   case "$confirm" in
+     [yY]) bash "$tmpdir/sync-runtime-from-image.sh" "" "$PWD" ;;
+     *) echo "Cancelled"; rm -rf "$tmpdir"; exit 1 ;;
+   esac
+   rm -rf "$tmpdir"
+   ```
+
+   The empty first argument selects the image from the rendered Compose configuration. The helper stages that image's binary, stops/restarts only the app, compares its installed SHA-256 and prints `RUNTIME_IMAGE_SYNC_PASS` on success. It preserves the previous binary for rollback and attempts to restore it on failure; this is **not** a database migration rollback. A failed helper is a failed upgrade, not a reason to continue blindly.
+
+4. **No mount at `/app`** (the local-directory variant): the binary comes directly from the image, so recreate only the app instead of running the runtime-volume helper:
+
+   ```bash
    docker compose up -d --no-deps --force-recreate sub2api
+   ```
+
+   If inspection shows a custom bind mount at `/app`, stop and prepare a mount-specific upgrade; neither standard path applies.
+
+5. For either supported path, verify the actual installed version and commit against the published Release metadata, not just the container's image tag:
+
+   ```bash
+   docker exec sub2api /app/sub2api --version
    docker compose ps
    docker compose logs --tail=200 sub2api
    ```

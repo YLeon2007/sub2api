@@ -14,7 +14,7 @@ const expectedAdded: Record<string, string> = {
   'admin.accounts.openai.wsModeCtxPoolHint':
     'Шлюз получает и повторно использует upstream WS-соединения из пула; лимит пула определяется конфигурацией шлюза.',
   'admin.accounts.openai.wsModeHttpBridgeHint':
-    'Шлюз преобразует клиентские WS-запросы в upstream HTTP-запросы, а потоковые SSE-ответы — обратно в WS-сообщения.',
+    'Шлюз преобразует клиентские WS-запросы в HTTP-запросы к вышестоящему сервису, а потоковые SSE-ответы — обратно в WS-сообщения.',
   'admin.accounts.opencodeGo.accountMode.go': 'GO',
   'admin.accounts.opencodeGo.accountMode.goDesc':
     'Шлюз по подписке с лимитами расхода в 5-часовом, недельном и месячном окнах.',
@@ -151,7 +151,7 @@ const expectedModified: Record<string, string> = {
   'admin.settings.openaiFastPolicy.description':
     'Перехватывает, фильтрует или пропускает запросы OpenAI fast(priority), ultrafast или flex на основе поля service_tier в теле запроса. Применяется только к шлюзу OpenAI. «Все значения tier» включает только явно переданные tier.',
   'admin.settings.payment.validationEasyPayCustomMethodUpstreamTypeInvalid':
-    'EasyPay upstream types могут содержать только строчные буквы, цифры, точки, подчёркивания и дефисы',
+    'Типы для EasyPay (upstream types) могут содержать только строчные буквы, цифры, точки, подчёркивания и дефисы',
 }
 
 describe('Russian v0.2.5 upstream locale delta', () => {

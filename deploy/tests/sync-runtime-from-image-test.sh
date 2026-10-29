@@ -53,4 +53,31 @@ unset FAKE_FAIL_SECOND_MV
 [[ "$(grep -c '^compose-up$' "${LOG_FILE}")" -eq 1 ]] || fail 'successful sync did not restart the service exactly once'
 grep -Fxq 'RUNTIME_IMAGE_SYNC_PASS' "${TEST_ROOT}/success.stdout" || fail 'successful sync did not report completion'
 
-printf '%s\n' 'sync-runtime success and second-mv rollback tests passed'
+# Upgrade guidance must cover the persistent /app mount, not just a new image.
+python3 - "${DEPLOY_DIR}" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+for name, heading in (
+    ("README.md", "Safe immutable upgrade"),
+    ("README_RU.md", "Безопасное обновление на неизменяемую версию"),
+):
+    text = (root / name).read_text()
+    section = text.split(f"## {heading}\n", 1)[1].split("\n## ", 1)[0]
+    blocks = re.findall(r"(?ms)^[ \t]*```bash\n(.*?)^[ \t]*```[ \t]*$", section)
+    commands = "\n".join(line for block in blocks for line in block.splitlines() if not line.lstrip().startswith("#"))
+    for command in (
+        'export COMPOSE_FILE=docker-compose.yml',
+        'docker inspect sub2api --format',
+        'less "$tmpdir/sync-runtime-from-image.sh"',
+        'bash "$tmpdir/sync-runtime-from-image.sh" "" "$PWD"',
+        'docker exec sub2api /app/sub2api --version',
+    ):
+        assert command in commands, f"{name}: upgrade guidance missing {command}"
+    assert "RUNTIME_IMAGE_SYNC_PASS" in section, f"{name}: require successful runtime sync receipt"
+    assert "sub2api_runtime" in section, f"{name}: explain persistent runtime volume"
+PY
+
+printf '%s\n' 'sync-runtime success, second-mv rollback and upgrade documentation tests passed'

@@ -556,7 +556,10 @@ with archive_path.open("rb") as raw, gzip.GzipFile(fileobj=raw, mode="rb") as st
         if name in seen:
             raise ValueError(f"duplicate archive member: {name}")
         seen.add(name)
-        if name == "deploy/sub2api" or name.startswith("deploy/sub2api/"):
+        # macOS commonly uses a case-insensitive installation filesystem.
+        # Refuse aliases before copying deploy contents into INSTALL_DIR.
+        folded_name = name.casefold()
+        if folded_name == "deploy/sub2api" or folded_name.startswith("deploy/sub2api/"):
             raise ValueError("archive deploy tree must not occupy the executable destination")
         if member.isdir():
             continue
@@ -591,7 +594,7 @@ with archive_path.open("rb") as raw, gzip.GzipFile(fileobj=raw, mode="rb") as st
         if any(chunk):
             raise ValueError("non-zero decompressed data after tar EOF")
 
-binary_members = [name for member, name in regular if PurePosixPath(name).name in ("sub2api", "sub2api.exe")]
+binary_members = [name for member, name in regular if PurePosixPath(name).name.casefold() in ("sub2api", "sub2api.exe")]
 if binary_members != ["sub2api"]:
     raise ValueError("archive must contain exactly one root sub2api binary and no shadow binary members")
 PY

@@ -172,8 +172,8 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.groups.compositeRoutes.endpoints.countTokens).toBe('Подсчёт токенов')
     expect(ru.admin.groups.openaiMessages.claudeModel).toBe('Модель Claude')
     expect(ru.admin.accounts.setupToken).toBe('Токен настройки')
-    expect(ru.admin.accounts.types.antigravityApikey).toBe('Подключение через Base URL и API-ключ')
-    expect(ru.admin.accounts.types.upstreamDesc).toBe('Подключение через Base URL и API-ключ')
+    expect(ru.admin.accounts.types.antigravityApikey).toBe('Подключение через базовый URL и API-ключ')
+    expect(ru.admin.accounts.types.upstreamDesc).toBe('Подключение через базовый URL и API-ключ')
     expect(ru.admin.accounts.oauthSetupToken).toBe('OAuth / токен настройки')
     expect(ru.admin.accounts.setupTokenLongLived).toBe('Токен настройки (долгоживущий)')
     expect(ru.admin.accounts.openai.responsesModeForceResponses).toBe('Принудительно Responses')
@@ -269,7 +269,7 @@ describe('Russian locale key coverage', () => {
       'Преобразовывать URL результата изображения в base64'
     )
     expect(ru.admin.accounts.openai.imagesUrlToB64JsonDesc).toBe(
-      'Применяется только к непотоковым ответам Images аккаунтов OpenAI API Key. Если элемент изображения upstream содержит url, но не содержит b64_json, шлюз скачивает данные по url и заполняет b64_json их содержимым в base64 (url сохраняется) для клиентов на основе официального API; при ошибке скачивания ответ возвращается без изменений.'
+      'Применяется только к непотоковым ответам Images аккаунтов OpenAI API Key. Если элемент изображения удалённого сервиса содержит url, но не содержит b64_json, шлюз скачивает данные по url и заполняет b64_json их содержимым в base64 (url сохраняется) для клиентов на основе официального API; при ошибке скачивания ответ возвращается без изменений.'
     )
 
     expect(ru.admin.channels.form.reasoningEffortMultipliers).toBe(
@@ -354,10 +354,10 @@ describe('Russian locale key coverage', () => {
       "Регистрироваться могут только email-адреса из указанных доменов; оставьте пустым без ограничений (например, {'@'}qq.com, {'@'}gmail.com, *.edu.cn)"
     )
     expect(ru.keys.useKeyModal.grok.description).toBe(
-      'Настройте Grok CLI, Claude Code, Codex или OpenCode для отправки запросов через группу Grok в Sub2API. Текстовые модели используют Responses, а image/video — идентификаторы Imagine на media endpoints.'
+      'Настройте Grok CLI, Claude Code, Codex или OpenCode для отправки запросов через группу Grok в Sub2API. Текстовые модели используют Responses, а изображения и видео — идентификаторы моделей Imagine на конечных точках для мультимедиа.'
     )
     expect(ru.keys.useKeyModal.grok.configTomlHint).toBe(
-      'Официальный путь: ~/.grok/config.toml (или $GROK_HOME). Заполните [endpoints] (models_base_url / models_list_url / xai_api_base_url / cli_chat_proxy_base_url), [auth] с preferred_method=api_key, [models], [session] и переопределения image/video в [features]. Предпочитайте env_key вместо api_key; для каждой текстовой модели требуется api_backend=responses. Перед объединением сделайте резервную копию, затем выполните grok inspect.'
+      'Официальный путь: ~/.grok/config.toml (или $GROK_HOME). Заполните [endpoints] (models_base_url / models_list_url / xai_api_base_url / cli_chat_proxy_base_url), [auth] с preferred_method=api_key, [models], [session] и переопределения генерации изображений и видео (image/video) в [features]. Предпочитайте env_key вместо api_key; для каждой текстовой модели требуется api_backend=responses. Перед объединением сделайте резервную копию, затем выполните grok inspect.'
     )
     expect(ru.keys.useKeyModal.grok.codexConfigTomlHint).toBe(
       'Официальный Codex: поддерживается только wire_api = "responses"; предпочитайте env_key вместо experimental_bearer_token; для шлюзов не OpenAI задайте supports_websockets = false (Sub2API всё равно может принимать WebSocket от клиента и преобразовывать его в HTTP/SSE). Перед объединением сохраните резервную копию ~/.codex/config.toml.'
@@ -429,7 +429,7 @@ describe('Russian locale key coverage', () => {
       'Региональный API (us-west-2)'
     )
     expect(ru.admin.settings.gatewayForwarding.grokDefaultBaseURLModeHint).toBe(
-      'Используется только тогда, когда у Grok-аккаунта не задан явный base URL. Медиа- и голосовые эндпоинты продолжат использовать свои официальные API-хосты.'
+      'Используется только тогда, когда у Grok-аккаунта не задан явный базовый URL. Медиа- и голосовые эндпоинты продолжат использовать свои официальные API-хосты.'
     )
     expect(ru.admin.settings.registration.emailDomainQuota).toBe(
       'Квота доменов вне разрешённого списка'
@@ -515,10 +515,10 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.accounts.openai.codexFingerprintSession).toBe('Устройство и сессия')
     expect(ru.admin.accounts.openai.codexFingerprintSession).not.toContain('рекоменду')
     expect(ru.admin.accounts.openai.compactProbeSuccess).toBe(
-      'Проверка compact успешно выполнена (нативный remote compaction v2)'
+      'Проверка compact успешно выполнена (нативное удалённое сжатие контекста — remote compaction v2)'
     )
     expect(ru.admin.accounts.openai.compactProbeUnsupported).toContain(
-      'эта цепочка не поддерживает нативный remote compaction v2'
+      'эта цепочка не поддерживает нативное удалённое сжатие контекста (remote compaction v2)'
     )
   })
 
@@ -528,8 +528,8 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.accounts.platforms.deepseek).toBe('DeepSeek')
     expect(ru.admin.accounts.cnProviders.accountMode.paygDesc).toContain('тарифицируется по токенам')
     expect(ru.admin.accounts.cnProviders.accountMode.codingDesc).toContain('скользящим окнам расхода: 5 часов и неделя')
-    expect(ru.admin.accounts.cnProviders.apiProtocol.anthropicDesc).toContain('Native passthrough')
-    expect(ru.admin.accounts.bulkEdit.longContextShadowHint).toContain('Long-context billing задаётся на родительском аккаунте')
+    expect(ru.admin.accounts.cnProviders.apiProtocol.anthropicDesc).toContain('Передача без преобразования')
+    expect(ru.admin.accounts.bulkEdit.longContextShadowHint).toContain('Тарификация длинного контекста задаётся на родительском аккаунте')
     expect(ru.admin.accounts.status.expired).toBe('Истёк')
 
     expect(ru.admin.channelMonitor.form.checkModeQuotaHint).toContain('без probe-запросов')
@@ -566,7 +566,7 @@ describe('Russian locale key coverage', () => {
     expect(ru.admin.channels.intervalValidation.multiplierPositive).toContain('должен быть больше 0')
     expect(ru.admin.channels.intervalValidation.price.inputMultiplier).toContain('входных токенов')
     expect(ru.admin.groups.modelPricing.longContextHint).toContain('интервалы канала')
-    expect(ru.admin.groups.modelPricing.longContextHint).toContain('long-context billing явно включён на аккаунте')
+    expect(ru.admin.groups.modelPricing.longContextHint).toContain('тарификация длинного контекста явно включена на аккаунте')
   })
 
   it('preserves the added v0.1.180 reset-credit, plugin, diagnostic, and time-pricing semantics in Russian', () => {

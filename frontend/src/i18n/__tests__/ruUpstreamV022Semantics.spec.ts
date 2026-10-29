@@ -180,7 +180,7 @@ describe('Russian v0.2.2 upstream semantics', () => {
     )
     expect(ru.admin.groups.codexModelsManifest.hint).toContain('обычные списки моделей')
     expect(ru.admin.groups.codexModelsManifest.hint).toContain('Codex Model Manifest')
-    expect(ru.admin.groups.codexModelsManifest.hint).toContain('маппинга аккаунта')
+    expect(ru.admin.groups.codexModelsManifest.hint).toContain('сопоставлений аккаунта')
     expect(ru.admin.groups.codexModelsManifest.hint).toContain(
       'списка разрешённых моделей группы'
     )
