@@ -4,7 +4,8 @@ import AdminAccessKeysSettings from '../AdminAccessKeysSettings.vue'
 import zh from '@/i18n/locales/zh/adminAccessKeys'
 import en from '@/i18n/locales/en/adminAccessKeys'
 const mountSettings = () => mount(AdminAccessKeysSettings)
-vi.mock('vue-i18n', () => ({ useI18n: () => ({
+vi.mock('vue-i18n', async (importOriginal) => ({ ...await importOriginal<typeof import('vue-i18n')>(), useI18n: () => ({
+  locale: { value: 'zh' },
   t: (key: string, values: Record<string, unknown> = {}) => {
     const message = zh[key.replace('adminAccessKeys.', '') as keyof typeof zh]
     if (!message) throw new Error(`缺少翻译：${key}`)
