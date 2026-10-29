@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AdminGroup } from '@/types'
 import GroupsView from '@/views/admin/GroupsView.vue'
 import { adminAPI } from '@/api/admin'
+import i18n from '@/i18n'
 
 const {
   listGroups,
@@ -74,8 +75,10 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
+      locale: i18n.global.locale,
       t: (key: string, params?: Record<string, unknown>) => {
         if (key === 'admin.groups.errors.GROUP_EXISTS') return 'localized group name conflict'
+        if (key.startsWith('admin.groups.errors.')) return key
         return params?.id === undefined ? key : `${key}:${String(params.id)}`
       }
     })
@@ -183,7 +186,10 @@ function mountView() {
 }
 
 describe('GroupsView duplicate action', () => {
+  let previousLocale: typeof i18n.global.locale.value
   beforeEach(() => {
+    previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'ru'
     authState.isSimpleMode = false
     localStorage.clear()
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -222,7 +228,68 @@ describe('GroupsView duplicate action', () => {
   })
 
   afterEach(() => {
+    i18n.global.locale.value = previousLocale
     vi.restoreAllMocks()
+  })
+
+  async function submitAction(wrapper: ReturnType<typeof mountView>, action: 'duplicate' | 'create' | 'update') {
+    if (action === 'duplicate') {
+      await wrapper.get('[data-testid="group-duplicate"]').trigger('click')
+    } else if (action === 'create') {
+      await wrapper.findAll('button').find(button => button.text() === 'admin.groups.createGroup')!.trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-tour="group-form-name"]').setValue('Primary')
+      await wrapper.get('#create-group-form').trigger('submit')
+    } else {
+      await wrapper.findAll('button').find(button => button.text() === 'common.edit')!.trigger('click')
+      await flushPromises()
+      await wrapper.get('#edit-group-form').trigger('submit')
+    }
+    await flushPromises()
+  }
+
+  it.each((['ru', 'en', 'zh'] as const).flatMap(locale =>
+    (['duplicate', 'create', 'update'] as const).map(action => ({ locale, action })),
+  ))('preserves the actual $action diagnostic contract in $locale', async ({ locale, action }) => {
+    i18n.global.locale.value = locale
+    const error = {
+      message: 'upstream envelope diagnostic',
+      error: 'secondary interceptor diagnostic',
+      response: { data: { detail: 'nested detail diagnostic', message: 'nested message diagnostic' } },
+      reason: 'UNKNOWN_REASON', metadata: { id: 42 },
+    }
+    const snapshot = structuredClone(error)
+    const request = { duplicate: duplicateGroup, create: createGroup, update: updateGroup }[action]
+    request.mockRejectedValueOnce(error)
+    const wrapper = mountView()
+    try {
+      await flushPromises()
+      await submitAction(wrapper, action)
+      const fallback = { duplicate: 'duplicateFailed', create: 'failedToCreate', update: 'failedToUpdate' }[action]
+      expect(showError).toHaveBeenCalledTimes(1)
+      expect(showError).toHaveBeenCalledWith(locale === 'ru' ? `admin.groups.${fallback}` : error.message)
+      expect(request).toHaveBeenCalledTimes(1)
+      expect(error).toEqual(snapshot)
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it.each((['ru', 'en', 'zh'] as const).flatMap(locale =>
+    (['create', 'update'] as const).map(action => ({ locale, action })),
+  ))('keeps the known-reason mapping reachable on $action in $locale', async ({ locale, action }) => {
+    i18n.global.locale.value = locale
+    const request = action === 'create' ? createGroup : updateGroup
+    request.mockRejectedValueOnce({ message: 'group name already exists', reason: 'GROUP_EXISTS' })
+    const wrapper = mountView()
+    try {
+      await flushPromises()
+      await submitAction(wrapper, action)
+      expect(showError).toHaveBeenCalledTimes(1)
+      expect(showError).toHaveBeenCalledWith('localized group name conflict')
+    } finally {
+      wrapper.unmount()
+    }
   })
 
   it('duplicates the selected group, reports success, and refreshes the list', async () => {

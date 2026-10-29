@@ -26,6 +26,55 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
   }
   const callee = (n: ts.CallExpression) => ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : n.expression.getText(sf)
   const sanitizers = new Set(['localizeApiErrorFallback', 'extractApiErrorMessage', 'extractI18nErrorMessage', 'buildAuthErrorMessage'])
+  const compact = (n: ts.Node) => n.getText(sf).replace(/\s+/g, '')
+  function russianCondition(n: ts.Expression): boolean {
+    return ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+      && ts.isStringLiteral(n.right) && n.right.text === 'ru'
+      && ['locale.value', 'getLocale()', 'locale.value.toLowerCase().split(/[-_]/)[0]'].includes(compact(n.left))
+  }
+  function verifiedFallbackCall(n: ts.Node, source: string): boolean {
+    if (!ts.isCallExpression(n) || !ts.isIdentifier(n.expression) || n.expression.text !== 'localizeApiErrorFallback' || n.arguments.length !== 3) return false
+    const [input, fallback, locale] = n.arguments
+    return compact(input) === source && compact(locale) === 'locale.value'
+      && ts.isCallExpression(fallback) && ts.isIdentifier(fallback.expression) && fallback.expression.text === 't'
+      && fallback.arguments.length === 1 && ts.isStringLiteral(fallback.arguments[0]) && !!fallback.arguments[0].text
+  }
+  function verifiedLocalWrapper(n: ts.CallExpression): boolean {
+    if (!ts.isIdentifier(n.expression)) return false
+    const declaration = alias(n.expression)
+    return !!declaration && ts.isArrowFunction(declaration) && declaration.parameters.length === 1
+      && ts.isIdentifier(declaration.parameters[0].name)
+      && verifiedFallbackCall(declaration.body, declaration.parameters[0].name.text)
+  }
+  function verifiedEarlyRussianReturn(n: ts.Node): boolean {
+    if (!ts.isFunctionLike(n) || !('body' in n) || !n.body || !ts.isBlock(n.body)) return false
+    const first = n.body.statements[0]
+    if (!first || !ts.isIfStatement(first) || first.elseStatement || !russianCondition(first.expression)) return false
+    const branch = first.thenStatement
+    const statement = ts.isBlock(branch) && branch.statements.length === 1 ? branch.statements[0] : branch
+    if (!ts.isReturnStatement(statement) || !statement.expression || !ts.isCallExpression(statement.expression)) return false
+    const call = statement.expression
+    return ts.isIdentifier(call.expression) && call.expression.text === 'extractApiErrorMessage' && call.arguments.length === 4
+      && call.arguments[0].getText(sf) === n.parameters[0]?.name.getText(sf)
+      && call.arguments[1].getText(sf) === n.parameters[1]?.name.getText(sf)
+      && call.arguments[2].getText(sf) === 'undefined' && compact(call.arguments[3]) === 'locale.value'
+  }
+  function verifiedThrowIntermediate(n: ts.Node): boolean {
+    // Raw parsing is not a primary sink when the immediately following throw
+    // passes this exact binding through a literal, active-locale fallback.
+    for (let p: ts.Node | undefined = n; p && !ts.isStatement(p); p = p.parent) {
+      if (!ts.isVariableDeclaration(p) || !ts.isIdentifier(p.name)) continue
+      const list = p.parent
+      const statement = list.parent
+      if (!ts.isVariableDeclarationList(list) || list.declarations.length !== 1 || !ts.isVariableStatement(statement) || !ts.isBlock(statement.parent)) return false
+      const next = statement.parent.statements[statement.parent.statements.indexOf(statement) + 1]
+      if (!next || !ts.isThrowStatement(next) || !next.expression || !ts.isNewExpression(next.expression)) return false
+      const expression = next.expression
+      return ts.isIdentifier(expression.expression) && expression.expression.text === 'Error'
+        && expression.arguments?.length === 1 && verifiedFallbackCall(expression.arguments[0], p.name.text)
+    }
+    return false
+  }
   function raw(n: ts.Node, seen = new Set<string>()): boolean {
     if (ts.isCallExpression(n) && sanitizers.has(callee(n))) {
       // The primary fallback must not itself contain raw API copy.
@@ -35,6 +84,7 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
     if (ts.isCallExpression(n)) {
       // Inspect data arguments, not a referenced function's declaration/name.
       // Local helper return fallbacks are audited separately by inspect().
+      if (verifiedLocalWrapper(n)) return false
       if (callee(n) === 'localizeQuotaDiagnostic') return false
       return n.arguments.some(argument => raw(argument, seen))
     }
@@ -45,7 +95,7 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
       if (['message', 'detail', 'error', 'error_description'].includes(n.name.text)) return true
       return false
     }
-    if (ts.isConditionalExpression(n) && n.condition.getText(sf).includes("=== 'ru'")) return raw(n.whenTrue, seen)
+    if (ts.isConditionalExpression(n) && russianCondition(n.condition)) return raw(n.whenTrue, seen)
     if (ts.isIdentifier(n) && !seen.has(n.text)) {
       const value = alias(n)
       if (value) return raw(value, new Set([...seen, n.text]))
@@ -57,8 +107,9 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
   function gated(n: ts.Node): boolean {
     for (let p: ts.Node | undefined = n.parent; p; p = p.parent) {
       if (ts.isCallExpression(p) && sanitizers.has(callee(p))) return true
-      if (ts.isConditionalExpression(p) && p.condition.getText(sf).includes("=== 'ru'")) return true
+      if (ts.isConditionalExpression(p) && russianCondition(p.condition) && n.getStart(sf) >= p.whenFalse.getStart(sf)) return true
       if (ts.isFunctionLike(p) && 'body' in p && p.body) {
+        if (verifiedEarlyRussianReturn(p) && ts.isBlock(p.body) && n.getStart(sf) >= p.body.statements[0].end) return true
         const body = (p.body as ts.Node).getText(sf)
         if (body.includes("if (getLocale() === 'ru') return fallback")) return true
         if (body.includes("if (locale.value === 'ru')") && body.includes('return extractApiErrorMessage(error, fallback, undefined, locale.value)')) return true
@@ -102,7 +153,7 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
   }
   function inspect(n: ts.Node) {
     if (!gated(n) && !verifiedException(n)) {
-      const fallbackChain = !hasSuccessSink(n) && !hasRejectSink(n) && ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.BarBarToken && raw(n) && localized(n.right)
+      const fallbackChain = !hasSuccessSink(n) && !hasRejectSink(n) && !verifiedThrowIntermediate(n) && ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.BarBarToken && raw(n) && localized(n.right)
       const sink = ts.isCallExpression(n) && callee(n) === 'showError' && n.arguments[0] && raw(n.arguments[0])
       const state = ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && /\w*(?:error|failure)\w*\.value$/i.test(n.left.getText(sf)) && raw(n.right)
       if (fallbackChain || sink || state) failures.add(`${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}: ${n.getText(sf)}`)
@@ -131,6 +182,30 @@ describe('complete primary error fallback surface', () => {
       "app.showError(localizeApiErrorFallback(err.message, err.response.data.detail || t('common.error')))",
     ]) expect(unsafePrimaryErrors(source), source).not.toEqual([])
     expect(unsafePrimaryErrors("app.showError(localizeApiErrorFallback(err?.message, t('common.error')))" )).toEqual([])
+  })
+  it.each([
+    "const primaryTestError = (message: string) => localizeApiErrorFallback(message, t('admin.accounts.testFailed'), locale.value); errorMessage.value = primaryTestError(event.error)",
+    "const reauthErrorText = (error: any, fallback: string) => { if (locale.value.toLowerCase().split(/[-_]/)[0] === 'ru') { return extractApiErrorMessage(error, fallback, undefined, locale.value) } return error.response?.data?.detail || fallback }",
+    "async function fetchUsage() { const msg = body?.error?.message || body?.message || `${t('keyUsage.queryFailed')} (${res.status})`; throw new Error(localizeApiErrorFallback(msg, t('keyUsage.queryFailedRetry'), locale.value)) }",
+    "errorMessage.value = locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? t('common.error') : event.error",
+  ])('accepts structurally verified active-locale boundaries: %s', source => {
+    expect(unsafePrimaryErrors(source)).toEqual([])
+  })
+  it.each([
+    "const primaryTestError = (message: string) => message; errorMessage.value = primaryTestError(event.error)",
+    "const primaryTestError = (message: string) => arbitrary(message, t('admin.accounts.testFailed'), locale.value); errorMessage.value = primaryTestError(event.error)",
+    "const primaryTestError = (message: string) => localizeApiErrorFallback(message, t('admin.accounts.testFailed'), 'en'); errorMessage.value = primaryTestError(event.error)",
+    "const primaryTestError = (message: string) => localizeApiErrorFallback(message, event.error || t('admin.accounts.testFailed'), locale.value); errorMessage.value = primaryTestError(event.error)",
+    "const reauthErrorText = (error: any, fallback: string) => { if (locale.value.toLowerCase().split(/[-_]/)[0] === 'en') { return extractApiErrorMessage(error, fallback, undefined, locale.value) } return error.message || fallback }",
+    "const reauthErrorText = (error: any, fallback: string) => { if (locale.value.toLowerCase().split(/[-_]/)[0] === 'ru') { extractApiErrorMessage(error, fallback, undefined, locale.value) } return error.message || fallback }",
+    "const reauthErrorText = (error: any, fallback: string) => { if (locale.value.toLowerCase().split(/[-_]/)[0] === 'ru') { return extractApiErrorMessage(error, fallback, undefined, 'en') } return error.message || fallback }",
+    "const msg = body?.error?.message || t('keyUsage.queryFailed'); throw new Error(arbitrary(msg, t('keyUsage.queryFailedRetry'), locale.value))",
+    "const msg = body?.error?.message || t('keyUsage.queryFailed'); throw new Error(localizeApiErrorFallback(msg, t('keyUsage.queryFailedRetry'), 'en'))",
+    "const msg = body?.error?.message || t('keyUsage.queryFailed'); throw new Error(localizeApiErrorFallback(msg, t('keyUsage.queryFailedRetry'), locale.value)); app.showError(msg)",
+    "errorMessage.value = false && locale.value === 'ru' ? t('common.error') : event.error",
+    "errorMessage.value = locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? event.error || t('common.error') : t('common.error')",
+  ])('rejects same-name bypasses and ungated primary paths: %s', source => {
+    expect(unsafePrimaryErrors(source)).not.toEqual([])
   })
   it('has no ungated raw prose in runtime primary error chains', () => {
     const issues: string[] = []
