@@ -23,7 +23,7 @@
         <div class="flex min-w-0 flex-1 items-center gap-3">
           <img
             :src="siteLogo || '/logo.svg'"
-            alt="Logo"
+            :alt="t('runtimeUi.siteLogo')"
             class="h-9 w-9 shrink-0 rounded-lg object-contain"
           />
           <span class="min-w-0 truncate text-base font-semibold">{{ siteName }}</span>
@@ -71,7 +71,7 @@
       <div class="min-w-0 max-w-2xl text-center">
         <img
           :src="siteLogo || '/logo.svg'"
-          alt="Logo"
+          :alt="t('runtimeUi.siteLogo')"
           class="mx-auto mb-6 h-20 w-20 rounded-2xl object-contain"
         />
         <h1 class="[overflow-wrap:anywhere] text-3xl font-bold md:text-4xl">{{ siteName }}</h1>
@@ -120,7 +120,7 @@
         <!-- Logo -->
         <div class="flex items-center">
           <div class="h-10 w-10 overflow-hidden rounded-xl shadow-md">
-            <img :src="siteLogo || '/logo.svg'" alt="Logo" class="h-full w-full object-contain" />
+            <img :src="siteLogo || '/logo.svg'" :alt="t('runtimeUi.siteLogo')" class="h-full w-full object-contain" />
           </div>
         </div>
 

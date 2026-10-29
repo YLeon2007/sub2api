@@ -80,7 +80,7 @@
         <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-dark-300">
           <dt>{{ t('admin.promptAudit.events.snapshotMax') }}</dt>
           <dd>{{ preview.snapshot_max_id }}</dd>
-          <dt>Filter SHA-256</dt>
+          <dt>{{ t('runtimeUi.filterHash') }}</dt>
           <dd class="break-all font-mono">{{ preview.filter_hash }}</dd>
           <dt>{{ t('admin.promptAudit.events.expiresAt') }}</dt>
           <dd>{{ formatDate(preview.expires_at) }}</dd>

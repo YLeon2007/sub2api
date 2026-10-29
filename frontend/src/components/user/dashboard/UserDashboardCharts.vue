@@ -95,7 +95,7 @@ const doughnutOptions = {
     legend: { display: false },
     tooltip: {
       callbacks: {
-        label: (context: any) => `${context.label}: ${formatTokens(context.parsed)} tokens`
+        label: (context: any) => `${context.label}: ${formatTokens(context.parsed)} ${t('dashboard.tokens')}`
       }
     }
   }

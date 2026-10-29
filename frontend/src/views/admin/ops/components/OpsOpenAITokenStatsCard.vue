@@ -59,10 +59,10 @@ const viewModeOptions = computed(() => [
 ])
 
 const topNOptions = computed(() => [
-  { value: 10, label: 'Top 10' },
-  { value: 20, label: 'Top 20' },
-  { value: 50, label: 'Top 50' },
-  { value: 100, label: 'Top 100' }
+  { value: 10, label: t('runtimeUi.topCount', { count: 10 }) },
+  { value: 20, label: t('runtimeUi.topCount', { count: 20 }) },
+  { value: 50, label: t('runtimeUi.topCount', { count: 50 }) },
+  { value: 100, label: t('runtimeUi.topCount', { count: 100 }) }
 ])
 
 const pageSizeOptions = computed(() => [

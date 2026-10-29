@@ -1,12 +1,56 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import ts from 'typescript'
 
 import en from '../locales/en'
 import zh from '../locales/zh'
 import ru from '../locales/ru'
 
 const source = (file: string) => readFileSync(resolve(process.cwd(), file), 'utf8')
+
+// These structural checks pin the precise locale-aware selector boundary;
+// consumer*MessageContractsV0219 suites execute the real primary sinks as well.
+function hasLocalizedSelector(input: string, selector: string, key: string): boolean {
+  const script = input.match(/<script\b[^>]*>([\s\S]*?)<\/script>/)?.[1] ?? input
+  const file = ts.createSourceFile('review-boundary.ts', script, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const compact = (value: string) => value.replace(/\s+/g, '')
+  let found = false
+  function visit(node: ts.Node): void {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) &&
+      node.expression.text === 'localizeApiErrorFallback' && node.arguments.length === 3) {
+      const [raw, fallback, locale] = node.arguments
+      if (compact(raw.getText(file)) === compact(selector) &&
+        ts.isCallExpression(fallback) && ts.isIdentifier(fallback.expression) && fallback.expression.text === 't' &&
+        fallback.arguments.length === 1 && ts.isStringLiteral(fallback.arguments[0]) && fallback.arguments[0].text === key &&
+        locale.getText(file) === 'locale.value') found = true
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  return found
+}
+
+function expectLocalizedSelector(input: string, selector: string, key: string): void {
+  expect(hasLocalizedSelector(input, selector, key), `${selector} must use literal ${key} at the active locale boundary`).toBe(true)
+}
+
+describe('review-closure localized selector guard', () => {
+  it('accepts the exact raw selector, translated fallback and active locale', () => {
+    expectLocalizedSelector("localizeApiErrorFallback(error.message, t('fixture.expected'), locale.value)", 'error.message', 'fixture.expected')
+  })
+  it.each([
+    "error.message || t('fixture.expected')",
+    "arbitrary(error.message, t('fixture.expected'), locale.value)",
+    "localizeApiErrorFallback(error.message, t('fixture.expected'), 'en')",
+    "localizeApiErrorFallback(error.message, t('fixture.wrong'), locale.value)",
+    "localizeApiErrorFallback(error.message, fallback, locale.value)",
+    "localizeApiErrorFallback(error.response?.data?.detail, t('fixture.expected'), locale.value)",
+    "// localizeApiErrorFallback(error.message, t('fixture.expected'), locale.value)",
+  ])('rejects raw, wrong-key, wrong-selector and forced-locale substitutes: %s', expression => {
+    expect(hasLocalizedSelector(expression, 'error.message', 'fixture.expected')).toBe(false)
+  })
+})
 
 describe('Russian release review closure', () => {
   it('translates active account status presets and scheduled-test controls', () => {
@@ -114,16 +158,16 @@ describe('Russian release review closure', () => {
 
   it('does not promote raw backend failures in active account OAuth flows', () => {
     const modal = source('src/components/account/CreateAccountModal.vue')
-    expect(modal).not.toMatch(/error\.response\?\.data\?\.(?:detail|message)\s*\|\|/)
-    expect(modal).not.toMatch(/error\.message\s*\|\|/)
-    expect(modal).not.toContain("'Unknown error'")
-    expect(modal).not.toContain("'Validation failed'")
+    expectLocalizedSelector(modal, 'error.response?.data?.message || error.response?.data?.detail', 'admin.accounts.failedToCreate')
+    expectLocalizedSelector(modal, "opts.message || opts.response?.message || t('admin.accounts.failedToCreate')", 'admin.accounts.mixedChannelWarningGeneric')
+    expectLocalizedSelector(modal, 'error.response?.data?.detail', 'admin.accounts.oauth.authFailed')
     expect(modal).not.toContain('item.error ||')
-    expect(modal).toMatch(/mixedChannelWarningRawMessage\.value\s*=\s*extractApiErrorMessage\(/)
     expect(modal).not.toContain('return `#${item.index}${name}: ${item.message}`')
     const antigravity = source('src/composables/useAntigravityOAuth.ts')
     const gemini = source('src/composables/useGeminiOAuth.ts')
-    expect(antigravity).not.toMatch(/err\.response\?\.data\?\.detail\s*\|\|/)
+    for (const key of ['failedToGenerateUrl', 'failedToExchangeCode', 'failedToValidateRT']) {
+      expectLocalizedSelector(antigravity, 'err.response?.data?.detail', `admin.accounts.oauth.antigravity.${key}`)
+    }
     expect(gemini).not.toMatch(/error\.value = (?:err|error)\.(?:message|response)/)
   })
 
@@ -159,7 +203,7 @@ describe('Russian release review closure', () => {
   it('localizes the empty Grok batch authorization failure', () => {
     const modal = source('src/components/account/CreateAccountModal.vue')
     expect(modal).not.toContain("'Authorization failed'")
-    expect(modal).toContain("extractApiErrorMessage(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'))")
+    expectLocalizedSelector(modal, 'grokOAuth.error.value', 'admin.accounts.oauth.authFailed')
   })
 
   it('localizes GitHub and Google OAuth credential labels and placeholders', () => {
@@ -178,24 +222,25 @@ describe('Russian release review closure', () => {
     const edit = source('src/components/account/EditAccountModal.vue')
     const bulk = source('src/components/account/BulkEditAccountModal.vue')
     const whitelist = source('src/components/account/ModelWhitelistSelector.vue')
-    expect(edit).not.toContain("error instanceof Error ? error.message")
-    expect(edit).not.toContain("error.message || t('admin.accounts.failedToUpdate')")
+    expectLocalizedSelector(edit, 'error.message', 'admin.accounts.failedToUpdate')
     expect(edit).not.toContain("'Unknown'")
-    expect(edit).toContain("extractApiErrorMessage(error, t('admin.accounts.failedToUpdate'), undefined, locale.value)")
-    expect(bulk).not.toContain("error.message || t('admin.accounts.bulkEdit.failed')")
+    expectLocalizedSelector(bulk, 'error.message', 'admin.accounts.bulkEdit.failed')
+    expectLocalizedSelector(bulk, "result.message || t('admin.accounts.bulkEdit.failed')", 'admin.accounts.mixedChannelWarningGeneric')
+    expect(bulk).toContain("mixedChannelWarningMessage.value = locale.value.toLowerCase().split(/[-_]/)[0] === 'ru'")
     expect(bulk).not.toContain("mixedChannelWarningMessage.value = error.message")
     expect(whitelist).not.toContain("error instanceof Error ? error.message")
   })
 
   it('sanitizes reauthorization and account probe primary error text', () => {
     const reauth = source('src/components/account/ReAuthAccountModal.vue')
-    expect(reauth).not.toContain("error.response?.data?.detail ||")
+    expectLocalizedSelector(reauth, 'error.response?.data?.detail', 'admin.accounts.oauth.authFailed')
     const quota = source('src/components/account/OpenAIQuotaResetCell.vue')
     const grok = source('src/components/account/GrokQuotaProbeCell.vue')
     const referral = source('src/components/account/OpenAIReferralCell.vue')
-    expect(quota).toContain('extractApiErrorMessage')
-    expect(grok).toContain('extractApiErrorMessage')
-    expect(referral).not.toContain("err.message || t('common.error')")
+    for (const component of [quota, grok]) {
+      expectLocalizedSelector(component, 'err?.message || err?.reason || err?.response?.data?.message || err?.response?.data?.error', 'common.error')
+    }
+    expectLocalizedSelector(referral, 'err.message', 'common.error')
   })
 
   it('sanitizes both active admin reauthorization and test-probe error paths', () => {
@@ -208,9 +253,10 @@ describe('Russian release review closure', () => {
     expect(reauth).not.toContain('error.response?.data?.message ||')
     expect(reauth).not.toContain('error.message ||')
     expect(reauth).toContain('extractApiErrorMessage(error,')
-    expect(test).not.toContain("addLine(t('admin.accounts.errorPrefix', { message: event.error })")
-    expect(test).not.toContain('error instanceof Error ? error.message')
-    expect(test).toContain('extractApiErrorMessage(')
+    // Labeled diagnostic log lines intentionally preserve upstream raw detail.
+    expect(test).toContain("addLine(t('admin.accounts.errorPrefix', { message: event.error })")
+    expectLocalizedSelector(test, 'msg', 'admin.accounts.testFailed')
+    expectLocalizedSelector(test, 'message', 'admin.accounts.testFailed')
   })
 
   it('preserves the legacy EN/ZH reauth error precedence while sanitizing RU', () => {

@@ -69,7 +69,7 @@
               :class="draft.refresh_interval_seconds === 60 ? 'tab-active' : ''"
               @click="draft.refresh_interval_seconds = 60"
             >
-              1 min
+              1 {{ t('common.minutes') }}
             </button>
             <button
               type="button"
@@ -77,7 +77,7 @@
               :class="draft.refresh_interval_seconds === 300 ? 'tab-active' : ''"
               @click="draft.refresh_interval_seconds = 300"
             >
-              5 min
+              5 {{ t('common.minutes') }}
             </button>
           </div>
         </div>
