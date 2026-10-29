@@ -478,7 +478,9 @@ const startTest = async () => {
     }
     status.value = 'error'
     const msg = error instanceof Error ? error.message : 'Unknown error'
-    errorMessage.value = localizeApiErrorFallback(msg, t('admin.accounts.testFailed'), locale.value)
+    errorMessage.value = locale.value.toLowerCase().split(/[-_]/)[0] === 'ru'
+      ? t('admin.accounts.testFailed')
+      : msg
     addLine(t('admin.accounts.errorPrefix', { message: msg }), 'text-red-400')
   }
 }

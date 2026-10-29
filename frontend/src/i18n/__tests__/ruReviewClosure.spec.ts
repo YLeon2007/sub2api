@@ -17,6 +17,11 @@ function hasLocalizedSelector(input: string, selector: string, key: string): boo
   const compact = (value: string) => value.replace(/\s+/g, '')
   let found = false
   function visit(node: ts.Node): void {
+    if (ts.isConditionalExpression(node) &&
+      compact(node.condition.getText(file)) === "locale.value.toLowerCase().split(/[-_]/)[0]==='ru'" &&
+      ts.isCallExpression(node.whenTrue) && ts.isIdentifier(node.whenTrue.expression) && node.whenTrue.expression.text === 't' &&
+      node.whenTrue.arguments.length === 1 && ts.isStringLiteral(node.whenTrue.arguments[0]) && node.whenTrue.arguments[0].text === key &&
+      compact(node.whenFalse.getText(file)) === compact(selector)) found = true
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) &&
       node.expression.text === 'localizeApiErrorFallback' && node.arguments.length === 3) {
       const [raw, fallback, locale] = node.arguments
@@ -38,6 +43,7 @@ function expectLocalizedSelector(input: string, selector: string, key: string): 
 describe('review-closure localized selector guard', () => {
   it('accepts the exact raw selector, translated fallback and active locale', () => {
     expectLocalizedSelector("localizeApiErrorFallback(error.message, t('fixture.expected'), locale.value)", 'error.message', 'fixture.expected')
+    expectLocalizedSelector("locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? t('fixture.expected') : error.message", 'error.message', 'fixture.expected')
   })
   it.each([
     "error.message || t('fixture.expected')",
@@ -47,6 +53,10 @@ describe('review-closure localized selector guard', () => {
     "localizeApiErrorFallback(error.message, fallback, locale.value)",
     "localizeApiErrorFallback(error.response?.data?.detail, t('fixture.expected'), locale.value)",
     "// localizeApiErrorFallback(error.message, t('fixture.expected'), locale.value)",
+    "locale.value === 'ru' ? t('fixture.expected') : error.message",
+    "locale.value.toLowerCase().split(/[-_]/)[0] === 'en' ? t('fixture.expected') : error.message",
+    "locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? t('fixture.wrong') : error.message",
+    "locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? t('fixture.expected') : error.message || t('fixture.expected')",
   ])('rejects raw, wrong-key, wrong-selector and forced-locale substitutes: %s', expression => {
     expect(hasLocalizedSelector(expression, 'error.message', 'fixture.expected')).toBe(false)
   })
@@ -161,7 +171,8 @@ describe('Russian release review closure', () => {
     expectLocalizedSelector(modal, 'error.response?.data?.message || error.response?.data?.detail', 'admin.accounts.failedToCreate')
     expectLocalizedSelector(modal, "opts.message || opts.response?.message || t('admin.accounts.failedToCreate')", 'admin.accounts.mixedChannelWarningGeneric')
     expectLocalizedSelector(modal, 'error.response?.data?.detail', 'admin.accounts.oauth.authFailed')
-    expect(modal).not.toContain('item.error ||')
+    expectLocalizedSelector(modal, "item.error || 'Unknown error'", 'admin.accounts.oauth.grok.failedToConvertSSO')
+    expectLocalizedSelector(modal, "error.response?.data?.detail || error.message || 'Unknown error'", 'admin.accounts.oauth.authFailed')
     expect(modal).not.toContain('return `#${item.index}${name}: ${item.message}`')
     const antigravity = source('src/composables/useAntigravityOAuth.ts')
     const gemini = source('src/composables/useGeminiOAuth.ts')
@@ -202,7 +213,7 @@ describe('Russian release review closure', () => {
 
   it('localizes the empty Grok batch authorization failure', () => {
     const modal = source('src/components/account/CreateAccountModal.vue')
-    expect(modal).not.toContain("'Authorization failed'")
+    expectLocalizedSelector(modal, "grokOAuth.error.value || 'Authorization failed'", 'admin.accounts.oauth.authFailed')
     expectLocalizedSelector(modal, 'grokOAuth.error.value', 'admin.accounts.oauth.authFailed')
   })
 

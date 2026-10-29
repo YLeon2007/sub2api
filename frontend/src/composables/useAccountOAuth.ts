@@ -78,7 +78,7 @@ export function useAccountOAuth() {
       sessionId.value = response.session_id
       return true
     } catch (err: any) {
-      error.value = localizeApiErrorFallback(err.response?.data?.detail, t('admin.accounts.oauth.failedToGenerateUrl'), locale.value)
+      error.value = localizeApiErrorFallback(err.response?.data?.detail || 'Failed to generate auth URL', t('admin.accounts.oauth.failedToGenerateUrl'), locale.value)
       appStore.showError(error.value)
       return false
     } finally {
@@ -114,7 +114,7 @@ export function useAccountOAuth() {
 
       return tokenInfo as TokenInfo
     } catch (err: any) {
-      error.value = localizeApiErrorFallback(err.response?.data?.detail, t('admin.accounts.oauth.failedToExchangeCode'), locale.value)
+      error.value = localizeApiErrorFallback(err.response?.data?.detail || 'Failed to exchange auth code', t('admin.accounts.oauth.failedToExchangeCode'), locale.value)
       appStore.showError(error.value)
       return null
     } finally {
@@ -151,7 +151,7 @@ export function useAccountOAuth() {
 
       return tokenInfo as TokenInfo
     } catch (err: any) {
-      error.value = localizeApiErrorFallback(err.response?.data?.detail, t('admin.accounts.oauth.cookieAuthFailed'), locale.value)
+      error.value = localizeApiErrorFallback(err.response?.data?.detail || 'Cookie authorization failed', t('admin.accounts.oauth.cookieAuthFailed'), locale.value)
       return null
     } finally {
       loading.value = false

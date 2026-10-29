@@ -263,7 +263,7 @@ describe('REG-074: actual plugin incompatible unknown diagnostics', () => {
       const plugin = { compatibility: { status: 'incompatible', compatible: false, message, current_sub2api_version: '0.2.19-ru.1', required_sub2api_version: '>=0.3.0' } }
       const before = structuredClone(plugin)
       const fallback = t('admin.plugins.messages.incompatibleVersion', { current: '0.2.19-ru.1', required: '>=0.3.0' })
-      expect(display(plugin)).toBe(isRussian() ? fallback : message || fallback)
+      expect(display(plugin)).toBe(isRussian() ? fallback : message)
       expect(plugin).toEqual(before)
     }
     const keys = consumer<Record<string, string>>(path, 'pluginBackendMessageKeys', baseScope())
@@ -276,6 +276,6 @@ describe('REG-074: actual plugin incompatible unknown diagnostics', () => {
     for (const [status, key] of [['compatible', 'compatibleTested'], ['untested', 'compatibleUntested']] as const) {
       expect(display({ compatibility: { status, message: 'Wrong raw' } })).toBe(t(`admin.plugins.messages.${key}`))
     }
-    expect(display({ compatibility: { status: 'incompatible', message: '' } })).toBe(t('admin.plugins.messages.incompatibleVersion', { current: '-', required: '-' }))
+    expect(display({ compatibility: { status: 'incompatible', message: '' } })).toBe(isRussian() ? t('admin.plugins.messages.incompatibleVersion', { current: '-', required: '-' }) : '')
   })
 })

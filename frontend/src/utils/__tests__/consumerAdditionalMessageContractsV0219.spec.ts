@@ -276,7 +276,7 @@ describe('actual account test catch/event primary and diagnostic channels', () =
     const admin = path.includes('/admin/')
     it.each(locales)(`${path}: start catch keeps original selector/fallback and raw log (%s)`, async locale => {
       language.current = locale
-      for (const error of [new Error('Original transport primary'), failure('Not an Error'), 'Thrown string']) {
+      for (const error of [new Error('Original transport primary'), new Error(''), failure('Not an Error'), 'Thrown string']) {
         const scope = testScope(() => Promise.reject(error))
         const { startTest } = consumers(path, ['addLine', 'startTest'], scope)
         await startTest()

@@ -365,7 +365,7 @@ interface PluginBridgeMessage {
   message?: unknown;
 }
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const appStore = useAppStore();
 const pluginStepUp = useStepUp();
 const plugins = ref<PluginInstallation[]>([]);
@@ -484,10 +484,12 @@ function localizedCompatibilityMessage(plugin: PluginInstallation): string {
       if (compatibility.message in pluginBackendMessageKeys) {
         return localizedPluginBackendMessage(compatibility.message);
       }
-      return localizeApiErrorFallback(compatibility.message, t("admin.plugins.messages.incompatibleVersion", {
-        current: compatibility.current_sub2api_version || "-",
-        required: compatibility.required_sub2api_version || "-",
-      }));
+      return locale.value.toLowerCase().split(/[-_]/)[0] === "ru"
+        ? t("admin.plugins.messages.incompatibleVersion", {
+            current: compatibility.current_sub2api_version || "-",
+            required: compatibility.required_sub2api_version || "-",
+          })
+        : compatibility.message;
     default:
       return localizedPluginBackendMessage(compatibility.message);
   }

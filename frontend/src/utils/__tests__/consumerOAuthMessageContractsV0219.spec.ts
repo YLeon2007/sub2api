@@ -37,8 +37,8 @@ beforeEach(() => {
 const locales = ['en', 'zh', 'ru', 'ru-RU'] as const
 const t = (key: string, params?: Record<string, unknown>) =>
   `translated:${fixture.current}:${key}${params ? `:${JSON.stringify(params)}` : ''}`
-const primary = (raw: string | undefined, key: string) =>
-  fixture.current.toLowerCase().startsWith('ru') ? t(key) : raw || t(key)
+const primary = (raw: string | undefined, key: string, officialFallback?: string) =>
+  fixture.current.toLowerCase().startsWith('ru') ? t(key) : raw || officialFallback || t(key)
 const authFailed = 'admin.accounts.oauth.authFailed'
 const createPath = 'components/account/CreateAccountModal.vue'
 const reauthPath = 'components/account/ReAuthAccountModal.vue'
@@ -224,24 +224,26 @@ describe('real create-account detail-first handlers (REG-004..017)', () => {
         const scope = createFixture(row.error, platform)
         await handler(createPath, name, scope)(input)
         expect(scope.adminAPI.accounts.create, row.name).toHaveBeenCalledOnce()
-        expect(scope[output].error.value, row.name).toBe(`#1: ${primary(row.detail || row.envelope, authFailed)}`)
+        expect(scope[output].error.value, row.name).toBe(`#1: ${primary(row.detail || row.envelope, authFailed, 'Unknown error')}`)
         expect(scope[output].loading.value).toBe(false)
       }
     })
     it.each(locales)(`${name} preserves the returned-client-error branch (%s)`, async locale => {
       fixture.current = locale
-      const scope = createFixture({ unreachable: true }, platform)
-      const oauth = scope[output]
-      const api = name === 'handleGrokAuthorizePassword' ? oauth.authorizePassword : oauth.validateRefreshToken
-      api.mockImplementation(async () => {
-        oauth.error.value = 'Returned client diagnostic'
-        return null
-      })
-      await handler(createPath, name, scope)(input)
-      expect(api).toHaveBeenCalledOnce()
-      expect(scope.adminAPI.accounts.create).not.toHaveBeenCalled()
-      expect(oauth.error.value).toBe(`#1: ${primary('Returned client diagnostic', authFailed)}`)
-      expect(oauth.loading.value).toBe(false)
+      for (const raw of ['Returned client diagnostic', '']) {
+        const scope = createFixture({ unreachable: true }, platform)
+        const oauth = scope[output]
+        const api = name === 'handleGrokAuthorizePassword' ? oauth.authorizePassword : oauth.validateRefreshToken
+        api.mockImplementation(async () => {
+          oauth.error.value = raw
+          return null
+        })
+        await handler(createPath, name, scope)(input)
+        expect(api).toHaveBeenCalledOnce()
+        expect(scope.adminAPI.accounts.create).not.toHaveBeenCalled()
+        expect(oauth.error.value).toBe(`#1: ${primary(raw, authFailed, name === 'handleGrokAuthorizePassword' ? 'Authorization failed' : undefined)}`)
+        expect(oauth.loading.value).toBe(false)
+      }
     })
   }
   it.each(locales)('handleGrokImportSSO catch keeps detail -> envelope message (%s)', async locale => {
@@ -258,14 +260,17 @@ describe('real create-account detail-first handlers (REG-004..017)', () => {
   for (const partial of [false, true]) {
     it.each(locales)(`handleGrokImportSSO preserves per-item diagnostics, partial=${partial} (%s)`, async locale => {
       fixture.current = locale
-      const scope = createFixture({ unreachable: true }, 'grok')
-      scope.adminAPI.grok.createFromSSO.mockResolvedValue({
-        created: partial ? [{}] : [], failed: [{ index: 1, error: 'SSO item diagnostic' }],
-      })
-      await handler(createPath, 'handleGrokImportSSO', scope)('fixture-sso')
-      expect(scope.adminAPI.grok.createFromSSO).toHaveBeenCalledOnce()
-      expect(scope.grokOAuth.error.value).toBe(`#1: ${primary('SSO item diagnostic', 'admin.accounts.oauth.grok.failedToConvertSSO')}`)
-      expect(scope.grokOAuth.loading.value).toBe(false)
+      for (const raw of ['SSO item diagnostic', '', undefined]) {
+        const scope = createFixture({ unreachable: true }, 'grok')
+        const result = { created: partial ? [{}] : [], failed: [{ index: 1, error: raw }] }
+        const before = structuredClone(result)
+        scope.adminAPI.grok.createFromSSO.mockResolvedValue(result)
+        await handler(createPath, 'handleGrokImportSSO', scope)('fixture-sso')
+        expect(scope.adminAPI.grok.createFromSSO).toHaveBeenCalledOnce()
+        expect(scope.grokOAuth.error.value).toBe(`#1: ${primary(raw, 'admin.accounts.oauth.grok.failedToConvertSSO', 'Unknown error')}`)
+        expect(scope.grokOAuth.loading.value).toBe(false)
+        expect(result).toEqual(before)
+      }
     })
   }
   const exchangeCases = [
@@ -322,6 +327,19 @@ describe('real create-account detail-first handlers (REG-004..017)', () => {
       `#2: ${primary('Codex warning diagnostic', 'common.warning')}`,
     ].join('\n'))
     expect(scope.openaiOAuth.loading.value).toBe(false)
+  })
+  it.each(locales)('Codex formatter preserves exact empty/null/undefined EN/ZH messages (%s)', locale => {
+    fixture.current = locale
+    const format = handler(createPath, 'formatCodexImportMessages', createFixture({}))
+    for (const message of ['Raw item message', '', null, undefined]) {
+      for (const fallback of ['admin.accounts.oauth.openai.codexSessionImportFailed', 'common.warning']) {
+        const items = [{ index: 31, name: 'Custom name', message }, { index: 32, name: '', message }]
+        const before = structuredClone(items)
+        const displayed = fixture.current.toLowerCase().startsWith('ru') ? t(fallback) : message
+        expect(format(items, fallback)).toBe(`#31 Custom name: ${displayed}\n#32: ${displayed}`)
+        expect(items).toEqual(before)
+      }
+    }
   })
   it.each(locales)('cookie per-item catch remains detail-only (%s)', async locale => {
     fixture.current = locale
@@ -399,7 +417,9 @@ describe('actual OAuth composables, not copied catches (REG-023..028/072)', () =
         const result = operation === 'cookieAuth' ? await oauth.cookieAuth('oauth', 'fixture-cookie') : await oauth[operation]('oauth')
         expect(api, row.name).toHaveBeenCalledOnce()
         expect(result).toBe(operation === 'generateAuthUrl' ? false : null)
-        expect(oauth.error.value, row.name).toBe(primary(row.detail, fallback))
+        const officialFallback = operation === 'generateAuthUrl' ? 'Failed to generate auth URL'
+          : operation === 'exchangeAuthCode' ? 'Failed to exchange auth code' : 'Cookie authorization failed'
+        expect(oauth.error.value, row.name).toBe(primary(row.detail, fallback, officialFallback))
         expect(oauth.loading.value).toBe(false)
         if (operation === 'cookieAuth') expect(fixture.showError).not.toHaveBeenCalled()
         else expect(fixture.showError).toHaveBeenCalledWith(oauth.error.value)

@@ -6429,7 +6429,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.authFailed'), locale.value)
+        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message || 'Unknown error', t('admin.accounts.oauth.authFailed'), locale.value)
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -6510,12 +6510,12 @@ const handleGrokImportSSO = async (ssoInput: string) => {
         t('admin.accounts.oauth.batchPartialSuccess', { success: successCount, failed: failedCount })
       )
       grokOAuth.error.value = (result.failed || [])
-        .map((item) => `#${item.index}: ${localizeApiErrorFallback(item.error, t('admin.accounts.oauth.grok.failedToConvertSSO'), locale.value)}`)
+        .map((item) => `#${item.index}: ${localizeApiErrorFallback(item.error || 'Unknown error', t('admin.accounts.oauth.grok.failedToConvertSSO'), locale.value)}`)
         .join('\n')
       emit('created')
     } else {
       grokOAuth.error.value = (result.failed || [])
-        .map((item) => `#${item.index}: ${localizeApiErrorFallback(item.error, t('admin.accounts.oauth.grok.failedToConvertSSO'), locale.value)}`)
+        .map((item) => `#${item.index}: ${localizeApiErrorFallback(item.error || 'Unknown error', t('admin.accounts.oauth.grok.failedToConvertSSO'), locale.value)}`)
         .join('\n') || t('admin.accounts.oauth.grok.failedToConvertSSO')
       appStore.showError(t('admin.accounts.oauth.batchFailed'))
     }
@@ -6562,7 +6562,7 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         const tokenInfo = await grokOAuth.authorizePassword(lines[i], form.proxy_id)
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${localizeApiErrorFallback(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'), locale.value)}`)
+          errors.push(`#${i + 1}: ${localizeApiErrorFallback(grokOAuth.error.value || 'Authorization failed', t('admin.accounts.oauth.authFailed'), locale.value)}`)
           grokOAuth.error.value = ''
           continue
         }
@@ -6606,7 +6606,7 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.authFailed'), locale.value)
+        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message || 'Unknown error', t('admin.accounts.oauth.authFailed'), locale.value)
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -6743,7 +6743,8 @@ const formatCodexImportMessages = (messages: CodexSessionImportMessage[] | undef
   return (messages || [])
     .map((item) => {
       const name = item.name ? ` ${item.name}` : ''
-      return `#${item.index}${name}: ${localizeApiErrorFallback(item.message, t(fallbackKey), locale.value)}`
+      const message = locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? t(fallbackKey) : item.message
+      return `#${item.index}${name}: ${message}`
     })
     .join('\n')
 }
@@ -6988,7 +6989,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.authFailed'), locale.value)
+        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message || 'Unknown error', t('admin.accounts.oauth.authFailed'), locale.value)
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -7086,7 +7087,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.accounts.oauth.authFailed'), locale.value)
+        const errMsg = localizeApiErrorFallback(error.response?.data?.detail || error.message || 'Unknown error', t('admin.accounts.oauth.authFailed'), locale.value)
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
