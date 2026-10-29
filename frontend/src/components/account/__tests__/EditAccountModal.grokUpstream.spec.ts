@@ -96,7 +96,8 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
-      t: translateMock
+      t: translateMock,
+      locale: { value: 'zh' }
     })
   }
 })

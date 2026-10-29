@@ -144,9 +144,13 @@ vi.mock("@/composables/useClipboard", () => ({
   }),
 }));
 
-vi.mock("@/utils/apiError", () => ({
-  extractApiErrorMessage: () => "error",
-}));
+vi.mock("@/utils/apiError", async () => {
+  const actual = await vi.importActual<typeof import("@/utils/apiError")>("@/utils/apiError");
+  return {
+    ...actual,
+    extractApiErrorMessage: () => "error",
+  };
+});
 
 vi.mock("vue-i18n", async () => {
   const actual = await vi.importActual<typeof import("vue-i18n")>("vue-i18n");
