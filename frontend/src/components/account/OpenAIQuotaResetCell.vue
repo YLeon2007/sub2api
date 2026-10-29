@@ -191,6 +191,7 @@ import {
   type OpenAIQuotaResetResult
 } from '@/api/admin/accounts'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import OpenAIReferralCell from '@/components/account/OpenAIReferralCell.vue'
 
 const props = defineProps<{
@@ -201,7 +202,7 @@ const emit = defineEmits<{
   'account-updated': [account: Account]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // Visible only for OpenAI OAuth accounts.
 const visible = computed(() => props.account.platform === 'openai' && props.account.type === 'oauth')
@@ -407,26 +408,6 @@ const formatResetCreditExpiry = (value: string, style: 'short' | 'full'): string
   return new Intl.DateTimeFormat(undefined, options).format(date)
 }
 
-const extractErrorMessage = (e: unknown): string => {
-  // The project's axios response interceptor (api/client.ts) flattens server
-  // errors into { status, code, message, reason, ... } and re-rejects them, so
-  // the message lives at the top level rather than under .response.data. Fall
-  // back to the raw axios shape for the cancellation/network branches that
-  // bypass the flattening, and finally to the generic i18n string.
-  const err = e as {
-    message?: string
-    reason?: string
-    response?: { data?: { message?: string; error?: string } }
-  }
-  return (
-    err?.message ||
-    err?.reason ||
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    t('common.error')
-  )
-}
-
 const toggleResetCreditDetails = () => {
   if (hiddenResetCreditCount.value <= 0) return
   showResetCreditDetails.value = !showResetCreditDetails.value
@@ -457,7 +438,7 @@ const handleQuery = async () => {
     }
   } catch (e) {
     if (props.account.id !== accountID) return
-    error.value = extractErrorMessage(e)
+    error.value = extractApiErrorMessage(e, t('common.error'), undefined, locale.value)
   } finally {
     if (props.account.id === accountID) loading.value = false
   }
@@ -514,7 +495,7 @@ const confirmReset = async () => {
     }
   } catch (e) {
     if (props.account.id !== accountID) return
-    error.value = extractErrorMessage(e)
+    error.value = extractApiErrorMessage(e, t('common.error'), undefined, locale.value)
   } finally {
     if (props.account.id === accountID) resetting.value = false
   }

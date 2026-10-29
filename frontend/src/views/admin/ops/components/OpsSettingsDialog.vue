@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -68,7 +70,7 @@ async function loadAllSettings() {
     settingsLoaded.value = true
   } catch (err: any) {
     console.error('[OpsSettingsDialog] Failed to load settings', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.settings.loadFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.settings.loadFailed')))
   } finally {
     loading.value = false
   }
@@ -228,7 +230,7 @@ async function saveAllSettings() {
     emit('close')
   } catch (err: any) {
     console.error('[OpsSettingsDialog] Failed to save settings', err)
-    appStore.showError(err?.response?.data?.message || err?.response?.data?.detail || t('admin.ops.settings.saveFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.message || err?.response?.data?.detail, t('admin.ops.settings.saveFailed')))
   } finally {
     saving.value = false
   }

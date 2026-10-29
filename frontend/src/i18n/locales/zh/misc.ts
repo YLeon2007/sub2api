@@ -82,7 +82,8 @@ export default {
     tableOfContents: '目录',
     copyCode: '复制',
     copiedCode: '已复制',
-    copyCodeFailed: '失败'
+    copyCodeFailed: '失败',
+    loadFailed: '页面加载失败'
   },
 
   // Announcements Page
@@ -321,6 +322,8 @@ export default {
       amountLabel: '赠送额度',
       amountLabelWithPercent: '赠送额度 (+{percent}%)',
       discountLabelWithPercent: '优惠 ({percent}% OFF)',
+      discountBadge: '减 {percent}%',
+      discountPercentSuffix: '% 优惠',
     },
     quickAmounts: '快捷金额',
     customAmount: '自定义金额',

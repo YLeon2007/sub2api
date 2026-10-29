@@ -2,9 +2,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AccountTestModal from '../AccountTestModal.vue'
 
-const { getAvailableModels, copyToClipboard } = vi.hoisted(() => ({
+const { getAvailableModels, copyToClipboard, mockLocale } = vi.hoisted(() => ({
   getAvailableModels: vi.fn(),
-  copyToClipboard: vi.fn()
+  copyToClipboard: vi.fn(),
+  mockLocale: { value: 'en' }
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -24,17 +25,23 @@ vi.mock('@/composables/useClipboard', () => ({
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   const messages: Record<string, string> = {
-    'admin.accounts.imagePromptDefault': 'Generate a cute orange cat astronaut sticker on a clean pastel background.'
+    'admin.accounts.imagePromptDefault': 'Generate a cute orange cat astronaut sticker on a clean pastel background.',
+    'admin.accounts.openai.compactProbeSuccess': 'Локализованный успешный результат compact probe',
+    'admin.accounts.openai.compactProbeUnsupported': 'Локализованный результат: compaction не поддерживается'
   }
   return {
     ...actual,
     useI18n: () => ({
+      locale: mockLocale,
       t: (key: string, params?: Record<string, string | number>) => {
         if (key === 'admin.accounts.imageReceived' && params?.count) {
           return `received-${params.count}`
         }
         if (key === 'admin.accounts.imagePreviewAlt' && params?.index) {
           return `test-image-${params.index}`
+        }
+        if (key === 'admin.accounts.errorPrefix' && params?.message) {
+          return `Ошибка: ${params.message}`
         }
         return messages[key] || key
       }
@@ -91,6 +98,7 @@ function mountModal(account: Record<string, unknown> = {
 
 describe('AccountTestModal', () => {
   beforeEach(() => {
+    mockLocale.value = 'en'
     getAvailableModels.mockResolvedValue([
       { id: 'gemini-2.0-flash', display_name: 'Gemini 2.0 Flash' },
       { id: 'gemini-2.5-flash-image', display_name: 'Gemini 2.5 Flash Image' },
@@ -219,5 +227,77 @@ describe('AccountTestModal', () => {
       prompt: '',
       mode: 'compact'
     })
+  })
+
+  it('локализует известный успешный результат OpenAI Compact probe', async () => {
+    getAvailableModels.mockResolvedValue([{ id: 'gpt-5.4', display_name: 'GPT-5.4' }])
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"content","text":"Compact probe succeeded (native remote compaction v2)"}\n',
+        'data: {"type":"test_complete","success":true}\n'
+      ])
+    ) as any
+
+    const wrapper = mountModal({
+      id: 42,
+      name: 'OpenAI OAuth',
+      platform: 'openai',
+      type: 'oauth',
+      status: 'active'
+    })
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    ;(wrapper.vm as any).selectedModelId = 'gpt-5.4'
+    ;(wrapper.vm as any).testMode = 'compact'
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Локализованный успешный результат compact probe')
+    expect(wrapper.text()).not.toContain('Compact probe succeeded')
+  })
+
+  it('локализует известную ошибку неподдерживаемого OpenAI Compact probe', async () => {
+    getAvailableModels.mockResolvedValue([{ id: 'gpt-5.4', display_name: 'GPT-5.4' }])
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"error","error":"Upstream returned 2xx without a compaction output item (native remote compaction v2 unsupported on this chain)"}\n'
+      ])
+    ) as any
+
+    const wrapper = mountModal({
+      id: 42,
+      name: 'OpenAI OAuth',
+      platform: 'openai',
+      type: 'oauth',
+      status: 'active'
+    })
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    ;(wrapper.vm as any).selectedModelId = 'gpt-5.4'
+    ;(wrapper.vm as any).testMode = 'compact'
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Локализованный результат: compaction не поддерживается')
+    expect(wrapper.text()).not.toContain('Upstream returned 2xx')
+  })
+
+  it('does not surface unknown backend status or errors in Russian', async () => {
+    mockLocale.value = 'ru'
+    global.fetch = vi.fn().mockResolvedValue(createStreamResponse([
+      'data: {"type":"status","text":"Negotiating upstream bearer token"}\n',
+      'data: {"type":"error","error":"upstream returned 402 for model"}\n'
+    ])) as any
+    const wrapper = mountModal()
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Ошибка: admin.accounts.testFailed')
+    expect(wrapper.text()).not.toContain('upstream returned 402')
+    expect(wrapper.text()).not.toContain('Negotiating upstream bearer token')
   })
 })

@@ -6,7 +6,8 @@ import MonitorTemplateApplyPickerDialog from '../MonitorTemplateApplyPickerDialo
 const mocks = vi.hoisted(() => ({ listAssociatedMonitors: vi.fn(), apply: vi.fn(), showError: vi.fn(), showSuccess: vi.fn() }))
 vi.mock('@/api/admin', () => ({ adminAPI: { channelMonitorTemplate: mocks } }))
 vi.mock('@/stores/app', () => ({ useAppStore: () => mocks }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-i18n')>()), useI18n: () => ({ t: (key: string) => key }) }))
 enableAutoUnmount(afterEach)
 beforeEach(() => { vi.clearAllMocks(); mocks.apply.mockResolvedValue({ affected: 1 }) })
 

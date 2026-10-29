@@ -1,5 +1,7 @@
 # GPT-5.5 retirement on ChatGPT-backed Codex accounts
 
+English | [Русский](OPENAI_GPT55_RETIREMENT_RU.md)
+
 OpenAI retired GPT-5.5 from Codex with ChatGPT sign-in on October 14,
 2026 at 19:00 UTC (October 15 at 03:00 in Asia/Shanghai). Official API access
 is unaffected. See the [official migration notice](https://learn.chatgpt.com/docs/models#gpt-55-retirement).

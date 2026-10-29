@@ -149,6 +149,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import { accountsAPI } from '@/api/admin/accounts'
 import type { SyncUpstreamPreviewParams } from '@/api/admin/accounts'
 import { useClipboard } from '@/composables/useClipboard'
@@ -156,9 +157,8 @@ import ModelIcon from '@/components/common/ModelIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { allModels, getModelsByPlatform } from '@/composables/useModelWhitelist'
 import { supportsUpstreamModelSync } from '@/constants/platformCatalog'
-import { extractApiErrorMessage } from '@/utils/apiError'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = withDefaults(defineProps<{
   modelValue: string[]
@@ -372,7 +372,7 @@ const syncUpstreamModels = async () => {
     }
   } catch (error) {
     if (!isCurrentSync()) return
-    const message = extractApiErrorMessage(error, t('admin.accounts.syncUpstreamModelsFailed'))
+    const message = extractApiErrorMessage(error, t('admin.accounts.syncUpstreamModelsFailed'), undefined, locale.value)
     appStore.showError(t('admin.accounts.syncUpstreamModelsError', { message }))
   } finally {
     if (isCurrentSync()) {

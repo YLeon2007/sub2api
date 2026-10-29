@@ -1255,7 +1255,7 @@
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label class="input-label">Project ID</label>
+              <label class="input-label">{{ t('admin.accounts.vertexProjectIdLabel') }}</label>
               <input
                 v-model="vertexProjectId"
                 type="text"
@@ -1266,7 +1266,7 @@
               <p class="input-hint">{{ t('admin.accounts.vertexApiKeyProjectIdHint') }}</p>
             </div>
             <div v-if="vertexProjectId.trim()">
-              <label class="input-label">Location</label>
+              <label class="input-label">{{ t('admin.accounts.vertexLocationLabel') }}</label>
               <select
                 v-model="vertexLocation"
                 required
@@ -1293,7 +1293,7 @@
 
         <template v-else>
           <div>
-            <label class="input-label">Service Account JSON</label>
+            <label class="input-label">{{ t('admin.accounts.vertexSaJsonLabel') }}</label>
             <input
               ref="vertexServiceAccountFileInput"
               type="file"
@@ -1336,8 +1336,8 @@
                 v-if="vertexClientEmail"
                 class="mt-3 rounded-md border border-sky-200 bg-white px-3 py-2 text-xs text-sky-900 dark:border-sky-800/50 dark:bg-dark-800 dark:text-sky-200"
               >
-                <div class="truncate">Project ID: <span class="font-mono">{{ vertexProjectId }}</span></div>
-                <div class="truncate">Client Email: <span class="font-mono">{{ vertexClientEmail }}</span></div>
+                <div class="truncate">{{ t('admin.accounts.vertexProjectIdLabel') }}: <span class="font-mono">{{ vertexProjectId }}</span></div>
+                <div class="truncate">{{ t('admin.accounts.vertexClientEmailLabel') }}: <span class="font-mono">{{ vertexClientEmail }}</span></div>
               </div>
             </div>
             <p class="input-hint">{{ t('admin.accounts.vertexSaJsonUploadHint') }}</p>
@@ -1345,7 +1345,7 @@
 
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label class="input-label">Project ID</label>
+              <label class="input-label">{{ t('admin.accounts.vertexProjectIdLabel') }}</label>
               <input
                 v-model="vertexProjectId"
                 type="text"
@@ -1355,7 +1355,7 @@
               />
             </div>
             <div>
-              <label class="input-label">Location</label>
+              <label class="input-label">{{ t('admin.accounts.vertexLocationLabel') }}</label>
               <select
                 v-model="vertexLocation"
                 required
@@ -3981,21 +3981,21 @@
                 <td class="px-3 py-2 text-gray-900 dark:text-white">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.googleOne.channel') }}
                 </td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">Free</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t('admin.accounts.gemini.quotaPolicy.tierFree') }}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.googleOne.limitsFree') }}
                 </td>
               </tr>
               <tr>
                 <td class="px-3 py-2 text-gray-900 dark:text-white"></td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">Pro</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t('admin.accounts.gemini.quotaPolicy.tierPro') }}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.googleOne.limitsPro') }}
                 </td>
               </tr>
               <tr>
                 <td class="px-3 py-2 text-gray-900 dark:text-white"></td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">Ultra</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t('admin.accounts.gemini.quotaPolicy.tierUltra') }}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.googleOne.limitsUltra') }}
                 </td>
@@ -4004,14 +4004,14 @@
                 <td class="px-3 py-2 text-gray-900 dark:text-white">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.gcp.channel') }}
                 </td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">Standard</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t('admin.accounts.gemini.quotaPolicy.tierStandard') }}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.gcp.limitsStandard') }}
                 </td>
               </tr>
               <tr>
                 <td class="px-3 py-2 text-gray-900 dark:text-white"></td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">Enterprise</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t('admin.accounts.gemini.quotaPolicy.tierEnterprise') }}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.gcp.limitsEnterprise') }}
                 </td>
@@ -4020,14 +4020,14 @@
                 <td class="px-3 py-2 text-gray-900 dark:text-white">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.aiStudio.channel') }}
                 </td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">Free</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t('admin.accounts.gemini.quotaPolicy.tierFree') }}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.aiStudio.limitsFree') }}
                 </td>
               </tr>
               <tr>
                 <td class="px-3 py-2 text-gray-900 dark:text-white"></td>
-                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">Paid</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t('admin.accounts.gemini.quotaPolicy.tierPaid') }}</td>
                 <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                   {{ t('admin.accounts.gemini.quotaPolicy.rows.aiStudio.limitsPaid') }}
                 </td>
@@ -4115,6 +4115,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { extractApiErrorMessage } from '@/utils/apiError'
 
 import {
   claudeModels,
@@ -5486,9 +5487,9 @@ const buildMixedChannelDetails = (resp?: CheckMixedChannelResponse) => {
     return null
   }
   return {
-    groupName: details.group_name || 'Unknown',
-    currentPlatform: details.current_platform || 'Unknown',
-    otherPlatform: details.other_platform || 'Unknown'
+    groupName: details.group_name || t('common.unknown'),
+    currentPlatform: details.current_platform || t('common.unknown'),
+    otherPlatform: details.other_platform || t('common.unknown')
   }
 }
 
@@ -5506,7 +5507,10 @@ const openMixedChannelDialog = (opts: {
 }) => {
   mixedChannelWarningDetails.value = buildMixedChannelDetails(opts.response)
   mixedChannelWarningRawMessage.value =
-    opts.message || opts.response?.message || t('admin.accounts.failedToCreate')
+    extractApiErrorMessage(
+      { message: opts.message || opts.response?.message },
+      t('admin.accounts.mixedChannelWarningGeneric')
+    )
   mixedChannelWarningAction.value = opts.onConfirm
   showMixedChannelWarning.value = true
 }
@@ -5548,7 +5552,7 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
     })
     return false
   } catch (error: any) {
-    appStore.showError(error.response?.data?.message || error.response?.data?.detail || t('admin.accounts.failedToCreate'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToCreate')))
     return false
   }
 }
@@ -5593,7 +5597,7 @@ const submitCreateAccount = async (payload: CreateAccountRequest) => {
   } catch (error: any) {
     if (error.response?.status === 409 && error.response?.data?.error === 'mixed_channel_warning' && needsMixedChannelCheck(form.platform)) {
       openMixedChannelDialog({
-        message: error.response?.data?.message,
+        message: extractApiErrorMessage(error, t('admin.accounts.mixedChannelWarningGeneric')),
         onConfirm: async () => {
           antigravityMixedChannelConfirmed.value = true
           await submitCreateAccount(payload)
@@ -5601,7 +5605,7 @@ const submitCreateAccount = async (payload: CreateAccountRequest) => {
       })
       return
     }
-    appStore.showError(error.response?.data?.message || error.response?.data?.detail || t('admin.accounts.failedToCreate'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToCreate')))
   } finally {
     submitting.value = false
   }
@@ -6386,7 +6390,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
         const tokenInfo = await grokOAuth.validateRefreshToken(refreshTokens[i], form.proxy_id)
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${grokOAuth.error.value || 'Validation failed'}`)
+          errors.push(`#${i + 1}: ${extractApiErrorMessage(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'))}`)
           grokOAuth.error.value = ''
           continue
         }
@@ -6394,7 +6398,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
         const credentials = grokOAuth.buildCredentials(tokenInfo)
         applyGrokOAuthUpstreamConfig(credentials)
         const extra = grokOAuth.buildExtraInfo(tokenInfo)
-        const accountName = refreshTokens.length > 1 ? `${form.name || tokenInfo.email || 'Grok OAuth Account'} #${i + 1}` : (form.name || tokenInfo.email || 'Grok OAuth Account')
+        const accountName = refreshTokens.length > 1 ? `${form.name || tokenInfo.email || t('admin.accounts.grokAccount')} #${i + 1}` : (form.name || tokenInfo.email || t('admin.accounts.grokAccount'))
 
         const modelMapping = buildModelMappingObject(modelRestrictionMode.value, allowedModels.value, modelMappings.value)
         if (modelMapping) {
@@ -6423,7 +6427,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = error.response?.data?.detail || error.message || 'Unknown error'
+        const errMsg = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -6504,17 +6508,17 @@ const handleGrokImportSSO = async (ssoInput: string) => {
         t('admin.accounts.oauth.batchPartialSuccess', { success: successCount, failed: failedCount })
       )
       grokOAuth.error.value = (result.failed || [])
-        .map((item) => `#${item.index}: ${item.error || 'Unknown error'}`)
+        .map((item) => `#${item.index}: ${extractApiErrorMessage({ message: item.error }, t('admin.accounts.oauth.grok.failedToConvertSSO'))}`)
         .join('\n')
       emit('created')
     } else {
       grokOAuth.error.value = (result.failed || [])
-        .map((item) => `#${item.index}: ${item.error || 'Unknown error'}`)
+        .map((item) => `#${item.index}: ${extractApiErrorMessage({ message: item.error }, t('admin.accounts.oauth.grok.failedToConvertSSO'))}`)
         .join('\n') || t('admin.accounts.oauth.grok.failedToConvertSSO')
       appStore.showError(t('admin.accounts.oauth.batchFailed'))
     }
   } catch (error: any) {
-    grokOAuth.error.value = error.response?.data?.detail || error.message || t('admin.accounts.oauth.grok.failedToConvertSSO')
+    grokOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.grok.failedToConvertSSO'))
     appStore.showError(grokOAuth.error.value)
   } finally {
     grokOAuth.loading.value = false
@@ -6556,7 +6560,7 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         const tokenInfo = await grokOAuth.authorizePassword(lines[i], form.proxy_id)
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${grokOAuth.error.value || 'Authorization failed'}`)
+          errors.push(`#${i + 1}: ${extractApiErrorMessage(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'))}`)
           grokOAuth.error.value = ''
           continue
         }
@@ -6566,8 +6570,8 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         const extra = grokOAuth.buildExtraInfo(tokenInfo)
         const accountName =
           lines.length > 1
-            ? `${form.name || tokenInfo.email || 'Grok OAuth Account'} #${i + 1}`
-            : form.name || tokenInfo.email || 'Grok OAuth Account'
+            ? `${form.name || tokenInfo.email || t('admin.accounts.grokAccount')} #${i + 1}`
+            : form.name || tokenInfo.email || t('admin.accounts.grokAccount')
 
         const modelMapping = buildModelMappingObject(
           modelRestrictionMode.value,
@@ -6600,7 +6604,7 @@ const handleGrokAuthorizePassword = async (emailPasswordInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = error.response?.data?.detail || error.message || 'Unknown error'
+        const errMsg = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -6702,7 +6706,7 @@ const handleOpenAIExchange = async (authCode: string) => {
     emit('created')
     handleClose()
   } catch (error: any) {
-    oauthClient.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+    oauthClient.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
     appStore.showError(oauthClient.error.value)
   } finally {
     oauthClient.loading.value = false
@@ -6733,11 +6737,11 @@ const buildOpenAICodexImportCredentialExtras = (): Record<string, unknown> | nul
   return credentials
 }
 
-const formatCodexImportMessages = (messages?: CodexSessionImportMessage[]) => {
+const formatCodexImportMessages = (messages: CodexSessionImportMessage[] | undefined, fallbackKey: string) => {
   return (messages || [])
     .map((item) => {
       const name = item.name ? ` ${item.name}` : ''
-      return `#${item.index}${name}: ${item.message}`
+      return `#${item.index}${name}: ${extractApiErrorMessage({ message: item.message }, t(fallbackKey))}`
     })
     .join('\n')
 }
@@ -6820,8 +6824,8 @@ const handleOpenAIImportCodexSession = async (content: string) => {
       return
     }
 
-    const errorText = formatCodexImportMessages(result.errors)
-    const warningText = formatCodexImportMessages(result.warnings)
+    const errorText = formatCodexImportMessages(result.errors, 'admin.accounts.oauth.openai.codexSessionImportFailed')
+    const warningText = formatCodexImportMessages(result.warnings, 'common.warning')
     oauthClient.error.value = [errorText, warningText].filter(Boolean).join('\n')
 
     if (result.failed === 0) {
@@ -6837,11 +6841,10 @@ const handleOpenAIImportCodexSession = async (content: string) => {
 
     appStore.showError(t('admin.accounts.oauth.openai.codexSessionImportFailed'))
   } catch (error: any) {
-    oauthClient.error.value =
-      error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
+    oauthClient.error.value = extractApiErrorMessage(
+      error,
       t('admin.accounts.oauth.openai.codexSessionImportFailed')
+    )
     appStore.showError(oauthClient.error.value)
   } finally {
     oauthClient.loading.value = false
@@ -6886,11 +6889,10 @@ const handleOpenAIImportCodexPAT = async (accessToken: string) => {
     emit('created')
     handleClose()
   } catch (error: any) {
-    oauthClient.error.value =
-      error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
+    oauthClient.error.value = extractApiErrorMessage(
+      error,
       t('admin.accounts.oauth.openai.codexPatImportFailed')
+    )
     appStore.showError(oauthClient.error.value)
   } finally {
     oauthClient.loading.value = false
@@ -6930,7 +6932,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
         )
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${oauthClient.error.value || 'Validation failed'}`)
+          errors.push(`#${i + 1}: ${extractApiErrorMessage(oauthClient.error.value, t('admin.accounts.oauth.authFailed'))}`)
           oauthClient.error.value = ''
           continue
         }
@@ -6982,7 +6984,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = error.response?.data?.detail || error.message || 'Unknown error'
+        const errMsg = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -7048,7 +7050,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
         )
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${antigravityOAuth.error.value || 'Validation failed'}`)
+          errors.push(`#${i + 1}: ${extractApiErrorMessage(antigravityOAuth.error.value, t('admin.accounts.oauth.authFailed'))}`)
           antigravityOAuth.error.value = ''
           continue
         }
@@ -7080,7 +7082,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
         successCount++
       } catch (error: any) {
         failedCount++
-        const errMsg = error.response?.data?.detail || error.message || 'Unknown error'
+        const errMsg = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
         errors.push(`#${i + 1}: ${errMsg}`)
       }
     }
@@ -7139,7 +7141,7 @@ const handleGeminiExchange = async (authCode: string) => {
     const extra = geminiOAuth.buildExtraInfo(tokenInfo)
     await createAccountAndFinish('gemini', 'oauth', credentials, extra)
   } catch (error: any) {
-    geminiOAuth.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+    geminiOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
     appStore.showError(geminiOAuth.error.value)
   } finally {
     geminiOAuth.loading.value = false
@@ -7185,7 +7187,7 @@ const handleAntigravityExchange = async (authCode: string) => {
 		const extra = buildAntigravityExtra()
 		await createAccountAndFinish('antigravity', 'oauth', credentials, extra)
   } catch (error: any) {
-    antigravityOAuth.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+    antigravityOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
     appStore.showError(antigravityOAuth.error.value)
   } finally {
     antigravityOAuth.loading.value = false
@@ -7222,7 +7224,7 @@ const handleGrokExchange = async (authCode: string) => {
     const extra = grokOAuth.buildExtraInfo(tokenInfo)
     await createAccountAndFinish('grok', 'oauth', credentials, extra)
   } catch (error: any) {
-    grokOAuth.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+    grokOAuth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
     appStore.showError(grokOAuth.error.value)
   } finally {
     grokOAuth.loading.value = false
@@ -7311,7 +7313,7 @@ const handleAnthropicExchange = async (authCode: string) => {
     applyInterceptWarmup(credentials, interceptWarmupRequests.value, 'create')
     await createAccountAndFinish(form.platform, addMethod.value as AccountType, credentials, extra)
   } catch (error: any) {
-    oauth.error.value = error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+    oauth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
     appStore.showError(oauth.error.value)
   } finally {
     oauth.loading.value = false
@@ -7464,7 +7466,7 @@ const handleCookieAuth = async (sessionKey: string) => {
         errors.push(
           t('admin.accounts.oauth.keyAuthFailed', {
             index: i + 1,
-            error: error.response?.data?.detail || t('admin.accounts.oauth.authFailed')
+            error: extractApiErrorMessage(error, t('admin.accounts.oauth.authFailed'))
           })
         )
       }
@@ -7484,7 +7486,7 @@ const handleCookieAuth = async (sessionKey: string) => {
       oauth.error.value = errors.join('\n')
     }
   } catch (error: any) {
-    oauth.error.value = error.response?.data?.detail || t('admin.accounts.oauth.cookieAuthFailed')
+    oauth.error.value = extractApiErrorMessage(error, t('admin.accounts.oauth.cookieAuthFailed'))
   } finally {
     oauth.loading.value = false
   }

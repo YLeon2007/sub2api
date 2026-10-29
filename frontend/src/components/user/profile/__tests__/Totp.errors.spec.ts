@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('@/api', () => ({ totpAPI: mocks.totpAPI }))
 vi.mock('@/stores/app', () => ({ useAppStore: () => mocks }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-i18n')>()), useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('qrcode', () => ({ default: { toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,qr') } }))
 enableAutoUnmount(afterEach)
 

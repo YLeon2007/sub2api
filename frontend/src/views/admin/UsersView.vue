@@ -792,6 +792,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -1638,7 +1640,7 @@ const loadUsers = async () => {
     if (errorInfo?.name === 'AbortError' || errorInfo?.name === 'CanceledError' || errorInfo?.code === 'ERR_CANCELED') {
       return
     }
-    const message = error.response?.data?.detail || error.message || t('admin.users.failedToLoad')
+    const message = localizeApiErrorFallback(error.response?.data?.detail || error.message, t('admin.users.failedToLoad'))
     appStore.showError(message)
     console.error('Error loading users:', error)
   } finally {
@@ -1761,7 +1763,7 @@ const handleToggleStatus = async (user: AdminUser) => {
       row.updated_at = updated.updated_at
     }
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.users.failedToToggle'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.users.failedToToggle')))
     console.error('Error toggling user status:', error)
   }
 }
@@ -1813,7 +1815,7 @@ const confirmDelete = async () => {
     deletingUser.value = null
     loadUsers()
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.users.failedToDelete'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.users.failedToDelete')))
     console.error('Error deleting user:', error)
   }
 }

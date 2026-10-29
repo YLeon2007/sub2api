@@ -13,7 +13,8 @@ vi.mock('@/api/admin', () => ({
   }
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...await importOriginal<typeof import('vue-i18n')>(),
   useI18n: () => ({
     t: (key: string) => key
   })
@@ -71,6 +72,6 @@ describe('CNProviderBalanceCell', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('CNY 12.50')
-    expect(wrapper.text()).toContain('HTTP 401')
+    expect(wrapper.text()).toContain('monitorCommon.quota.errors.generic')
   })
 })
