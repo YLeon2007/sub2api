@@ -21,7 +21,10 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
         }
       }
       if (ts.isCatchClause(scope) && scope.variableDeclaration?.name.getText(sf) === n.text) return undefined
-      if (ts.isFunctionLike(scope) && scope.parameters.some(p => p.name.getText(sf) === n.text)) return undefined
+      if (ts.isFunctionLike(scope)) {
+        const parameter = scope.parameters.find(p => p.name.getText(sf) === n.text)
+        if (parameter) return parameter.initializer
+      }
     }
   }
   const callee = (n: ts.CallExpression) => ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : n.expression.getText(sf)
@@ -49,7 +52,7 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
   function verifiedEarlyRussianReturn(n: ts.Node): ts.IfStatement | undefined {
     if (!ts.isFunctionLike(n) || !('body' in n) || !n.body || !ts.isBlock(n.body)) return undefined
     let first = n.body.statements[0]
-    let boundFallback = n.parameters.some(parameter => ts.isIdentifier(parameter.name) && parameter.name.text === 'fallback')
+    let boundFallback = n.parameters.some(parameter => ts.isIdentifier(parameter.name) && parameter.name.text === 'fallback' && !parameter.initializer && !parameter.dotDotDotToken)
     // buildAuthErrorMessage binds only options.fallback before its RU return.
     // Permit that exact pure parameter destructuring, not arbitrary initializers,
     // calls, default values, or statements that may already expose a primary sink.
@@ -58,7 +61,8 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
       const declaration = declarations.length === 1 ? declarations[0] : undefined
       if (declaration && ts.isObjectBindingPattern(declaration.name) && declaration.name.elements.length === 1
         && declaration.initializer && ts.isIdentifier(declaration.initializer)
-        && declaration.initializer.text === n.parameters[1]?.name.getText(sf)) {
+        && declaration.initializer.text === n.parameters[1]?.name.getText(sf)
+        && !n.parameters[1]?.initializer && !n.parameters[1]?.dotDotDotToken) {
         const binding = declaration.name.elements[0]
         if (ts.isIdentifier(binding.name) && binding.name.text === 'fallback' && !binding.propertyName && !binding.initializer && !binding.dotDotDotToken) {
           boundFallback = true
@@ -126,7 +130,14 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
   }
   function gated(n: ts.Node): boolean {
     for (let p: ts.Node | undefined = n.parent; p; p = p.parent) {
-      if (ts.isCallExpression(p) && sanitizers.has(callee(p))) return true
+      if (ts.isCallExpression(p) && sanitizers.has(callee(p))) {
+        const fallback = p.arguments[callee(p) === 'extractI18nErrorMessage' ? 3 : 1]
+        // A sanitizer protects only its raw-input subtree, never its fallback.
+        // In particular a bare returned sanitizer call is not itself a sink,
+        // so do not suppress the analysis of raw fallback expressions inside it.
+        if (fallback && !raw(fallback)
+          && !(n.getStart(sf) >= fallback.getStart(sf) && n.end <= fallback.end)) return true
+      }
       if (ts.isConditionalExpression(p) && russianCondition(p.condition) && n.getStart(sf) >= p.whenFalse.getStart(sf)) return true
       if (ts.isFunctionLike(p) && 'body' in p && p.body) {
         const earlyReturn = verifiedEarlyRussianReturn(p)
@@ -174,7 +185,8 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
       const fallbackChain = !hasSuccessSink(n) && !hasRejectSink(n) && !verifiedThrowIntermediate(n) && ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.BarBarToken && raw(n) && localized(n.right)
       const sink = ts.isCallExpression(n) && callee(n) === 'showError' && n.arguments[0] && raw(n.arguments[0])
       const state = ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && /\w*(?:error|failure)\w*\.value$/i.test(n.left.getText(sf)) && raw(n.right)
-      if (fallbackChain || sink || state) failures.add(`${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}: ${n.getText(sf)}`)
+      const unsafeSanitizer = ts.isCallExpression(n) && sanitizers.has(callee(n)) && raw(n)
+      if (fallbackChain || sink || state || unsafeSanitizer) failures.add(`${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}: ${n.getText(sf)}`)
     }
     ts.forEachChild(n, inspect)
   }
@@ -212,6 +224,9 @@ describe('complete primary error fallback surface', () => {
     expect(unsafePrimaryErrors(source)).toEqual([])
   })
   it.each([
+    "function f(err:any, fallback=err.message){if(getLocale()==='ru')return fallback; return err.message||fallback}",
+    "function f(err:any){return localizeApiErrorFallback(err.message,err.message||t('common.error'))}",
+    "function f(err:any, options={fallback:err.message}){const {fallback}=options; if(getLocale()==='ru')return fallback; return err.message||fallback}",
     "const primaryTestError = (message: string) => message; errorMessage.value = primaryTestError(event.error)",
     "const primaryTestError = (message: string) => arbitrary(message, t('admin.accounts.testFailed'), locale.value); errorMessage.value = primaryTestError(event.error)",
     "const primaryTestError = (message: string) => localizeApiErrorFallback(message, t('admin.accounts.testFailed'), 'en'); errorMessage.value = primaryTestError(event.error)",

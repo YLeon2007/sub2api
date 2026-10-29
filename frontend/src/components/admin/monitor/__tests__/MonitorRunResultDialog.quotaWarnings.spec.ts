@@ -20,6 +20,15 @@ const rows = JSON.parse(readFileSync(resolve(process.cwd(), '../backend/internal
   name: string; snapshot: MonitorQuotaSnapshot; message: string; ru: string
 }[]
 
+// All producer windows are exercised through the real child and progress bar.
+// Immutable official MonitorQuotaView leaves monthly raw in EN/ZH; only RU
+// closes the missing display mapping, without changing those original labels.
+const windows: Record<string, string> = {
+  '5h': '5h', '7d': '7d', '7d-sonnet': '7dSonnet', '7d-fable': '7dFable',
+  daily: 'daily', weekly: 'weekly', monthly: 'monthly', '30d': '30d', total: 'total',
+}
+const labels = new Set(['requests', 'tokens', 'shared', 'pro', 'flash'])
+
 for (const locale of ['ru', 'ru-RU', 'en', 'zh'] as const) {
   describe(`actual quota-warning run-result display (${locale})`, () => {
     for (const row of rows) {
@@ -36,11 +45,22 @@ for (const locale of ['ru', 'ru-RU', 'en', 'zh'] as const) {
         const wrapper = mount(MonitorRunResultDialog, {
           props: { show: true, results: [result] },
           global: { plugins: [i18n], stubs: {
-            BaseDialog: { template: '<div><slot /><slot name="footer" /></div>' }, MonitorQuotaView: true,
+            BaseDialog: { template: '<div><slot /><slot name="footer" /></div>' },
           } },
         })
         const russian = locale === 'ru' || locale === 'ru-RU'
         expect(wrapper.find('span.text-xs').text()).toBe(russian ? row.ru : row.message)
+        const bars = wrapper.findAll('[data-testid="monitor-quota-tier"]')
+        expect(bars).toHaveLength(row.snapshot.tiers?.length || 0)
+        for (const [index, tier] of (row.snapshot.tiers || []).entries()) {
+          const key = tier.window === 'monthly' && !russian ? undefined : windows[tier.window]
+          const window = key ? i18n.global.t(`monitorCommon.quota.windows.${key}`) : tier.window
+          const label = tier.label && labels.has(tier.label)
+            ? i18n.global.t(`monitorCommon.quota.labels.${tier.label}`) : tier.label
+          const expected = label ? `${label}/${window}` : window
+          expect(bars[index].attributes('title')).toBe(expected)
+          expect(bars[index].text()).toContain(expected)
+        }
         if (russian) {
           expect(wrapper.find('details summary').text()).toBe('Техническая диагностика')
           expect(wrapper.find('details pre').text()).toBe(row.message)

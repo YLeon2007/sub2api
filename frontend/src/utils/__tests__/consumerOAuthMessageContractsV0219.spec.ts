@@ -181,7 +181,7 @@ describe('real create-account message-first consumers (REG-001/002/003)', () => 
   }
   it.each(locales)('409 mixed-channel warning ignores all fields except response.message (%s)', async locale => {
     fixture.current = locale
-    for (const message of ['Response message', undefined]) {
+    for (const message of ['Response message', '', undefined, null]) {
       const error = { message: 'Envelope message', error: 'Envelope error', reason: 'Envelope reason', response: {
         status: 409, data: { message, detail: 'Do not select detail', error: 'mixed_channel_warning', reason: 'Response reason' },
       } }
@@ -193,7 +193,12 @@ describe('real create-account message-first consumers (REG-001/002/003)', () => 
       await handler(createPath, 'submitCreateAccount', scope)({ platform: 'antigravity', credentials: {} })
       expect(scope.adminAPI.accounts.create).toHaveBeenCalledOnce()
       expect(scope.showMixedChannelWarning.value).toBe(true)
-      expect(scope.mixedChannelWarningRawMessage.value).toBe(primary(message, 'admin.accounts.mixedChannelWarningGeneric'))
+      // Immutable original caller forwards raw message and the receiving dialog
+      // selects message || response?.message || failedToCreate, not warningGeneric.
+      const originalFinal = message || t('admin.accounts.failedToCreate')
+      expect(scope.mixedChannelWarningRawMessage.value).toBe(
+        locale.startsWith('ru') ? t('admin.accounts.mixedChannelWarningGeneric') : originalFinal,
+      )
       expect(scope.appStore.showError).not.toHaveBeenCalled()
       expect(scope.submitting.value).toBe(false)
     }

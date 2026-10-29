@@ -5599,7 +5599,7 @@ const submitCreateAccount = async (payload: CreateAccountRequest) => {
   } catch (error: any) {
     if (error.response?.status === 409 && error.response?.data?.error === 'mixed_channel_warning' && needsMixedChannelCheck(form.platform)) {
       openMixedChannelDialog({
-        message: localizeApiErrorFallback(error.response?.data?.message, t('admin.accounts.mixedChannelWarningGeneric'), locale.value),
+        message: error.response?.data?.message,
         onConfirm: async () => {
           antigravityMixedChannelConfirmed.value = true
           await submitCreateAccount(payload)
