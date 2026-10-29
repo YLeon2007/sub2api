@@ -5,6 +5,7 @@ import { parse } from 'vue/compiler-sfc'
 import ts from 'typescript'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as apiErrors from '@/utils/apiError'
+import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
 
 const language = vi.hoisted(() => ({ current: 'ru' }))
 vi.mock('@/i18n', () => ({ getLocale: () => language.current }))
@@ -328,5 +329,69 @@ describe('actual account test catch/event primary and diagnostic channels', () =
     const { handleEvent } = consumers(testPaths[1]!, ['localizeKnownAccountTestText', 'primaryTestError', 'addLine', 'handleEvent'], scope)
     handleEvent({ type: 'content', text: 'Compact probe succeeded (native remote compaction v2)' })
     expect(scope.streamingContent.value).toBe(t('admin.accounts.openai.compactProbeSuccess'))
+  })
+})
+
+// The last three strict equality branches bypassed the established RU-root
+// contract even though the surrounding catches already handled regional RU.
+describe('regional Russian boundaries at the actual remaining consumers', () => {
+  const localeCases = ['ru', 'ru-RU', 'ru_RU', 'RU', 'en', 'zh', 'russian']
+  const russian = (value: string) => value.toLowerCase().split(/[-_]/)[0] === 'ru'
+  it.each(localeCases)('admin reauth preserves each EN/ZH mode and localizes the RU root (%s)', locale => {
+    language.current = locale
+    const { reauthErrorText } = consumers('components/admin/account/ReAuthAccountModal.vue', ['reauthErrorText'], baseScope())
+    const fallback = t('admin.accounts.oauth.authFailed')
+    const cases = [
+      { input: { message: 'Envelope', response: { data: { detail: 'Detail', message: 'Nested' } } }, expected: ['Detail', 'Detail', 'Detail'] },
+      { input: { message: 'Envelope', response: { data: { message: 'Nested' } } }, expected: [fallback, 'Nested', 'Envelope'] },
+      { input: { message: 'Envelope', response: { data: { detail: '', message: '' } } }, expected: [fallback, 'Envelope', 'Envelope'] },
+      { input: { message: '', response: { data: { message: '' } } }, expected: [fallback, fallback, fallback] },
+      { input: undefined, expected: [fallback, fallback, fallback] },
+    ]
+    for (const { input, expected } of cases) {
+      const before = structuredClone(input)
+      for (const [index, mode] of ['detail', 'detail-message-error', 'detail-error'].entries()) {
+        expect(reauthErrorText(input, fallback, mode)).toBe(russian(locale) ? fallback : expected[index])
+      }
+      expect(input).toEqual(before)
+    }
+  })
+  it.each(localeCases)('successful Grok quota response localizes only display, preserving result and emission (%s)', async locale => {
+    language.current = locale
+    for (const raw of ['Provider temporarily unavailable', 'Authentication failed (HTTP 401): request-id=keep', '', null, undefined]) {
+      const result = { probe_error: raw, success: false, quota: { remaining: 17 }, code: 'UNCHANGED_CODE' }
+      const before = structuredClone(result)
+      const queryQuota = vi.fn(async () => result)
+      const scope = { ...baseScope(), localizeQuotaDiagnostic, props: { account: { id: 31 } },
+        loading: ref(false), error: ref<string | null>(null), data: ref<unknown>(null), emit: vi.fn(),
+        adminAPI: { grok: { queryQuota } },
+      }
+      const { handleProbe } = consumers('components/account/GrokQuotaProbeCell.vue', ['extractErrorMessage', 'handleProbe'], scope)
+      await handleProbe()
+      expect(scope.error.value).toBe(raw ? russian(locale) ? localizeQuotaDiagnostic(raw, t) : raw : null)
+      expect(scope.data.value).toEqual(result)
+      expect(scope.emit).toHaveBeenCalledWith('probed', scope.data.value)
+      expect(queryQuota).toHaveBeenCalledTimes(1)
+      expect(queryQuota).toHaveBeenCalledWith(31)
+      expect(result).toEqual(before)
+      expect(scope.loading.value).toBe(false)
+    }
+  })
+  it.each(localeCases)('admin status event keeps the original event while localizing the RU display (%s)', locale => {
+    language.current = locale
+    for (const text of ['Provider queued: custom detail', '', undefined]) {
+      const scope = testScope(async () => ({}))
+      scope.streamingContent.value = 'User-authored model content'
+      const { handleEvent } = consumers(testPaths[1]!, ['localizeKnownAccountTestText', 'primaryTestError', 'addLine', 'handleEvent'], scope)
+      const event = { type: 'status', text, model: 'machine-model-id' }
+      const before = structuredClone(event)
+      handleEvent(event)
+      expect(scope.outputLines.value).toEqual(text ? [{ text: russian(locale) ? t('admin.accounts.testing') : text, class: 'text-cyan-300' }] : [])
+      expect(scope.status.value).toBe('idle')
+      expect(scope.streamingContent.value).toBe('User-authored model content')
+      expect(scope.errorMessage.value).toBe('')
+      expect(scope.fetch).not.toHaveBeenCalled()
+      expect(event).toEqual(before)
+    }
   })
 })

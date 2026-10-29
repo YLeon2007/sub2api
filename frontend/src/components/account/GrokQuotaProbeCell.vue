@@ -103,7 +103,7 @@ const handleProbe = async () => {
   try {
     data.value = await adminAPI.grok.queryQuota(props.account.id)
     error.value = data.value.probe_error
-      ? (locale.value === 'ru' ? localizeQuotaDiagnostic(data.value.probe_error, t) : data.value.probe_error)
+      ? (locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? localizeQuotaDiagnostic(data.value.probe_error, t) : data.value.probe_error)
       : null
     emit('probed', data.value)
   } catch (e) {

@@ -1038,7 +1038,7 @@ const handleEvent = (event: {
 
     case 'status':
       if (event.text) {
-        addLine(locale.value === 'ru' ? t('admin.accounts.testing') : event.text, 'text-cyan-300')
+        addLine(locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? t('admin.accounts.testing') : event.text, 'text-cyan-300')
       }
       break
 

@@ -246,7 +246,7 @@ const reauthErrorText = (
   fallback: string,
   mode: ReauthErrorMode = 'detail'
 ): string => {
-  if (locale.value === 'ru') {
+  if (locale.value.toLowerCase().split(/[-_]/)[0] === 'ru') {
     return extractApiErrorMessage(error, fallback, undefined, locale.value)
   }
   const source = (error || {}) as ReauthErrorSource

@@ -261,7 +261,7 @@ describe('Russian release review closure', () => {
 
   it('preserves the legacy EN/ZH reauth error precedence while sanitizing RU', () => {
     const reauth = source('src/components/admin/account/ReAuthAccountModal.vue')
-    expect(reauth).toContain("if (locale.value === 'ru')")
+    expect(reauth).toContain("if (locale.value.toLowerCase().split(/[-_]/)[0] === 'ru')")
     expect(reauth).toContain("if (mode === 'detail') return detail || fallback")
     expect(reauth).toContain("return detail || source.response?.data?.message || source.message || fallback")
     expect(reauth).toContain("return detail || source.message || fallback")
