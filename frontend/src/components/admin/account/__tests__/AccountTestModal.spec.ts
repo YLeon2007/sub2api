@@ -284,7 +284,7 @@ describe('AccountTestModal', () => {
     expect(wrapper.text()).not.toContain('Upstream returned 2xx')
   })
 
-  it('does not surface unknown backend status or errors in Russian', async () => {
+  it('localizes Russian primary errors while retaining separately labeled raw diagnostics', async () => {
     mockLocale.value = 'ru'
     global.fetch = vi.fn().mockResolvedValue(createStreamResponse([
       'data: {"type":"status","text":"Negotiating upstream bearer token"}\n',
@@ -296,8 +296,12 @@ describe('AccountTestModal', () => {
     await (wrapper.vm as any).startTest()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Ошибка: admin.accounts.testFailed')
-    expect(wrapper.text()).not.toContain('upstream returned 402')
+    const primary = wrapper.get('.border-t.text-red-400 > span')
+    expect(primary.text()).toBe('admin.accounts.testFailed')
+    expect(primary.text()).not.toContain('upstream returned 402')
+    const diagnostics = wrapper.findAll('div.text-red-400')
+      .filter(line => !line.classes().includes('border-t'))
+    expect(diagnostics.map(line => line.text())).toContain('Ошибка: upstream returned 402 for model')
     expect(wrapper.text()).not.toContain('Negotiating upstream bearer token')
   })
 })

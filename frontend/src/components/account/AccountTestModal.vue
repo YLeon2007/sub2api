@@ -251,7 +251,7 @@ import { Icon } from '@/components/icons'
 import { useClipboard } from '@/composables/useClipboard'
 import { buildApiUrl } from '@/api/client'
 import { adminAPI } from '@/api/admin'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import type { Account, ClaudeModel } from '@/types'
 
 const { t, locale } = useI18n()
@@ -477,8 +477,8 @@ const startTest = async () => {
       return
     }
     status.value = 'error'
-    const msg = extractApiErrorMessage(error, t('common.unknownError'), undefined, locale.value)
-    errorMessage.value = t('admin.accounts.testFailed')
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    errorMessage.value = localizeApiErrorFallback(msg, t('admin.accounts.testFailed'), locale.value)
     addLine(t('admin.accounts.errorPrefix', { message: msg }), 'text-red-400')
   }
 }
@@ -541,10 +541,10 @@ const handleEvent = (event: {
         status.value = 'success'
       } else {
         status.value = 'error'
-        errorMessage.value = t('admin.accounts.testFailed')
+        errorMessage.value = localizeApiErrorFallback(event.error || 'Test failed', t('admin.accounts.testFailed'), locale.value)
         if (event.error) {
           addLine(t('admin.accounts.errorPrefix', {
-            message: extractApiErrorMessage({ message: event.error }, t('common.error'), undefined, locale.value)
+            message: event.error
           }), 'text-red-400')
         }
       }
@@ -552,10 +552,10 @@ const handleEvent = (event: {
 
     case 'error':
       status.value = 'error'
-      errorMessage.value = t('admin.accounts.testFailed')
+      errorMessage.value = localizeApiErrorFallback(event.error || 'Unknown error', t('admin.accounts.testFailed'), locale.value)
       if (event.error) {
         addLine(t('admin.accounts.errorPrefix', {
-          message: extractApiErrorMessage({ message: event.error }, t('common.error'), undefined, locale.value)
+          message: event.error
         }), 'text-red-400')
       }
       if (streamingContent.value) {

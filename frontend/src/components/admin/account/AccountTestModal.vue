@@ -375,7 +375,7 @@ import { useClipboard } from '@/composables/useClipboard'
 import { buildApiUrl } from '@/api/client'
 import { ADMIN_UI_REQUEST_HEADER } from '@/api/adminUIRequest'
 import { adminAPI } from '@/api/admin'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import type { Account, ClaudeModel } from '@/types'
 
 const { t, locale } = useI18n()
@@ -933,8 +933,8 @@ const startTest = async () => {
       return
     }
     status.value = 'error'
-    const msg = extractApiErrorMessage(error, t('common.unknownError'), undefined, locale.value)
-    errorMessage.value = t('admin.accounts.testFailed')
+    const msg = error instanceof Error ? error.message : t('common.unknownError')
+    errorMessage.value = localizeApiErrorFallback(msg, t('admin.accounts.testFailed'), locale.value)
     addLine(t('admin.accounts.errorPrefix', { message: msg }), 'text-red-400')
   }
 }
@@ -956,7 +956,7 @@ const localizeKnownAccountTestText = (text: string) => {
 }
 
 const primaryTestError = (message: string) =>
-  extractApiErrorMessage({ message }, t('admin.accounts.testFailed'), undefined, locale.value)
+  localizeApiErrorFallback(message, t('admin.accounts.testFailed'), locale.value)
 
 const handleEvent = (event: {
   type: string
@@ -1055,13 +1055,13 @@ const handleEvent = (event: {
         if (event.error) {
           const localizedError = localizeKnownAccountTestText(event.error)
           if (localizedError === event.error) {
-            errorMessage.value = t('admin.accounts.testFailed')
-            addLine(t('admin.accounts.errorPrefix', { message: primaryTestError(event.error) }), 'text-red-400')
+            errorMessage.value = primaryTestError(event.error)
+            addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
           } else {
             errorMessage.value = localizedError
           }
         } else {
-          errorMessage.value = t('admin.accounts.testFailed')
+          errorMessage.value = primaryTestError(t('admin.accounts.testFailed'))
         }
       }
       break
@@ -1071,13 +1071,13 @@ const handleEvent = (event: {
       if (event.error) {
         const localizedEventError = localizeKnownAccountTestText(event.error)
         if (localizedEventError === event.error) {
-          errorMessage.value = t('admin.accounts.testFailed')
-          addLine(t('admin.accounts.errorPrefix', { message: primaryTestError(event.error) }), 'text-red-400')
+          errorMessage.value = primaryTestError(event.error)
+          addLine(t('admin.accounts.errorPrefix', { message: event.error }), 'text-red-400')
         } else {
           errorMessage.value = localizedEventError
         }
       } else {
-        errorMessage.value = t('admin.accounts.testFailed')
+        errorMessage.value = primaryTestError(t('common.unknownError'))
       }
       if (streamingContent.value) {
         addLine(streamingContent.value, 'text-green-300')

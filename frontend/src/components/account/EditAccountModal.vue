@@ -5501,9 +5501,9 @@ const openMixedChannelDialog = (opts: {
   onConfirm: () => Promise<void>
 }) => {
   mixedChannelWarningDetails.value = buildMixedChannelDetails(opts.response)
-  mixedChannelWarningRawMessage.value = extractApiErrorMessage(
-    { message: opts.message || opts.response?.message },
-    t('admin.accounts.mixedChannelWarningGeneric'), undefined, locale.value
+  mixedChannelWarningRawMessage.value = localizeApiErrorFallback(
+    opts.message || opts.response?.message || t('admin.accounts.failedToUpdate'),
+    t('admin.accounts.mixedChannelWarningGeneric'), locale.value
   )
   mixedChannelWarningAction.value = opts.onConfirm
   showMixedChannelWarning.value = true
@@ -5550,7 +5550,7 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
     })
     return false
   } catch (error: any) {
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToUpdate'), undefined, locale.value))
+    appStore.showError(localizeApiErrorFallback(error.message, t('admin.accounts.failedToUpdate'), locale.value))
     return false
   }
 }
@@ -5613,7 +5613,8 @@ const submitUpdateAccount = async (accountID: number, updatePayload: Record<stri
   } catch (error: any) {
     if (error.status === 409 && error.error === 'mixed_channel_warning' && needsMixedChannelCheck()) {
       openMixedChannelDialog({
-        message: extractApiErrorMessage(error, t('admin.accounts.mixedChannelWarningGeneric'), undefined, locale.value),
+        // The dialog owns RU primary localization; forward the original selector.
+        message: error.message,
         onConfirm: async () => {
           antigravityMixedChannelConfirmed.value = true
           await submitUpdateAccount(accountID, updatePayload)
@@ -5621,7 +5622,7 @@ const submitUpdateAccount = async (accountID: number, updatePayload: Record<stri
       })
       return
     }
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToUpdate'), undefined, locale.value))
+    appStore.showError(localizeApiErrorFallback(error.message, t('admin.accounts.failedToUpdate'), locale.value))
   } finally {
     submitting.value = false
   }
@@ -6402,7 +6403,7 @@ const handleSubmit = async () => {
 
     await submitUpdateAccount(accountID, updatePayload)
   } catch (error: any) {
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.failedToUpdate'), undefined, locale.value))
+    appStore.showError(localizeApiErrorFallback(error.message, t('admin.accounts.failedToUpdate'), locale.value))
   }
 }
 

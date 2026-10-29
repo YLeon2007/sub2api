@@ -127,7 +127,7 @@ import {
   type ClaudeResetOutcome
 } from '@/api/admin/claudeResetCredits'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 
 const props = defineProps<{ account: Account }>()
 // Fired after a redemption attempt so the parent can refresh the usage row.
@@ -285,7 +285,7 @@ function errorText(e: unknown): string {
     case 'CLAUDE_RESET_UPSTREAM_UNAVAILABLE': return t('admin.accounts.claudeResetCredits.outcome.unavailable')
     case 'IDEMPOTENCY_IN_PROGRESS': return t('admin.accounts.claudeResetCredits.outcome.inProgress')
     case 'IDEMPOTENCY_RETRY_BACKOFF': return t('admin.accounts.claudeResetCredits.outcome.retryBackoff')
-    default: return extractApiErrorMessage(e, t('admin.accounts.claudeResetCredits.outcome.failed'), undefined, locale.value)
+    default: return localizeApiErrorFallback(err?.message, t('admin.accounts.claudeResetCredits.outcome.failed'), locale.value)
   }
 }
 

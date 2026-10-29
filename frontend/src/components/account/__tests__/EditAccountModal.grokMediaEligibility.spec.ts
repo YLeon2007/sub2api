@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { mount } from '@vue/test-utils'
 
@@ -38,10 +38,11 @@ vi.mock('@/api/admin', () => ({
 vi.mock('@/api/admin/accounts', () => ({ getAntigravityDefaultModelMapping: vi.fn() }))
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
-  return { ...actual, useI18n: () => ({ t: (key: string) => key }) }
+  return { ...actual, useI18n: () => ({ t: (key: string) => key, locale: i18n.global.locale }) }
 })
 
 import EditAccountModal from '../EditAccountModal.vue'
+import { i18n } from '@/i18n'
 
 const BaseDialogStub = defineComponent({
   props: { show: { type: Boolean, default: false } },
@@ -67,7 +68,13 @@ function mountModal(value = account()) {
 }
 
 describe('EditAccountModal Grok media eligibility', () => {
+  let previousLocale: string
+  afterEach(() => {
+    i18n.global.locale.value = previousLocale as typeof i18n.global.locale.value
+  })
   beforeEach(() => {
+    previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'ru'
     authIsSimpleMode.value = true
     updateAccountMock.mockReset()
     getEligibilityMock.mockReset()
