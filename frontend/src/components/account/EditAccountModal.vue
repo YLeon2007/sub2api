@@ -3486,7 +3486,7 @@ import {
 } from '@/utils/openaiWsMode'
 import {
   getPresetMappingsByPlatform,
-  commonErrorCodes,
+  getCommonErrorCodes,
   buildModelMappingObject,
   splitModelMappingObject,
   isValidWildcardPattern
@@ -3506,6 +3506,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+const commonErrorCodes = computed(() => getCommonErrorCodes(t))
 const appStore = useAppStore()
 const browserTimeZone = getBrowserTimeZone()
 

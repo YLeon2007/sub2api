@@ -499,6 +499,20 @@ export const commonErrorCodes = [
   { value: 529, label: 'Overloaded' }
 ]
 
+// Display labels only; keep numeric codes and the exported source inventory unchanged.
+export function getCommonErrorCodes(t: (key: string) => string) {
+  const labelKeys: Record<number, string> = {
+    401: 'errors.unauthorized',
+    403: 'errors.forbidden',
+    429: 'admin.accounts.rateLimited',
+    500: 'errors.serverError',
+    502: 'runtimeUi.badGateway',
+    503: 'runtimeUi.serviceUnavailable',
+    529: 'admin.accounts.status.overloaded',
+  }
+  return commonErrorCodes.map(code => ({ ...code, label: t(labelKeys[code.value] || 'common.unknown') }))
+}
+
 // =====================
 // 辅助函数
 // =====================

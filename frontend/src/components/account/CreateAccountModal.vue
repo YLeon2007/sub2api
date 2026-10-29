@@ -4121,7 +4121,7 @@ import {
   claudeModels,
   getPresetMappingsByPlatform,
   getModelsByPlatform,
-  commonErrorCodes,
+  getCommonErrorCodes,
   buildModelMappingObject,
   fetchAntigravityDefaultMappings,
   isValidWildcardPattern
@@ -4235,6 +4235,7 @@ interface OAuthFlowExposed {
 }
 
 const { t } = useI18n()
+const commonErrorCodes = computed(() => getCommonErrorCodes(t))
 const browserTimeZone = getBrowserTimeZone()
 
 const oauthStepTitle = computed(() => {
