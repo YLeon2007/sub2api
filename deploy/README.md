@@ -111,7 +111,7 @@ Never commit `.env`, generated secrets, database data or OAuth credentials.
 |---|---|---|
 | `docker-compose.local.yml` | `./data`, `./postgres_data`, `./redis_data` | Easy filesystem-level transfer; stop or use DB-aware backups for consistency |
 | `docker-compose.yml` | Named volumes | Includes `/app` runtime persistence needed for web-updated binaries across restart |
-| `docker-compose.standalone.yml` | App data/runtime only | Requires external `DATABASE_HOST`, `DATABASE_PASSWORD`, `REDIS_HOST` and related split variables |
+| `docker-compose.standalone.yml` | App data only (`/app/data`; no runtime mount at `/app`) | Requires external `DATABASE_HOST`, `DATABASE_PASSWORD`, `REDIS_HOST` and related split variables |
 
 The image tag remains the reproducible source of truth. If a binary was updated from the web UI, update the Compose image pin to the matching immutable RU release before recreating containers.
 
@@ -156,7 +156,7 @@ Replace `<NEW_RU_VERSION>` only with a published immutable tag from [fork Releas
 
    Set `COMPOSE_FILE` to `docker-compose.local.yml` or `docker-compose.standalone.yml` instead when that is the deployed filename. Keep this selection for every command, including the helper below.
 
-3. **Named volume mounted at `/app`: synchronize the runtime before declaring the upgrade complete.** The standard `sub2api_runtime` volume (also used by the standalone variant) hides `/app` from the new image. Pulling/recreating alone preserves the old binary; the entrypoint does not replace it. Do not delete the volume to update it.
+3. **Named volume mounted at `/app`: synchronize the runtime before declaring the upgrade complete.** The standard `docker-compose.yml` uses `sub2api_runtime`, which hides `/app` from the new image. The local and standard standalone variants do not mount a runtime volume at `/app`. Pulling/recreating alone preserves the old binary; the entrypoint does not replace it. Do not delete the volume to update it.
 
    Download the release-pinned helper, inspect it and explicitly approve execution:
 
@@ -176,7 +176,7 @@ Replace `<NEW_RU_VERSION>` only with a published immutable tag from [fork Releas
 
    The empty first argument selects the image from the rendered Compose configuration. The helper stages that image's binary, stops/restarts only the app, compares its installed SHA-256 and prints `RUNTIME_IMAGE_SYNC_PASS` on success. It preserves the previous binary for rollback and attempts to restore it on failure; this is **not** a database migration rollback. A failed helper is a failed upgrade, not a reason to continue blindly.
 
-4. **No mount at `/app`** (the local-directory variant): the binary comes directly from the image, so recreate only the app instead of running the runtime-volume helper:
+4. **No mount at `/app`** (the local-directory and standard standalone variants): the binary comes directly from the image, so recreate only the app instead of running the runtime-volume helper:
 
    ```bash
    docker compose up -d --no-deps --force-recreate sub2api

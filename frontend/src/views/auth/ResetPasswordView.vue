@@ -207,7 +207,7 @@ import { AuthLayout } from '@/components/layout'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
 import { resetPassword } from '@/api/auth'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 
 const { t } = useI18n()
 
@@ -319,7 +319,9 @@ async function handleSubmit(): Promise<void> {
     if (err.response?.data?.code === 'INVALID_RESET_TOKEN') {
       errorMessage.value = t('auth.invalidOrExpiredToken')
     } else {
-      errorMessage.value = extractApiErrorMessage(error, t('auth.resetPasswordFailed'))
+      errorMessage.value = localizeApiErrorFallback(
+        err.response?.data?.detail || err.message, t('auth.resetPasswordFailed'),
+      )
     }
 
     appStore.showError(errorMessage.value)

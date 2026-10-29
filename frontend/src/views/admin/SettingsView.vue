@@ -9022,7 +9022,7 @@ import {
 import AdminAccessKeysSettings from "@/components/admin/settings/AdminAccessKeysSettings.vue";
 import TotpStepUpDialog from "@/components/auth/TotpStepUpDialog.vue";
 import { affiliatesAPI, type AffiliateAdminEntry, type SimpleUser as AffiliateSimpleUser } from "@/api/admin/affiliates";
-import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiError";
+import { extractApiErrorMessage, extractI18nErrorMessage, localizeApiSuccessMessage } from "@/utils/apiError";
 import { useAppStore } from "@/stores";
 import { useAdminSettingsStore } from "@/stores/adminSettings";
 import { normalizeVisibleMethod } from "@/components/payment/paymentFlow";
@@ -11955,7 +11955,7 @@ async function testSmtpConnection() {
     });
     // API returns { message: "..." } on success, errors are thrown as exceptions
     appStore.showSuccess(
-      result.message || t("admin.settings.smtpConnectionSuccess"),
+      localizeApiSuccessMessage(result.message, t("admin.settings.smtpConnectionSuccess")),
     );
   } catch (error: unknown) {
     appStore.showError(
@@ -11988,7 +11988,7 @@ async function sendTestEmail() {
       smtp_use_tls: form.smtp_use_tls,
     });
     // API returns { message: "..." } on success, errors are thrown as exceptions
-    appStore.showSuccess(result.message || t("admin.settings.testEmailSent"));
+    appStore.showSuccess(localizeApiSuccessMessage(result.message, t("admin.settings.testEmailSent")));
   } catch (error: unknown) {
     appStore.showError(
       extractApiErrorMessage(error, t("admin.settings.failedToSendTestEmail")),

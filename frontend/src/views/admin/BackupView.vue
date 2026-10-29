@@ -416,6 +416,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { localizeApiSuccessMessage } from '@/utils/apiError'
 import { adminAPI } from '@/api'
 import { useAppStore } from '@/stores'
 import type {
@@ -725,7 +726,7 @@ async function testImageStorage() {
   try {
     const result = await adminAPI.backup.testImageStorageConnection(imageStorageForm.value)
     if (result.ok) {
-      appStore.showSuccess(result.message || t('admin.backup.s3.testSuccess'))
+      appStore.showSuccess(localizeApiSuccessMessage(result.message, t('admin.backup.s3.testSuccess')))
     } else {
       appStore.showError(t('admin.backup.s3.testFailed'))
     }
@@ -741,7 +742,7 @@ async function testS3() {
   try {
     const result = await adminAPI.backup.testS3Connection(s3Form.value)
     if (result.ok) {
-      appStore.showSuccess(result.message || t('admin.backup.s3.testSuccess'))
+      appStore.showSuccess(localizeApiSuccessMessage(result.message, t('admin.backup.s3.testSuccess')))
     } else {
       appStore.showError(t('admin.backup.s3.testFailed'))
     }

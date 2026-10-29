@@ -63,6 +63,7 @@ root = Path(sys.argv[1])
 for name, heading in (
     ("README.md", "Safe immutable upgrade"),
     ("README_RU.md", "Безопасное обновление на неизменяемую версию"),
+    ("../README_RU.md", "Обновление Docker-образа вручную"),
 ):
     text = (root / name).read_text()
     section = text.split(f"## {heading}\n", 1)[1].split("\n## ", 1)[0]
@@ -78,6 +79,12 @@ for name, heading in (
         assert command in commands, f"{name}: upgrade guidance missing {command}"
     assert "RUNTIME_IMAGE_SYNC_PASS" in section, f"{name}: require successful runtime sync receipt"
     assert "sub2api_runtime" in section, f"{name}: explain persistent runtime volume"
+    assert "docker-compose.standalone.yml" in section, f"{name}: cover standalone variant"
+    assert "also used by the standalone variant" not in text
+    assert "он используется и в автономном варианте" not in text
+standalone = (root / "docker-compose.standalone.yml").read_text()
+assert "sub2api_data:/app/data" in standalone
+assert "sub2api_runtime:/app" not in standalone
 PY
 
 printf '%s\n' 'sync-runtime success, second-mv rollback and upgrade documentation tests passed'

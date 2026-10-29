@@ -55,9 +55,9 @@ describe('Russian primary API errors', () => {
     const redeem = readFileSync(resolve(process.cwd(), 'src/views/user/RedeemView.vue'), 'utf8')
     const forgot = readFileSync(resolve(process.cwd(), 'src/views/auth/ForgotPasswordView.vue'), 'utf8')
     const reset = readFileSync(resolve(process.cwd(), 'src/views/auth/ResetPasswordView.vue'), 'utf8')
-    expect(redeem).toContain("extractApiErrorMessage(error, t('redeem.failedToRedeem'))")
-    expect(forgot).toContain("extractApiErrorMessage(error, t('auth.sendResetLinkFailed'))")
-    expect(reset).toContain("extractApiErrorMessage(error, t('auth.resetPasswordFailed'))")
+    expect(redeem).toContain("localizeApiErrorFallback(error.response?.data?.detail, t('redeem.failedToRedeem'))")
+    expect(forgot).toMatch(/localizeApiErrorFallback\(\s*err\.response\?\.data\?\.detail \|\| err\.message, t\('auth\.sendResetLinkFailed'\)/)
+    expect(reset).toMatch(/localizeApiErrorFallback\(\s*err\.response\?\.data\?\.detail \|\| err\.message, t\('auth\.resetPasswordFailed'\)/)
     expect(reset).toContain("err.response?.data?.code === 'INVALID_RESET_TOKEN'")
     for (const view of [redeem, forgot, reset]) {
       expect(view).not.toMatch(/errorMessage\.value\s*=\s*(?:err|error)\.response(?:\?\.)?\.data(?:\?\.)?\.detail/)

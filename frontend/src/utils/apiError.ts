@@ -21,6 +21,15 @@ export function localizeApiErrorFallback(
   return locale === 'ru' ? fallback : raw || fallback
 }
 
+/** Localize primary success copy in RU without changing EN/ZH API messages. */
+export function localizeApiSuccessMessage(
+  raw: string | null | undefined,
+  fallback: string,
+  localeOverride?: string,
+): string {
+  return localizeApiErrorFallback(raw, fallback, localeOverride)
+}
+
 interface ApiErrorLike {
   status?: number
   code?: number | string

@@ -140,7 +140,7 @@ import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/CaptchaChallenge.vue'
 import { useAppStore } from '@/stores'
 import { getPublicSettings, forgotPassword } from '@/api/auth'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 
 const { t } = useI18n()
 
@@ -313,7 +313,10 @@ async function handleSubmit(): Promise<void> {
     isSubmitted.value = true
     appStore.showSuccess(t('auth.resetEmailSent'))
   } catch (error: unknown) {
-    errorMessage.value = extractApiErrorMessage(error, t('auth.sendResetLinkFailed'))
+    const err = error as { message?: string; response?: { data?: { detail?: string } } }
+    errorMessage.value = localizeApiErrorFallback(
+      err.response?.data?.detail || err.message, t('auth.sendResetLinkFailed'),
+    )
 
     appStore.showError(errorMessage.value)
   } finally {
