@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/require"
 )
 
@@ -79,6 +80,10 @@ func newInflightEstimateGateway(t *testing.T, channelService *ChannelService) *G
 		billingService: billing,
 		resolver:       NewModelPricingResolver(channelService, billing),
 		channelService: channelService,
+		// Match NewGatewayService's shared cache; disable the janitor in this fixture.
+		// A nil cache creates a cache and background janitor per estimate, polluting
+		// the bounded-memory assertion with unrelated rate-resolver allocations.
+		userGroupRateCache: gocache.New(defaultUserGroupRateCacheTTL, 0),
 	}
 }
 
@@ -436,6 +441,7 @@ func attachInflightSnapshot(svc *GatewayService, snap *inflightSnapshotCacheStub
 func TestInflightEstimate_AccountMappingNoDBAndBoundedMemory(t *testing.T) {
 	groupID := int64(40)
 	svc := newInflightEstimateGateway(t, nil)
+	require.NotNil(t, svc.userGroupRateCache, "fixture must share the rate cache as NewGatewayService does")
 	snap := &inflightSnapshotCacheStub{byBucket: map[string][]Account{inflightBucketKey(groupID, PlatformAnthropic): {
 		{ID: 1, Platform: PlatformAnthropic, Credentials: map[string]any{"model_mapping": map[string]any{"acct-alias-40": "claude-sonnet-4-5"}}},
 	}}}
