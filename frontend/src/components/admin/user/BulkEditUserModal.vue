@@ -90,8 +90,6 @@
 </template>
 
 <script setup lang="ts">
-import { localizeApiErrorFallback } from '@/utils/apiError'
-
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
@@ -111,7 +109,7 @@ const emit = defineEmits<{
   success: [affected: number]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 const enableConcurrency = ref(false)
 const enableRPMLimit = ref(false)
@@ -206,7 +204,7 @@ const handleSubmit = async () => {
     emit('close')
   } catch (error: any) {
     appStore.showError(
-      localizeApiErrorFallback(extractApiErrorMessage(error, t('admin.users.bulkLimits.failed')), t('admin.users.bulkLimits.failed'))
+      extractApiErrorMessage(error, t('admin.users.bulkLimits.failed'), undefined, locale.value)
     )
   } finally {
     submitting.value = false

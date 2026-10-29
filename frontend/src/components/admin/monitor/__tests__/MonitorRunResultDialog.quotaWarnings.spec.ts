@@ -8,6 +8,7 @@ import ru from '@/i18n/locales/ru'
 import zh from '@/i18n/locales/zh'
 import type { MonitorQuotaSnapshot } from '@/api/admin/channelMonitor'
 import MonitorRunResultDialog from '../MonitorRunResultDialog.vue'
+import MonitorQuotaView from '@/components/common/MonitorQuotaView.vue'
 
 // The component must use its own active composer, not the unrelated global one.
 vi.mock('@/i18n', async importOriginal => ({
@@ -28,6 +29,27 @@ const windows: Record<string, string> = {
   daily: 'daily', weekly: 'weekly', monthly: 'monthly', '30d': '30d', total: 'total',
 }
 const labels = new Set(['requests', 'tokens', 'shared', 'pro', 'flash'])
+
+for (const locale of ['en', 'zh', 'ru', 'ru-RU', 'RU_ru', 'ru_RU'] as const) {
+  describe(`real failed quota snapshot primary text and title (${locale}; global EN)`, () => {
+    for (const row of rows) {
+      it(`uses the active composer for ${row.name}`, () => {
+        const i18n = createI18n({ legacy: false, locale, fallbackLocale: false,
+          messages: { en, zh, ru, 'ru-RU': ru, RU_ru: ru, ru_RU: ru }, missingWarn: false, fallbackWarn: false })
+        const snapshot = { ...structuredClone(row.snapshot), success: false, error: row.message }
+        const before = structuredClone(snapshot)
+        const wrapper = mount(MonitorQuotaView, { props: { snapshot }, global: { plugins: [i18n] } })
+        const error = wrapper.get('[data-testid="monitor-quota-error"]')
+        const expected = locale.toLowerCase().split(/[-_]/)[0] === 'ru' ? row.ru : row.message
+        expect(error.text()).toBe(expected.length > 48 ? `${expected.slice(0, 48)}…` : expected)
+        expect(error.attributes('title')).toBe(expected)
+        expect(wrapper.findAll('[data-testid="monitor-quota-tier"]')).toHaveLength(0)
+        expect(snapshot).toEqual(before)
+        wrapper.unmount()
+      })
+    }
+  })
+}
 
 for (const locale of ['ru', 'ru-RU', 'en', 'zh'] as const) {
   describe(`actual quota-warning run-result display (${locale})`, () => {

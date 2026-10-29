@@ -133,6 +133,7 @@ const balanceRows = computed(() => {
 const localizedError = computed(() => localizeApiErrorFallback(
   props.snapshot?.error,
   localizeQuotaDiagnostic(props.snapshot?.error, t) || t('monitorCommon.quota.unavailable'),
+  locale.value,
 ))
 
 const truncatedError = computed(() => {

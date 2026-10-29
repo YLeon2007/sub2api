@@ -12,7 +12,8 @@ vi.mock('vue-i18n', async () => {
     // te() 恒真：已知 token 直接返回 i18n key，便于断言 window/label 映射。
     useI18n: () => ({
       t: (key: string, values?: Record<string, string | number>) => values ? `${key}:${JSON.stringify(values)}` : key,
-      te: () => true
+      te: () => true,
+      locale: i18n.global.locale,
     }),
   }
 })

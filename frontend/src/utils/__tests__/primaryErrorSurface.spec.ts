@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import ts from 'typescript'
 import { parse } from 'vue/compiler-sfc'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 
 // Structural guard: discover every runtime file, not just the originally reported
 // two toasts. Inspect expressions/aliases with TypeScript AST (including optional
@@ -10,22 +11,37 @@ import { parse } from 'vue/compiler-sfc'
 export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[] {
   const sf = ts.createSourceFile(name, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
   const failures = new Set<string>()
-  function alias(n: ts.Identifier): ts.Expression | undefined {
+  function bindingSources(name: ts.BindingName, value: ts.Expression | undefined, target: string): ts.Expression[] | undefined {
+    if (ts.isIdentifier(name)) return name.text === target ? (value ? [value] : []) : undefined
+    for (const element of name.elements) {
+      if (ts.isOmittedExpression(element)) continue
+      const nested = bindingSources(element.name, element.initializer, target)
+      // Defaults at every binding level are possible sources. Keep the complete
+      // enclosing initializer conservatively tainted rather than trusting the
+      // destructured identifier's spelling or losing default-object provenance.
+      if (nested) return value ? [...nested, value] : nested
+    }
+  }
+  function aliases(n: ts.Identifier): ts.Expression[] {
     for (let scope: ts.Node | undefined = n.parent; scope; scope = scope.parent) {
       if (ts.isBlock(scope) || ts.isSourceFile(scope)) {
         for (const statement of scope.statements) {
           if (!ts.isVariableStatement(statement)) continue
           for (const declaration of statement.declarationList.declarations) {
-            if (ts.isIdentifier(declaration.name) && declaration.name.text === n.text) return declaration.initializer
+            const sources = bindingSources(declaration.name, declaration.initializer, n.text)
+            if (sources) return sources
           }
         }
       }
-      if (ts.isCatchClause(scope) && scope.variableDeclaration?.name.getText(sf) === n.text) return undefined
+      if (ts.isCatchClause(scope) && scope.variableDeclaration && bindingSources(scope.variableDeclaration.name, undefined, n.text)) return []
       if (ts.isFunctionLike(scope)) {
-        const parameter = scope.parameters.find(p => p.name.getText(sf) === n.text)
-        if (parameter) return parameter.initializer
+        for (const parameter of scope.parameters) {
+          const sources = bindingSources(parameter.name, parameter.initializer, n.text)
+          if (sources) return sources
+        }
       }
     }
+    return []
   }
   const callee = (n: ts.CallExpression) => ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : n.expression.getText(sf)
   const sanitizers = new Set(['localizeApiErrorFallback', 'extractApiErrorMessage', 'extractI18nErrorMessage', 'buildAuthErrorMessage'])
@@ -44,7 +60,7 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
   }
   function verifiedLocalWrapper(n: ts.CallExpression): boolean {
     if (!ts.isIdentifier(n.expression)) return false
-    const declaration = alias(n.expression)
+    const declaration = aliases(n.expression)[0]
     return !!declaration && ts.isArrowFunction(declaration) && declaration.parameters.length === 1
       && ts.isIdentifier(declaration.parameters[0].name)
       && verifiedFallbackCall(declaration.body, declaration.parameters[0].name.text)
@@ -121,8 +137,7 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
     }
     if (ts.isConditionalExpression(n) && russianCondition(n.condition)) return raw(n.whenTrue, seen)
     if (ts.isIdentifier(n) && !seen.has(n.text)) {
-      const value = alias(n)
-      if (value) return raw(value, new Set([...seen, n.text]))
+      return aliases(n).some(value => raw(value, new Set([...seen, n.text])))
     }
     let found = false
     ts.forEachChild(n, c => { if (raw(c, seen)) found = true })
@@ -186,7 +201,16 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
       const sink = ts.isCallExpression(n) && callee(n) === 'showError' && n.arguments[0] && raw(n.arguments[0])
       const state = ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && /\w*(?:error|failure)\w*\.value$/i.test(n.left.getText(sf)) && raw(n.right)
       const unsafeSanitizer = ts.isCallExpression(n) && sanitizers.has(callee(n)) && raw(n)
-      if (fallbackChain || sink || state || unsafeSanitizer) failures.add(`${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}: ${n.getText(sf)}`)
+      // A tainted RU return can leak without an OR expression or outer sink.
+      // Refusing the early-return exemption alone does not diagnose that path.
+      let unsafeRussianReturn = false
+      if (ts.isReturnStatement(n) && n.expression && raw(n.expression)) {
+        for (let p: ts.Node | undefined = n.parent; p && !ts.isFunctionLike(p); p = p.parent) {
+          if (ts.isIfStatement(p) && russianCondition(p.expression)
+            && n.getStart(sf) >= p.thenStatement.getStart(sf) && n.end <= p.thenStatement.end) unsafeRussianReturn = true
+        }
+      }
+      if (fallbackChain || sink || state || unsafeSanitizer || unsafeRussianReturn) failures.add(`${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}: ${n.getText(sf)}`)
     }
     ts.forEachChild(n, inspect)
   }
@@ -203,6 +227,15 @@ function runtimeFiles(dir: string): string[] {
 }
 
 describe('complete primary error fallback surface', () => {
+  it.each([
+    "function f(err, {fallback=err.message}={}){return localizeApiErrorFallback(err.message,fallback)}",
+    "function f(err, {fallback}={fallback:err.message}){return localizeApiErrorFallback(err.message,fallback)}",
+    "function f(err, fallback=err.message){if(getLocale()==='ru')return fallback; return err.message}",
+  ])('rejects executable raw default provenance without an outer sink: %s', source => {
+    const run = new Function('localizeApiErrorFallback', 'getLocale', `${source}; return f({message:'RAW_API_MESSAGE'})`)
+    expect(run((raw: string, fallback: string) => localizeApiErrorFallback(raw, fallback, 'ru'), () => 'ru')).toBe('RAW_API_MESSAGE')
+    expect(unsafePrimaryErrors(source)).not.toEqual([])
+  })
   it('finds aliases, optional chains, casts, multiline fallbacks and transitive returns', () => {
     for (const source of [
       "app.showError(err?.message || t('common.error'))",
@@ -224,6 +257,15 @@ describe('complete primary error fallback surface', () => {
     expect(unsafePrimaryErrors(source)).toEqual([])
   })
   it.each([
+    "function f(err, {fallback=err.message}={}){return localizeApiErrorFallback(err.message,fallback)}",
+    "function f(err, {fallback}={fallback:err.message}){return localizeApiErrorFallback(err.message,fallback)}",
+    "function f(err, fallback=err.message){if(getLocale()==='ru')return fallback; return err.message}",
+    "function f(err, {fallback: copy=err.message}={}){return localizeApiErrorFallback(err.message,copy)}",
+    "function f(err, {options:{fallback=err.message}={}}={}){return localizeApiErrorFallback(err.message,fallback)}",
+    "function f(err, [fallback=err.message]=[]){return localizeApiErrorFallback(err.message,fallback)}",
+    "function f(err, options={fallback:err.message}){const {fallback}=options; return localizeApiErrorFallback(err.message,fallback)}",
+    "function f(err){const {fallback=err.message}={}; return localizeApiErrorFallback(err.message,fallback)}",
+    "function f(err, {fallback=err.message}={}){if(getLocale()==='ru')return fallback; return err.message}",
     "function f(err:any, fallback=err.message){if(getLocale()==='ru')return fallback; return err.message||fallback}",
     "function f(err:any){return localizeApiErrorFallback(err.message,err.message||t('common.error'))}",
     "function f(err:any, options={fallback:err.message}){const {fallback}=options; if(getLocale()==='ru')return fallback; return err.message||fallback}",

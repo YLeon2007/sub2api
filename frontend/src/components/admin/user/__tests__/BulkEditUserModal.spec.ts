@@ -27,6 +27,7 @@ vi.mock('@/stores/app', () => ({
 vi.mock('vue-i18n', async (importOriginal) => ({
   ...await importOriginal<typeof import('vue-i18n')>(),
   useI18n: () => ({
+    locale: { value: 'en' },
     t: (key: string, params?: Record<string, unknown>) =>
       params ? `${key}:${JSON.stringify(params)}` : key
   })

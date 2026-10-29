@@ -63,11 +63,7 @@ export function useGeminiOAuth() {
       state.value = response.state
       return true
     } catch (err: any) {
-      error.value = localizeApiErrorFallback(
-        extractApiErrorMessage(err, t('admin.accounts.oauth.gemini.failedToGenerateUrl'), undefined, locale.value),
-        t('admin.accounts.oauth.gemini.failedToGenerateUrl'),
-        locale.value
-      )
+      error.value = extractApiErrorMessage(err, t('admin.accounts.oauth.gemini.failedToGenerateUrl'), undefined, locale.value)
       appStore.showError(error.value)
       return false
     } finally {
