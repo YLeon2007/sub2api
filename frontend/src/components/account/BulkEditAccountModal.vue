@@ -1629,7 +1629,7 @@ const filteredPresets = computed(() => {
 
   const dedupedPresets = new Map<string, ReturnType<typeof getPresetMappingsByPlatform>[number]>()
   for (const platform of targetSelectedPlatforms.value) {
-    for (const preset of getPresetMappingsByPlatform(platform)) {
+    for (const preset of getPresetMappingsByPlatform(platform, t)) {
       const key = `${preset.from}=>${preset.to}`
       if (!dedupedPresets.has(key)) {
         dedupedPresets.set(key, preset)

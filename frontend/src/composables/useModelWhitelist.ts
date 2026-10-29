@@ -549,11 +549,22 @@ export function getModelsByPlatform(platform: string): string[] {
 }
 
 // 按平台获取预设映射
-export function getPresetMappingsByPlatform(platform: string) {
+export function getPresetMappingsByPlatform(
+  platform: string,
+  t?: (key: string, params?: Record<string, unknown>) => string,
+) {
   if (platform === 'openai') return openaiPresetMappings
   if (platform === 'gemini') return geminiPresetMappings
   if (platform === 'grok' || platform === 'xai') return grokPresetMappings
-  if (platform === 'antigravity') return antigravityPresetMappings
+  if (platform === 'antigravity') {
+    if (!t) return antigravityPresetMappings
+    return antigravityPresetMappings.map(preset => ({
+      ...preset,
+      label: preset.label.endsWith('透传')
+        ? t('runtimeUi.presetPassthrough', { model: preset.label.slice(0, -2) })
+        : preset.label,
+    }))
+  }
   if (platform === 'bedrock') return bedrockPresetMappings
   return anthropicPresetMappings
 }

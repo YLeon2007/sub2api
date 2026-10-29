@@ -1,6 +1,6 @@
 # Antigravity: разбор 429, вызванного attribution metadata в Claude Desktop
 
-[中文](ANTIGRAVITY_ATTRIBUTION_429.md) | Русский
+[К русскому README](../README_RU.md)
 
 Документ описывает локализацию и исправление конкретной проблемы для сценария Claude Desktop / Claude Code → Anthropic Messages → Antigravity. Это не универсальное объяснение всех ошибок `429 RESOURCE_EXHAUSTED`: исчерпание quota, частота запросов и capacity upstream нужно проверять отдельно.
 

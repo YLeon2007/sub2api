@@ -61,8 +61,8 @@
           <div>
             <p class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 xl:hidden">{{ t('admin.promptAudit.pool.limits') }}</p>
             <div class="flex flex-wrap gap-1.5 text-xs text-gray-600 dark:text-dark-300">
-              <span class="rounded-md bg-gray-100 px-2 py-1 tabular-nums dark:bg-dark-800">{{ endpoint.timeout_ms }} ms</span>
-              <span class="rounded-md bg-gray-100 px-2 py-1 tabular-nums dark:bg-dark-800">{{ endpoint.input_limit }} chars</span>
+              <span class="rounded-md bg-gray-100 px-2 py-1 tabular-nums dark:bg-dark-800">{{ endpoint.timeout_ms }} {{ t('runtimeUi.milliseconds') }}</span>
+              <span class="rounded-md bg-gray-100 px-2 py-1 tabular-nums dark:bg-dark-800">{{ endpoint.input_limit }} {{ t('runtimeUi.characters') }}</span>
             </div>
           </div>
 
@@ -76,9 +76,13 @@
               {{ t('admin.promptAudit.pool.probeProgress') }}
             </p>
             <p v-if="probeResults[endpoint.id]" class="mt-1.5 line-clamp-2 text-xs leading-5" :class="probeResults[endpoint.id].ok ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'">
-              {{ t('admin.promptAudit.pool.probeResult', { status: probeResults[endpoint.id].status, http: probeResults[endpoint.id].http_status || '—', latency: probeResults[endpoint.id].latency_ms }) }}
-              · {{ probeResults[endpoint.id].message }}
+              {{ t('runtimeUi.probeResult', { status: promptStatusLabel(probeResults[endpoint.id].status, t), http: probeResults[endpoint.id].http_status || '—', latency: probeResults[endpoint.id].latency_ms }) }}
+              · {{ promptProbeMessage(probeResults[endpoint.id], t) }}
             </p>
+            <details v-if="probeResults[endpoint.id]" class="mt-1.5 text-xs text-gray-500 dark:text-dark-400">
+              <summary class="cursor-pointer">{{ t('admin.promptAudit.events.tabs.technical') }}</summary>
+              <pre class="mt-1 whitespace-pre-wrap break-words font-mono">{{ promptDiagnosticDetails(probeResults[endpoint.id]) }}</pre>
+            </details>
           </div>
 
           <div class="flex flex-wrap items-center justify-end gap-1 border-t border-gray-100 pt-3 dark:border-dark-800 xl:flex-nowrap xl:border-0 xl:pt-0">
@@ -144,6 +148,7 @@ import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import type { PromptAuditEndpointDraft, PromptProbeResult } from '../types'
 import { cloneData, createDefaultEndpoint } from '../viewModel'
+import { promptDiagnosticDetails, promptProbeMessage, promptStatusLabel } from '../display'
 
 const props = defineProps<{
   endpoints: PromptAuditEndpointDraft[]

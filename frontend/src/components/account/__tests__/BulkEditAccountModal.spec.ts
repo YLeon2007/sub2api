@@ -8,7 +8,7 @@ import { adminAPI } from '@/api/admin'
 const { showError, showSuccess, translate } = vi.hoisted(() => ({
   showError: vi.fn(),
   showSuccess: vi.fn(),
-  translate: vi.fn((key: string) => key)
+  translate: vi.fn((key: string, params?: Record<string, unknown>) => key === 'runtimeUi.presetPassthrough' ? `${key}:${params?.model}` : key)
 }))
 
 vi.mock('@/stores/app', () => ({
@@ -144,7 +144,7 @@ describe('BulkEditAccountModal', () => {
     expect(mappingTab).toBeTruthy()
     await mappingTab!.trigger('click')
 
-    expect(wrapper.text()).toContain('3.1-Flash-Image透传')
+    expect(wrapper.text()).toContain('runtimeUi.presetPassthrough:3.1-Flash-Image')
     expect(wrapper.text()).toContain('3-Pro-Image→3.1')
     expect(wrapper.text()).not.toContain('GPT-5.3 Codex Spark')
   })

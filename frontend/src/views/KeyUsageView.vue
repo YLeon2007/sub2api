@@ -419,6 +419,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { useAppStore } from '@/stores'
 import { FeatureFlags, resolveFeatureFlag } from '@/utils/featureFlags'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
@@ -892,7 +893,9 @@ async function fetchUsage(key: string) {
     headers: { 'Authorization': 'Bearer ' + key },
   })
   if (!res.ok) {
-    throw new Error(t('keyUsage.queryFailedRetry'))
+    const body = await res.json().catch(() => null)
+    const msg = body?.error?.message || body?.message || `${t('keyUsage.queryFailed')} (${res.status})`
+    throw new Error(localizeApiErrorFallback(msg, t('keyUsage.queryFailedRetry'), locale.value))
   }
   return await res.json()
 }
@@ -925,7 +928,7 @@ async function queryKey() {
   } catch (err) {
     showResults.value = false
     showLoading.value = false
-    appStore.showError(t('keyUsage.queryFailedRetry'))
+    appStore.showError(localizeApiErrorFallback((err as Error).message, t('keyUsage.queryFailedRetry'), locale.value))
   } finally {
     isQuerying.value = false
   }

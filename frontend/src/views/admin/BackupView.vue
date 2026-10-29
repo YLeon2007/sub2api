@@ -416,7 +416,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { localizeApiSuccessMessage } from '@/utils/apiError'
+import { localizeApiErrorFallback, localizeApiSuccessMessage } from '@/utils/apiError'
 import { adminAPI } from '@/api'
 import { useAppStore } from '@/stores'
 import type {
@@ -567,7 +567,7 @@ function startPolling(backupId: string) {
         if (record.status === 'completed') {
           appStore.showSuccess(t('admin.backup.operations.backupCreated'))
         } else {
-          appStore.showError(t('admin.backup.operations.backupFailed'))
+          appStore.showError(localizeApiErrorFallback(record.error_message, t('admin.backup.operations.backupFailed')))
         }
         await loadBackups()
       }
@@ -604,7 +604,7 @@ function startRestorePolling(backupId: string) {
         if (record.restore_status === 'completed') {
           appStore.showSuccess(t('admin.backup.actions.restoreSuccess'))
         } else {
-          appStore.showError(t('admin.backup.operations.restoreFailed'))
+          appStore.showError(localizeApiErrorFallback(record.restore_error, t('admin.backup.operations.restoreFailed')))
         }
         await loadBackups()
       }
@@ -668,7 +668,7 @@ async function loadS3Config() {
     }
     s3SecretConfigured.value = Boolean(cfg.access_key_id)
   } catch (error) {
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   }
 }
 
@@ -683,7 +683,7 @@ async function saveS3Config() {
       savingS3.value = false
       return
     }
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   } finally {
     savingS3.value = false
   }
@@ -700,7 +700,7 @@ async function loadImageStorageConfig() {
     }
     imageStorageSecretConfigured.value = secret_configured
   } catch (error) {
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   }
 }
 
@@ -715,7 +715,7 @@ async function saveImageStorageConfig() {
       savingImageStorage.value = false
       return
     }
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   } finally {
     savingImageStorage.value = false
   }
@@ -728,10 +728,10 @@ async function testImageStorage() {
     if (result.ok) {
       appStore.showSuccess(localizeApiSuccessMessage(result.message, t('admin.backup.s3.testSuccess')))
     } else {
-      appStore.showError(t('admin.backup.s3.testFailed'))
+      appStore.showError(localizeApiErrorFallback(result.message, t('admin.backup.s3.testFailed')))
     }
   } catch (error) {
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   } finally {
     testingImageStorage.value = false
   }
@@ -744,10 +744,10 @@ async function testS3() {
     if (result.ok) {
       appStore.showSuccess(localizeApiSuccessMessage(result.message, t('admin.backup.s3.testSuccess')))
     } else {
-      appStore.showError(t('admin.backup.s3.testFailed'))
+      appStore.showError(localizeApiErrorFallback(result.message, t('admin.backup.s3.testFailed')))
     }
   } catch (error) {
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   } finally {
     testingS3.value = false
   }
@@ -770,7 +770,7 @@ async function loadSchedule() {
     }
     savedArchive.value = cloneArchive(archiveForm.value)
   } catch (error) {
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   }
 }
 
@@ -783,7 +783,7 @@ async function saveSchedule() {
     savedArchive.value = cloneArchive(archive)
     appStore.showSuccess(t('admin.backup.schedule.saved'))
   } catch (error) {
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   } finally {
     savingSchedule.value = false
   }
@@ -795,7 +795,7 @@ async function loadBackups() {
     const result = await adminAPI.backup.listBackups()
     backups.value = result.items || []
   } catch (error) {
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   } finally {
     loadingBackups.value = false
   }
@@ -820,7 +820,7 @@ async function createBackup() {
     if (error?.response?.status === 409) {
       appStore.showWarning(t('admin.backup.operations.alreadyInProgress'))
     } else {
-      appStore.showError(t('errors.networkError'))
+      appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
     }
     creatingBackup.value = false
   }
@@ -846,7 +846,7 @@ async function downloadBackup(id: string) {
   } catch (error) {
     if (isStepUpCancelled(error)) return
     if (reportStepUpBlocked(error)) return
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   }
 }
 
@@ -872,7 +872,7 @@ async function restoreBackup(id: string) {
     if (error?.status === 409 || error?.response?.status === 409) {
       appStore.showWarning(t('admin.backup.operations.restoreRunning'))
     } else {
-      appStore.showError(t('errors.networkError'))
+      appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
     }
   }
 }
@@ -885,7 +885,7 @@ async function removeBackup(id: string) {
     appStore.showSuccess(t('admin.backup.actions.deleted'))
     await loadBackups()
   } catch (error) {
-    appStore.showError(t('errors.networkError'))
+    appStore.showError(localizeApiErrorFallback((error as { message?: string })?.message, t('errors.networkError')))
   }
 }
 

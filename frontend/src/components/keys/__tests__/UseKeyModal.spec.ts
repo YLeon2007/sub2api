@@ -56,11 +56,11 @@ describe('UseKeyModal', () => {
       }
     })
 
-    const clientTabs = () => wrapper.find('nav[aria-label="Client"]').text()
+    const clientTabs = () => wrapper.find('nav[aria-label="runtimeUi.clientNavigation"]').text()
     expect(clientTabs()).toContain('keys.useKeyModal.cliTabs.codexCli')
     expect(clientTabs()).toContain('keys.useKeyModal.cliTabs.opencode')
 
-    const codexTab = wrapper.find('nav[aria-label="Client"]').findAll('button').find(
+    const codexTab = wrapper.find('nav[aria-label="runtimeUi.clientNavigation"]').findAll('button').find(
       (button) => button.text().includes('keys.useKeyModal.cliTabs.codexCli')
     )
     await codexTab!.trigger('click')
@@ -269,8 +269,8 @@ describe('UseKeyModal', () => {
     expect(parsedSettings.env).not.toHaveProperty('CLAUDE_CODE_ATTRIBUTION_HEADER')
     expect(wrapper.text()).toContain('keys.useKeyModal.claudeSettingsHint')
     expect(wrapper.text()).toContain('keys.useKeyModal.grok.claudeNote')
-    expect(wrapper.find('nav[aria-label="Client"]').classes()).toContain('min-w-max')
-    expect(wrapper.find('nav[aria-label="Client"]').element.parentElement?.classList.contains('overflow-x-auto')).toBe(true)
+    expect(wrapper.find('nav[aria-label="runtimeUi.clientNavigation"]').classes()).toContain('min-w-max')
+    expect(wrapper.find('nav[aria-label="runtimeUi.clientNavigation"]').element.parentElement?.classList.contains('overflow-x-auto')).toBe(true)
 
     const cmdTab = wrapper.findAll('button').find(
       (button) => button.text().trim() === 'Windows CMD'

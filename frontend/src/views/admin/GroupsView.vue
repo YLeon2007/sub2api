@@ -4299,7 +4299,7 @@ import { useAppStore } from "@/stores/app";
 import { useAuthStore } from "@/stores/auth";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { adminAPI } from "@/api/admin";
-import { extractI18nErrorMessage } from "@/utils/apiError";
+import { extractApiErrorMessage, extractI18nErrorMessage, localizeApiErrorFallback } from "@/utils/apiError";
 import type {
   AdminGroup,
   CodexModelsManifestConfig,
@@ -6091,7 +6091,6 @@ const handleCreateGroup = async () => {
         t,
         "admin.groups.errors",
         t("admin.groups.failedToCreate"),
-        true,
       ),
     );
     console.error("Error creating group:", error);
@@ -6451,7 +6450,6 @@ const handleUpdateGroup = async () => {
         t,
         "admin.groups.errors",
         t("admin.groups.failedToUpdate"),
-        true,
       ),
     );
     console.error("Error updating group:", error);
@@ -6505,7 +6503,7 @@ const handleDuplicate = async (group: AdminGroup) => {
     );
     await loadGroups();
   } catch (error: unknown) {
-    appStore.showError(t("admin.groups.duplicateFailed"));
+    appStore.showError(extractApiErrorMessage(error, t("admin.groups.duplicateFailed")));
     console.error("Error duplicating group:", error);
   } finally {
     duplicatingGroupIds.delete(group.id);
@@ -6568,7 +6566,10 @@ const loadCompositeRoutes = async () => {
       return a.id - b.id;
     });
   } catch (error: any) {
-    appStore.showError(t("admin.groups.compositeRoutes.failedToLoad"));
+    appStore.showError(localizeApiErrorFallback(
+      error.response?.data?.detail || error.response?.data?.message,
+      t("admin.groups.compositeRoutes.failedToLoad"),
+    ));
     console.error("Error loading composite routes:", error);
   } finally {
     compositeRoutesLoading.value = false;
@@ -6631,7 +6632,10 @@ const saveCompositeRoute = async () => {
     resetCompositeRouteForm();
     await loadCompositeRoutes();
   } catch (error: any) {
-    appStore.showError(t("admin.groups.compositeRoutes.failedToSave"));
+    appStore.showError(localizeApiErrorFallback(
+      error.response?.data?.detail || error.response?.data?.message,
+      t("admin.groups.compositeRoutes.failedToSave"),
+    ));
     console.error("Error saving composite route:", error);
   } finally {
     compositeRouteSaving.value = false;
@@ -6652,7 +6656,10 @@ const deleteCompositeRoute = async (route: CompositeModelRoute) => {
     appStore.showSuccess(t("admin.groups.compositeRoutes.routeDeleted"));
     await loadCompositeRoutes();
   } catch (error: any) {
-    appStore.showError(t("admin.groups.compositeRoutes.failedToDelete"));
+    appStore.showError(localizeApiErrorFallback(
+      error.response?.data?.detail || error.response?.data?.message,
+      t("admin.groups.compositeRoutes.failedToDelete"),
+    ));
     console.error("Error deleting composite route:", error);
   }
 };
@@ -6671,7 +6678,10 @@ const previewCompositeRoute = async () => {
       },
     );
   } catch (error: any) {
-    appStore.showError(t("admin.groups.compositeRoutes.failedToPreview"));
+    appStore.showError(localizeApiErrorFallback(
+      error.response?.data?.detail || error.response?.data?.message,
+      t("admin.groups.compositeRoutes.failedToPreview"),
+    ));
     console.error("Error previewing composite route:", error);
   } finally {
     compositePreviewLoading.value = false;
@@ -6693,7 +6703,7 @@ const confirmDelete = async () => {
     deletingGroup.value = null;
     loadGroups();
   } catch (error: any) {
-    appStore.showError(t("admin.groups.failedToDelete"));
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t("admin.groups.failedToDelete")));
     console.error("Error deleting group:", error);
   }
 };
@@ -6909,7 +6919,7 @@ const saveSortOrder = async () => {
     closeSortModal();
     loadGroups();
   } catch (error: any) {
-    appStore.showError(t("admin.groups.failedToUpdateSortOrder"));
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t("admin.groups.failedToUpdateSortOrder")));
     console.error("Error updating sort order:", error);
   } finally {
     sortSubmitting.value = false;

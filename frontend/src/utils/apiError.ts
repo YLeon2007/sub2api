@@ -169,7 +169,7 @@ export function extractApiErrorMessage(
 
   // Unknown backend text (including Error.message and stringified errors) is
   // diagnostic data, not a Russian primary UI message. Keep EN/ZH behavior.
-  if ((localeOverride ?? getLocale()) === 'ru') return fallback
+  if ((localeOverride ?? getLocale()).toLowerCase().split(/[-_]/)[0] === 'ru') return fallback
 
   // Plain object from API client interceptor (most common case)
   if (typeof err === 'object' && err !== null) {

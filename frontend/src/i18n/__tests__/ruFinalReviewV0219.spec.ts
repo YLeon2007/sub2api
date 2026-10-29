@@ -10,6 +10,8 @@ import proseCorrections from './ruProseV0219Expected.json'
 // protocol identifiers, technical examples and acquisition/fallback semantics.
 const corrections: Record<string, string> = {
   ...proseCorrections,
+  'admin.settings.upstreamBillingProbe.enabledHint': 'Когда включено, проверки по расписанию выполняются только для аккаунтов, у которых также включена автоматическая проверка. Отключение останавливает все проверки по расписанию; ручные проверки остаются доступны.',
+  'admin.settings.ollamaCloudUsage.intervalHint': 'Диапазон: 15–1440 минут. Если непрерывные запросы постоянно откладывают обновление, по истечении этого времени оно выполняется принудительно.',
   "admin.accounts.upstreamBilling.trustWarning": "Этот тариф объявлен вышестоящим сервисом для текущего API-ключа. Sub2API не может проверить, совпадает ли он с фактическими списаниями. Сервис или промежуточный прокси могут вернуть поддельные, устаревшие или изменённые данные. Сверяйте их со счетами, изменениями баланса и фактическим использованием.",
   "admin.settings.security.stepUpHint": "Когда включено, чувствительные операции (экспорт аккаунтов и прокси, создание и скачивание резервных копий, изменение настроек S3, назначение администраторов) требуют недавней проверки TOTP, действительной 15 минут. Перед включением настройте 2FA для собственного аккаунта в профиле; отключение этого переключателя также требует повторной проверки.",
   "admin.settings.security.stepUpEnableRequiresTotp": "Перед включением повторной проверки включите 2FA (TOTP) для собственного аккаунта в профиле.",
@@ -93,6 +95,14 @@ describe('Russian v0.2.19 final-review inherited prose closure', () => {
     expect(ru.admin.accounts.bulkEdit.baseUrlNotice).toContain('API Key и адресу пересылки запросов аккаунтов Grok OAuth')
     expect(ru.admin.accounts.grokCustomBaseUrl.hint).toContain('Авторизация OAuth и обновление токенов не затрагиваются')
     expect(ru.admin.settings.openaiExperimentalScheduler.lowRatePriorityDescription).toContain('При включённом экспериментальном планировщике этот переключатель не действует')
+  })
+
+  it('keeps the subscription currency label explicitly display-only, not billing currency', () => {
+    expect(en.payment.admin.currency).toBe('Currency Label')
+    expect(en.payment.admin.currencyHint).toContain('does not affect billing')
+    expect(ru.payment.admin.currency).toBe('Обозначение валюты')
+    expect(ru.payment.admin.currencyHint).toContain('только для отображения')
+    expect(ru.payment.admin.currencyHint.toLowerCase()).toContain('не влияет на списание')
   })
 
   it('retains protocol names, request-affinity keys and TLS wire examples', () => {

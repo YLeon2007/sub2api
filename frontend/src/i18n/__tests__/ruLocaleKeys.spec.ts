@@ -104,23 +104,21 @@ function expectLocalizedCatchErrors(
           node.expression.name.text === 'showError'
         ) {
           const message = node.arguments[0]
-          expect(
-            message &&
-              ts.isCallExpression(message) &&
-              ts.isIdentifier(message.expression) &&
-              message.expression.text === 't' &&
-              message.arguments.length === 1 &&
-              ts.isStringLiteral(message.arguments[0]),
-            `${functionName} must pass a literal i18n key to showError in catch`
-          ).toBe(true)
-          if (
-            message &&
-            ts.isCallExpression(message) &&
-            message.arguments.length === 1 &&
-            ts.isStringLiteral(message.arguments[0])
-          ) {
-            localizedKeys.push(message.arguments[0].text)
+          // Preserving upstream EN/ZH diagnostics requires a locale-aware
+          // boundary, not unconditional replacement with a translated string.
+          // Accept only the two tested API helpers with a direct literal t()
+          // fallback; arbitrary wrappers and raw fallbacks remain rejected.
+          let translated = message
+          if (message && ts.isCallExpression(message) && ts.isIdentifier(message.expression) &&
+            ['localizeApiErrorFallback', 'extractApiErrorMessage'].includes(message.expression.text) && message.arguments.length === 2) {
+            translated = message.arguments[1]
           }
+          const key = translated && ts.isCallExpression(translated) &&
+            ts.isIdentifier(translated.expression) && translated.expression.text === 't' &&
+            translated.arguments.length === 1 && ts.isStringLiteral(translated.arguments[0])
+            ? translated.arguments[0].text : undefined
+          expect(key, `${functionName} must have a literal translated primary fallback in catch`).toBeDefined()
+          if (key) localizedKeys.push(key)
         }
         ts.forEachChild(node, visitCatch)
       }
@@ -129,6 +127,67 @@ function expectLocalizedCatchErrors(
     expect(localizedKeys).toContain(expectedKey)
   }
 }
+
+function expectRawErrorSelectorsInsideLocaleBoundary(vueSource: string): void {
+  const script = vueSource.match(/<script\s+setup(?:\s+lang=["']ts["'])?[^>]*>([\s\S]*?)<\/script>/)
+  expect(script).not.toBeNull()
+  const file = ts.createSourceFile('primary-errors.ts', script?.[1] ?? '', ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  function visit(node: ts.Node): void {
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.BarBarToken &&
+      ts.isPropertyAccessExpression(node.left) && /^error\.response\?\.data\?\.(detail|message)$/.test(node.left.getText(file))) {
+      let boundary = false
+      for (let parent = node.parent; parent; parent = parent.parent) {
+        if (!ts.isCallExpression(parent) || !ts.isIdentifier(parent.expression) || parent.expression.text !== 'localizeApiErrorFallback') continue
+        const [raw, fallback, override] = parent.arguments
+        const validOverride = !override || (ts.isPropertyAccessExpression(override) && override.getText(file) === 'locale.value')
+        boundary = Boolean(raw && raw.pos <= node.pos && raw.end >= node.end &&
+          parent.arguments.length >= 2 && parent.arguments.length <= 3 && validOverride &&
+          fallback && ts.isCallExpression(fallback) && ts.isIdentifier(fallback.expression) && fallback.expression.text === 't' &&
+          fallback.arguments.length === 1 && ts.isStringLiteral(fallback.arguments[0]))
+        if (boundary) break
+      }
+      expect(boundary, 'backend detail/message precedence must remain inside a tested locale-aware boundary').toBe(true)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+}
+
+describe('locale-aware primary-error AST guard self-tests', () => {
+  const source = (expression: string) => `<script setup lang="ts">const fixture = () => { try {} catch (err) { app.showError(${expression}) } }</script>`
+  it.each([
+    "localizeApiErrorFallback(error.response?.data?.detail || error.response?.data?.message, t('fixture.expected'))",
+    "localizeApiErrorFallback(error.response?.data?.detail || error.response?.data?.message, t('fixture.expected'), locale.value)",
+  ])('preserves raw EN/ZH selector only behind a valid RU boundary: %s', expression => {
+    expectRawErrorSelectorsInsideLocaleBoundary(source(expression))
+  })
+  it.each([
+    "error.response?.data?.detail || t('fixture.expected')",
+    "arbitrary(error.response?.data?.message || t('fixture.expected'))",
+    "localizeApiErrorFallback(error.response?.data?.detail || error.response?.data?.message, err.message)",
+    "localizeApiErrorFallback(error.response?.data?.detail || error.response?.data?.message, t('fixture.expected'), 'en')",
+  ])('rejects raw selectors outside a proven RU boundary: %s', expression => {
+    expect(() => expectRawErrorSelectorsInsideLocaleBoundary(source(expression))).toThrow()
+  })
+  it.each([
+    "t('fixture.expected')",
+    "localizeApiErrorFallback(err.message, t('fixture.expected'))",
+    "extractApiErrorMessage(err, t('fixture.expected'))",
+  ])('accepts only direct translations or tested locale-aware helpers: %s', expression => {
+    expectLocalizedCatchErrors(source(expression), { fixture: 'fixture.expected' })
+  })
+  it.each([
+    'err.message',
+    "localizeApiErrorFallback(err.message, t('fixture.expected'), 'en')",
+    "extractApiErrorMessage(err, t('fixture.expected'), undefined, 'en')",
+    "arbitrary(t('fixture.expected'))",
+    'localizeApiErrorFallback(err.message, err.message)',
+    "localizeApiErrorFallback(err.message, t('wrong.key'))",
+    "extractApiErrorMessage(err, translatedVariable)",
+  ])('rejects raw/wrong/unproven primary fallbacks: %s', expression => {
+    expect(() => expectLocalizedCatchErrors(source(expression), { fixture: 'fixture.expected' })).toThrow()
+  })
+})
 
 describe('Russian locale key coverage', () => {
   const enLeaves = flattenLeaves(en)
@@ -687,7 +746,7 @@ describe('Russian locale key coverage', () => {
     expect(keyUsage).not.toMatch(/statusText:\s*['"](?:Active|Quota Exhausted|Expired)['"]/)
     expect(keyUsage).not.toContain("|| 'Unknown'")
     expect(keyUsage).not.toContain('response?.data?.message')
-    expect(keyUsage).not.toContain('(err as Error).message')
+    expect(keyUsage).toContain("appStore.showError(localizeApiErrorFallback((err as Error).message, t('keyUsage.queryFailedRetry'), locale.value))")
     expect(keyUsage).not.toContain('windowLabels[rl.window] || rl.window')
     expect(usage).toContain("appStore.showError(t('usage.exportFailed'))")
     expect(customPage).toContain("t('customPage.loadFailed')")
@@ -772,8 +831,7 @@ describe('Russian locale key coverage', () => {
       expect(source).not.toContain('showError(err.message || t(')
       expect(source).not.toContain('showError(result.error || t(')
       expect(source).not.toContain('showError(record.error_message || t(')
-      expect(source).not.toContain('error.response?.data?.detail ||')
-      expect(source).not.toContain('error.response?.data?.message ||')
+      expectRawErrorSelectorsInsideLocaleBoundary(source)
     }
   })
 })

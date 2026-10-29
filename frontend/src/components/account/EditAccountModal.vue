@@ -3468,7 +3468,7 @@ import {
   getBrowserTimeZone,
   parseDateTimeLocalInput
 } from '@/utils/format'
-import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
+import { extractApiErrorMessage, extractI18nErrorMessage, localizeApiErrorFallback } from '@/utils/apiError'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 import { supportsAccountQuota } from '@/utils/accountQuota'
 import { getAccountExpiryTimestamp } from '@/components/account/accountExpiry'
@@ -3623,8 +3623,8 @@ const baseUrlHint = computed(() => {
   return t('admin.accounts.baseUrlHint')
 })
 
-const antigravityPresetMappings = computed(() => getPresetMappingsByPlatform('antigravity'))
-const bedrockPresets = computed(() => getPresetMappingsByPlatform('bedrock'))
+const antigravityPresetMappings = computed(() => getPresetMappingsByPlatform('antigravity', t))
+const bedrockPresets = computed(() => getPresetMappingsByPlatform('bedrock', t))
 
 // Model mapping type
 interface ModelMapping {
@@ -4060,9 +4060,9 @@ const loadGrokMediaEligibility = async (accountID: number): Promise<GrokMediaEli
     grokMediaEligibilityMode.value = state.mode
     grokMediaEligibilityInitialMode.value = state.mode
     return state
-  } catch {
+  } catch (error) {
     if (requestVersion !== grokMediaEligibilityRequestVersion) return null
-    grokMediaEligibilityError.value = t('admin.accounts.grokMediaEligibility.loadFailed')
+    grokMediaEligibilityError.value = localizeApiErrorFallback((error as { message?: string })?.message, t('admin.accounts.grokMediaEligibility.loadFailed'), locale.value)
     return null
   } finally {
     if (requestVersion === grokMediaEligibilityRequestVersion) {
@@ -4417,7 +4417,7 @@ const openAICompactStatusKey = computed(() => {
 })
 
 // Computed: current preset mappings based on platform
-const presetMappings = computed(() => getPresetMappingsByPlatform(props.account?.platform || 'anthropic'))
+const presetMappings = computed(() => getPresetMappingsByPlatform(props.account?.platform || 'anthropic', t))
 const tempUnschedScopeOptions = computed<Array<{ value: TempUnschedulableScope; label: string; description: string }>>(() => [
   {
     value: 'model',
