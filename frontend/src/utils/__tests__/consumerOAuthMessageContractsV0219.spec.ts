@@ -241,7 +241,9 @@ describe('real create-account detail-first handlers (REG-004..017)', () => {
         await handler(createPath, name, scope)(input)
         expect(api).toHaveBeenCalledOnce()
         expect(scope.adminAPI.accounts.create).not.toHaveBeenCalled()
-        expect(oauth.error.value).toBe(`#1: ${primary(raw, authFailed, name === 'handleGrokAuthorizePassword' ? 'Authorization failed' : undefined)}`)
+        // Immutable official null-result branch: refresh-token validation uses
+        // the literal 'Validation failed', not the password authorization default.
+        expect(oauth.error.value).toBe(`#1: ${primary(raw, authFailed, name === 'handleGrokAuthorizePassword' ? 'Authorization failed' : 'Validation failed')}`)
         expect(oauth.loading.value).toBe(false)
       }
     })

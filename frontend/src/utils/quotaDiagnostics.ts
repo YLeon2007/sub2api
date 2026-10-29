@@ -1,5 +1,26 @@
 type Translate = (key: string, values?: Record<string, string | number>) => string
 
+const quotaWindowKeys = new Map([
+  ['5h', '5h'], ['7d', '7d'], ['7d-sonnet', '7dSonnet'], ['7d-fable', '7dFable'],
+  ['daily', 'daily'], ['weekly', 'weekly'], ['monthly', 'monthly'], ['30d', '30d'], ['total', 'total'],
+])
+const quotaLabelKeys = new Map([
+  ['requests', 'requests'], ['tokens', 'tokens'], ['shared', 'shared'], ['pro', 'pro'], ['flash', 'flash'],
+])
+
+function localizedQuotaWindow(value: string, t: Translate): string | undefined {
+  const separator = value.lastIndexOf('/')
+  const window = separator < 0 ? value : value.slice(separator + 1)
+  const key = quotaWindowKeys.get(window)
+  if (!key) return undefined
+  const localizedWindow = t(`monitorCommon.quota.windows.${key}`)
+  if (separator < 0) return localizedWindow
+  const label = value.slice(0, separator)
+  const labelKey = quotaLabelKeys.get(label)
+  // Unknown labels here are provider/operator model IDs, not translated prose.
+  return `${labelKey ? t(`monitorCommon.quota.labels.${labelKey}`) : label}/${localizedWindow}`
+}
+
 function firstHttpStatus(message: string): string {
   return message.match(/\bHTTP\s+(\d{3})\b/i)?.[1]
     || message.match(/\bstatus(?:\s+code)?\s+(\d{3})\b/i)?.[1]
@@ -73,12 +94,23 @@ export function localizeQuotaDiagnostic(message: string | null | undefined, t: T
     return t('monitorCommon.quota.errors.snapshotMissing')
   }
 
-  const quotaHigh = raw.match(/quota high:\s*(.+?)\s+at\s+([0-9]+(?:\.[0-9]+)?)%/i)
+  const quotaHigh = raw.match(/^quota high:\s*(.+?)\s+at\s+([0-9]+(?:\.[0-9]+)?)%$/i)
   if (quotaHigh) {
+    const window = localizedQuotaWindow(quotaHigh[1], t)
+    if (!window) return t('monitorCommon.quota.errors.quotaHighUnknownWindow', { percent: quotaHigh[2] })
     return t('monitorCommon.quota.errors.quotaHigh', {
-      window: quotaHigh[1],
+      window,
       percent: quotaHigh[2],
     })
+  }
+
+  const balanceLowAmount = raw.match(/^balance low:\s*([+-]?[0-9]+(?:\.[0-9]+)?(?:e[+-]?[0-9]+)?)\s+(\S+)$/i)
+  if (balanceLowAmount) {
+    return t('monitorCommon.quota.errors.balanceLowAmount', { amount: balanceLowAmount[1], currency: balanceLowAmount[2] })
+  }
+  const balanceLow = raw.match(/^balance low\s*\(([^)]+)\)$/i)
+  if (balanceLow) {
+    return t('monitorCommon.quota.errors.balanceLow', { currency: balanceLow[1] })
   }
 
   const balanceDepleted = raw.match(/balance depleted\s*\(([^)]+)\)/i)

@@ -211,10 +211,12 @@ describe('Russian release review closure', () => {
     expect(create).not.toContain('>Client Email:')
   })
 
-  it('localizes the empty Grok batch authorization failure', () => {
+  it('localizes password authorization and validation without losing their distinct literal defaults', () => {
     const modal = source('src/components/account/CreateAccountModal.vue')
     expectLocalizedSelector(modal, "grokOAuth.error.value || 'Authorization failed'", 'admin.accounts.oauth.authFailed')
-    expectLocalizedSelector(modal, 'grokOAuth.error.value', 'admin.accounts.oauth.authFailed')
+    for (const client of ['grokOAuth', 'oauthClient', 'antigravityOAuth']) {
+      expectLocalizedSelector(modal, `${client}.error.value || 'Validation failed'`, 'admin.accounts.oauth.authFailed')
+    }
   })
 
   it('localizes GitHub and Google OAuth credential labels and placeholders', () => {

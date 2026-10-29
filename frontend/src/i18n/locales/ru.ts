@@ -1333,6 +1333,7 @@ export const ruOverrides = {
     },
     "quota": {
       "unavailable": "Квота недоступна",
+      "rawDiagnostic": "Техническая диагностика",
       "labels": {
         "pro": "Pro",
         "flash": "Flash",
@@ -1359,7 +1360,10 @@ export const ruOverrides = {
         "linkedAccountNotFound": "Связанный аккаунт не найден",
         "snapshotMissing": "Отсутствует снимок квоты",
         "quotaHigh": "Высокий расход квоты: {window} — {percent}%",
+        "quotaHighUnknownWindow": "Высокий расход квоты: {percent}% (окно квоты — в технической диагностике)",
         "balanceDepleted": "Баланс исчерпан ({currency})",
+        "balanceLow": "Низкий баланс ({currency})",
+        "balanceLowAmount": "Низкий баланс: {amount} {currency}",
         "noBalanceEndpoint": "У этого провайдера нет эндпоинта для проверки баланса",
         "codingPlanNoBalanceEndpoint": "У аккаунта с тарифом Coding нет эндпоинта для проверки баланса; используйте проверку квоты",
         "apiKeyEmpty": "У аккаунта не указан api_key",

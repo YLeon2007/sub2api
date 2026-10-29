@@ -6392,7 +6392,7 @@ const handleGrokValidateRT = async (refreshTokenInput: string) => {
         const tokenInfo = await grokOAuth.validateRefreshToken(refreshTokens[i], form.proxy_id)
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${localizeApiErrorFallback(grokOAuth.error.value, t('admin.accounts.oauth.authFailed'), locale.value)}`)
+          errors.push(`#${i + 1}: ${localizeApiErrorFallback(grokOAuth.error.value || 'Validation failed', t('admin.accounts.oauth.authFailed'), locale.value)}`)
           grokOAuth.error.value = ''
           continue
         }
@@ -6937,7 +6937,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
         )
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${localizeApiErrorFallback(oauthClient.error.value, t('admin.accounts.oauth.authFailed'), locale.value)}`)
+          errors.push(`#${i + 1}: ${localizeApiErrorFallback(oauthClient.error.value || 'Validation failed', t('admin.accounts.oauth.authFailed'), locale.value)}`)
           oauthClient.error.value = ''
           continue
         }
@@ -7055,7 +7055,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
         )
         if (!tokenInfo) {
           failedCount++
-          errors.push(`#${i + 1}: ${localizeApiErrorFallback(antigravityOAuth.error.value, t('admin.accounts.oauth.authFailed'), locale.value)}`)
+          errors.push(`#${i + 1}: ${localizeApiErrorFallback(antigravityOAuth.error.value || 'Validation failed', t('admin.accounts.oauth.authFailed'), locale.value)}`)
           antigravityOAuth.error.value = ''
           continue
         }

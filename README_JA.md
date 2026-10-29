@@ -459,10 +459,18 @@ docker compose -f docker-compose.local.yml logs sub2api | grep "Generated admin"
 
 #### アップグレード
 
+イメージを取得する前に、[Fork Releases](https://github.com/YLeon2007/sub2api/releases) から公開済みの不変 RU バージョンを選び、マイグレーションの説明を読み、新しいデータベースバックアップを検証してください。**実際にデプロイした Compose ファイル**の `sub2api` サービスの `image:` を、その正確なタグ（先頭の `v` を除く）に変更します。以下はこのリリースの固定バージョン例です。変動する `latest` タグではなく、選択した公開済みバージョンに置き換えてください：
+
+```yaml
+image: ghcr.io/yleon2007/sub2api:0.2.19-ru.1
+```
+
+続いて[不変バージョンへの安全なアップグレード手順](deploy/README.md#safe-immutable-upgrade)に従い、すべてのコマンドで同じ Compose ファイルを選択してください。準備スクリプトはローカル版を `docker-compose.yml` として保存します。実際のファイル名が `docker-compose.local.yml` の場合にのみ、その名前を使用してください。`/app` に名前付きボリュームがある場合は、内容を確認したランタイム同期スクリプトが必要です。イメージの取得とコンテナの再作成だけでは古いバイナリが残ります。`/app` マウントがない構成ではアプリだけを再作成します。更新のためにランタイムボリュームを削除したり、PostgreSQL/Redis を再作成したりしないでください。
+
+どちらの手順でも、**実際にインストールされたバージョンとコミット**を選択した Release のメタデータと照合してください。イメージタグだけでは確認できません：
+
 ```bash
-# 最新イメージをプルしてコンテナを再作成
-docker compose -f docker-compose.local.yml pull
-docker compose -f docker-compose.local.yml up -d
+docker exec sub2api /app/sub2api --version
 ```
 
 #### 簡単な移行（ローカルディレクトリバージョン）

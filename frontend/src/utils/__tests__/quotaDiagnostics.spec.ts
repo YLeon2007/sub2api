@@ -28,7 +28,7 @@ describe('localizeQuotaDiagnostic', () => {
       'monitorCommon.quota.errors.snapshotMissing',
     )
     expect(localizeQuotaDiagnostic('quota high: pro/7d at 93.4%', t)).toBe(
-      'monitorCommon.quota.errors.quotaHigh:{"window":"pro/7d","percent":"93.4"}',
+      'monitorCommon.quota.errors.quotaHigh:{"window":"monitorCommon.quota.labels.pro/monitorCommon.quota.windows.7d","percent":"93.4"}',
     )
     expect(localizeQuotaDiagnostic('balance depleted (CNY)', t)).toBe(
       'monitorCommon.quota.errors.balanceDepleted:{"currency":"CNY"}',

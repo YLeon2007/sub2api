@@ -524,6 +524,7 @@ export default {
     // Quota snapshot rendering (MonitorQuotaView, shared by admin + user views)
     quota: {
       unavailable: 'Quota unavailable',
+      rawDiagnostic: 'Technical diagnostic',
       windows: {
         '5h': '5h',
         '7d': '7d',
@@ -550,7 +551,10 @@ export default {
         linkedAccountNotFound: 'Linked account not found',
         snapshotMissing: 'Quota snapshot missing',
         quotaHigh: 'Quota high: {window} at {percent}%',
+        quotaHighUnknownWindow: 'Quota high: {percent}% (quota window is in the technical diagnostic)',
         balanceDepleted: 'Balance depleted ({currency})',
+        balanceLow: 'Balance low ({currency})',
+        balanceLowAmount: 'Balance low: {amount} {currency}',
         noBalanceEndpoint: 'Account provider has no balance endpoint',
         codingPlanNoBalanceEndpoint: 'Coding Plan accounts use quota probe, not balance endpoint',
         apiKeyEmpty: 'Account api_key is empty',

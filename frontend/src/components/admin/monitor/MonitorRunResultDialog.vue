@@ -14,6 +14,10 @@
         <div class="flex flex-col">
           <span class="font-medium text-gray-900 dark:text-white">{{ formatMonitorModel(r.model) }}</span>
           <span v-if="r.message" class="text-xs text-gray-500 dark:text-gray-400">{{ displayMessage(r.message) }}</span>
+          <details v-if="r.message && displayMessage(r.message) !== r.message" class="text-xs text-gray-500 dark:text-gray-400">
+            <summary>{{ t('monitorCommon.quota.rawDiagnostic') }}</summary>
+            <pre class="whitespace-pre-wrap break-all">{{ r.message }}</pre>
+          </details>
           <MonitorQuotaView :snapshot="r.quota" class="mt-1" />
         </div>
         <div class="flex items-center gap-2">
@@ -55,11 +59,12 @@ defineEmits<{
   (e: 'close'): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { statusLabel, statusBadgeClass, formatLatency, formatMonitorModel } = useChannelMonitorFormat()
 
 const displayMessage = (message: string) => localizeApiErrorFallback(
   message,
   localizeQuotaDiagnostic(message, t) || t('monitorCommon.quota.errors.generic'),
+  locale.value,
 )
 </script>

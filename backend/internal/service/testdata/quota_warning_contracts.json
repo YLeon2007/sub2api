@@ -1,0 +1,17 @@
+[
+  {"name":"balance amount","snapshot":{"success":true,"balance_low":true,"balance":0.025,"currency":"USD"},"message":"balance low: 0.025 USD","ru":"Низкий баланс: 0.025 USD"},
+  {"name":"balance missing amount","snapshot":{"success":true,"balance_low":true,"currency":"CNY"},"message":"balance low (CNY)","ru":"Низкий баланс (CNY)"},
+  {"name":"balance missing currency","snapshot":{"success":true,"balance_low":true,"balance":0},"message":"balance low: 0 ?","ru":"Низкий баланс: 0 ?"},
+  {"name":"balance negative","snapshot":{"success":true,"balance_low":true,"balance":-2.5,"currency":"USD"},"message":"balance low: -2.5 USD","ru":"Низкий баланс: -2.5 USD"},
+  {"name":"quota total","snapshot":{"success":true,"tiers":[{"window":"total","used_percent":93.4}]},"message":"quota high: total at 93.4%","ru":"Высокий расход квоты: Всего — 93.4%"},
+  {"name":"quota model ID","snapshot":{"success":true,"tiers":[{"window":"total","label":"gemini-3-pro","used_percent":93.4}]},"message":"quota high: gemini-3-pro/total at 93.4%","ru":"Высокий расход квоты: gemini-3-pro/Всего — 93.4%"},
+  {"name":"quota plan label","snapshot":{"success":true,"tiers":[{"window":"7d","label":"pro","used_percent":93.4}]},"message":"quota high: pro/7d at 93.4%","ru":"Высокий расход квоты: Pro/7 д — 93.4%"},
+  {"name":"quota requests","snapshot":{"success":true,"tiers":[{"window":"daily","label":"requests","used_percent":93.4}]},"message":"quota high: requests/daily at 93.4%","ru":"Высокий расход квоты: Запросы/День — 93.4%"},
+  {"name":"quota weekly","snapshot":{"success":true,"tiers":[{"window":"weekly","used_percent":93.4}]},"message":"quota high: weekly at 93.4%","ru":"Высокий расход квоты: Неделя — 93.4%"},
+  {"name":"quota monthly","snapshot":{"success":true,"tiers":[{"window":"monthly","used_percent":93.4}]},"message":"quota high: monthly at 93.4%","ru":"Высокий расход квоты: Месяц — 93.4%"},
+  {"name":"quota five hour","snapshot":{"success":true,"tiers":[{"window":"5h","used_percent":93.4}]},"message":"quota high: 5h at 93.4%","ru":"Высокий расход квоты: 5 ч — 93.4%"},
+  {"name":"quota thirty day","snapshot":{"success":true,"tiers":[{"window":"30d","used_percent":93.4}]},"message":"quota high: 30d at 93.4%","ru":"Высокий расход квоты: 30 д — 93.4%"},
+  {"name":"quota Sonnet","snapshot":{"success":true,"tiers":[{"window":"7d-sonnet","used_percent":93.4}]},"message":"quota high: 7d-sonnet at 93.4%","ru":"Высокий расход квоты: 7 д Sonnet — 93.4%"},
+  {"name":"quota Fable","snapshot":{"success":true,"tiers":[{"window":"7d-fable","used_percent":93.4}]},"message":"quota high: 7d-fable at 93.4%","ru":"Высокий расход квоты: 7 д Fable — 93.4%"},
+  {"name":"quota unknown window","snapshot":{"success":true,"tiers":[{"window":"future_window","used_percent":93.4}]},"message":"quota high: future_window at 93.4%","ru":"Высокий расход квоты: 93.4% (окно квоты — в технической диагностике)"}
+]

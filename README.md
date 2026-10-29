@@ -458,10 +458,18 @@ docker compose -f docker-compose.local.yml logs sub2api | grep "Generated admin"
 
 #### Upgrade
 
+Before pulling, choose a published immutable RU version from [fork Releases](https://github.com/YLeon2007/sub2api/releases), read its migration notes, and verify a fresh database backup. Change the `sub2api` service's `image:` in the **actually deployed Compose file** to that exact tag (without the leading `v`). The pin below is this release's example; replace it with your selected published version, not a floating `latest` tag:
+
+```yaml
+image: ghcr.io/yleon2007/sub2api:0.2.19-ru.1
+```
+
+Then follow the [safe immutable upgrade procedure](deploy/README.md#safe-immutable-upgrade), keeping the selected Compose filename for every command. The preparation script saves the local variant as `docker-compose.yml`; use `docker-compose.local.yml` only if that is your deployed filename. A named volume at `/app` requires the inspected runtime-sync helper; pulling/recreating alone retains the old binary. A layout without an `/app` mount uses app-only recreation. Do not delete the runtime volume or recreate PostgreSQL/Redis as an app upgrade.
+
+For either path, compare the **installed version and commit** with the selected Release metadata; the image tag alone is not verification:
+
 ```bash
-# Pull latest image and recreate container
-docker compose -f docker-compose.local.yml pull
-docker compose -f docker-compose.local.yml up -d
+docker exec sub2api /app/sub2api --version
 ```
 
 #### Easy Migration (Local Directory Version)

@@ -46,18 +46,38 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
       && ts.isIdentifier(declaration.parameters[0].name)
       && verifiedFallbackCall(declaration.body, declaration.parameters[0].name.text)
   }
-  function verifiedEarlyRussianReturn(n: ts.Node): boolean {
-    if (!ts.isFunctionLike(n) || !('body' in n) || !n.body || !ts.isBlock(n.body)) return false
-    const first = n.body.statements[0]
-    if (!first || !ts.isIfStatement(first) || first.elseStatement || !russianCondition(first.expression)) return false
+  function verifiedEarlyRussianReturn(n: ts.Node): ts.IfStatement | undefined {
+    if (!ts.isFunctionLike(n) || !('body' in n) || !n.body || !ts.isBlock(n.body)) return undefined
+    let first = n.body.statements[0]
+    let boundFallback = n.parameters.some(parameter => ts.isIdentifier(parameter.name) && parameter.name.text === 'fallback')
+    // buildAuthErrorMessage binds only options.fallback before its RU return.
+    // Permit that exact pure parameter destructuring, not arbitrary initializers,
+    // calls, default values, or statements that may already expose a primary sink.
+    if (first && ts.isVariableStatement(first) && first.declarationList.flags & ts.NodeFlags.Const) {
+      const declarations = first.declarationList.declarations
+      const declaration = declarations.length === 1 ? declarations[0] : undefined
+      if (declaration && ts.isObjectBindingPattern(declaration.name) && declaration.name.elements.length === 1
+        && declaration.initializer && ts.isIdentifier(declaration.initializer)
+        && declaration.initializer.text === n.parameters[1]?.name.getText(sf)) {
+        const binding = declaration.name.elements[0]
+        if (ts.isIdentifier(binding.name) && binding.name.text === 'fallback' && !binding.propertyName && !binding.initializer && !binding.dotDotDotToken) {
+          boundFallback = true
+          first = n.body.statements[1]
+        }
+      }
+    }
+    if (!first || !ts.isIfStatement(first) || first.elseStatement || !russianCondition(first.expression)) return undefined
     const branch = first.thenStatement
     const statement = ts.isBlock(branch) && branch.statements.length === 1 ? branch.statements[0] : branch
-    if (!ts.isReturnStatement(statement) || !statement.expression || !ts.isCallExpression(statement.expression)) return false
+    if (!ts.isReturnStatement(statement) || !statement.expression) return undefined
+    if (ts.isIdentifier(statement.expression) && statement.expression.text === 'fallback' && boundFallback) return first
+    if (!ts.isCallExpression(statement.expression)) return undefined
     const call = statement.expression
-    return ts.isIdentifier(call.expression) && call.expression.text === 'extractApiErrorMessage' && call.arguments.length === 4
+    const verified = ts.isIdentifier(call.expression) && call.expression.text === 'extractApiErrorMessage' && call.arguments.length === 4
       && call.arguments[0].getText(sf) === n.parameters[0]?.name.getText(sf)
       && call.arguments[1].getText(sf) === n.parameters[1]?.name.getText(sf)
       && call.arguments[2].getText(sf) === 'undefined' && compact(call.arguments[3]) === 'locale.value'
+    return verified ? first : undefined
   }
   function verifiedThrowIntermediate(n: ts.Node): boolean {
     // Raw parsing is not a primary sink when the immediately following throw
@@ -109,10 +129,8 @@ export function unsafePrimaryErrors(text: string, name = 'fixture.ts'): string[]
       if (ts.isCallExpression(p) && sanitizers.has(callee(p))) return true
       if (ts.isConditionalExpression(p) && russianCondition(p.condition) && n.getStart(sf) >= p.whenFalse.getStart(sf)) return true
       if (ts.isFunctionLike(p) && 'body' in p && p.body) {
-        if (verifiedEarlyRussianReturn(p) && ts.isBlock(p.body) && n.getStart(sf) >= p.body.statements[0].end) return true
-        const body = (p.body as ts.Node).getText(sf)
-        if (body.includes("if (getLocale() === 'ru') return fallback")) return true
-        if (body.includes("if (locale.value === 'ru')") && body.includes('return extractApiErrorMessage(error, fallback, undefined, locale.value)')) return true
+        const earlyReturn = verifiedEarlyRussianReturn(p)
+        if (earlyReturn && n.getStart(sf) >= earlyReturn.end) return true
       }
     }
     return false
@@ -184,6 +202,8 @@ describe('complete primary error fallback surface', () => {
     expect(unsafePrimaryErrors("app.showError(localizeApiErrorFallback(err?.message, t('common.error')))" )).toEqual([])
   })
   it.each([
+    "function f(err: any, fallback: string) { if (getLocale() === 'ru') return fallback; return err.message || fallback }",
+    "function f(err: any, options: { fallback: string }) { const { fallback } = options; if (getLocale() === 'ru') return fallback; return err.message || fallback }",
     "const primaryTestError = (message: string) => localizeApiErrorFallback(message, t('admin.accounts.testFailed'), locale.value); errorMessage.value = primaryTestError(event.error)",
     "const reauthErrorText = (error: any, fallback: string) => { if (locale.value.toLowerCase().split(/[-_]/)[0] === 'ru') { return extractApiErrorMessage(error, fallback, undefined, locale.value) } return error.response?.data?.detail || fallback }",
     "async function fetchUsage() { const msg = body?.error?.message || body?.message || `${t('keyUsage.queryFailed')} (${res.status})`; throw new Error(localizeApiErrorFallback(msg, t('keyUsage.queryFailedRetry'), locale.value)) }",
@@ -202,6 +222,16 @@ describe('complete primary error fallback surface', () => {
     "const msg = body?.error?.message || t('keyUsage.queryFailed'); throw new Error(arbitrary(msg, t('keyUsage.queryFailedRetry'), locale.value))",
     "const msg = body?.error?.message || t('keyUsage.queryFailed'); throw new Error(localizeApiErrorFallback(msg, t('keyUsage.queryFailedRetry'), 'en'))",
     "const msg = body?.error?.message || t('keyUsage.queryFailed'); throw new Error(localizeApiErrorFallback(msg, t('keyUsage.queryFailedRetry'), locale.value)); app.showError(msg)",
+    "function f(err: any) { /* if (getLocale() === 'ru') return fallback */ app.showError(err.message || t('common.error')) }",
+    "function f(err: any) { /* if (locale.value === 'ru') return extractApiErrorMessage(error, fallback, undefined, locale.value) */ app.showError(err.message || t('common.error')) }",
+    "function f(err: any) { if (false) { if (getLocale() === 'ru') return fallback } app.showError(err.message || t('common.error')) }",
+    "function f(err: any) { if (false) { if (locale.value === 'ru') return extractApiErrorMessage(error, fallback, undefined, locale.value) } app.showError(err.message || t('common.error')) }",
+    "function f(err: any) { const unused = () => { if (getLocale() === 'ru') return fallback }; app.showError(err.message || t('common.error')) }",
+    "function f(err: any) { const unused = () => { if (locale.value === 'ru') return extractApiErrorMessage(error, fallback, undefined, locale.value) }; app.showError(err.message || t('common.error')) }",
+    "function f(err: any) { const text = \"if (getLocale() === 'ru') return fallback\"; app.showError(err.message || t('common.error')) }",
+    "function f(err: any) { app.showError(err.message || t('common.error')); if (getLocale() === 'ru') return fallback }",
+    "function f(err: any) { const fallback = err.message; if (getLocale() === 'ru') return fallback; app.showError(err.message || t('common.error')) }",
+    "function f(err: any, fallback: string) { if (getLocale() === 'ru') { app.showError(err.message || t('common.error')); return fallback } return err.message || fallback }",
     "errorMessage.value = false && locale.value === 'ru' ? t('common.error') : event.error",
     "errorMessage.value = locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? event.error || t('common.error') : t('common.error')",
   ])('rejects same-name bypasses and ungated primary paths: %s', source => {

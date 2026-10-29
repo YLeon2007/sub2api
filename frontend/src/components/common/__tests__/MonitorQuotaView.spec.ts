@@ -124,7 +124,7 @@ describe('MonitorQuotaView', () => {
     })
 
     const error = wrapper.get('[data-testid="monitor-quota-error"]')
-    const expected = 'monitorCommon.quota.errors.quotaHigh:{"window":"pro/7d","percent":"93.4"}'
+    const expected = 'monitorCommon.quota.errors.quotaHigh:{"window":"monitorCommon.quota.labels.pro/monitorCommon.quota.windows.7d","percent":"93.4"}'
     expect(error.text()).toBe(`${expected.slice(0, 48)}…`)
     expect(error.attributes('title')).toBe(expected)
   })
