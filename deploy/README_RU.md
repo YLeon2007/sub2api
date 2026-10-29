@@ -2,37 +2,37 @@
 
 [English](README.md) | Русский
 
-Каталог содержит Docker/systemd assets для Linux и локальный стек Apple silicon.
+Каталог содержит файлы развёртывания Docker/systemd для Linux и локальный стек для Apple silicon.
 
 ## Выбор способа
 
-| Способ | Сценарий | Setup |
+| Способ | Сценарий | Первоначальная настройка |
 |---|---|---|
 | Docker Compose | Рекомендуемый серверный вариант | `AUTO_SETUP=true` по умолчанию |
-| Apple `container` | Локальный macOS 26+ на Apple silicon | Автоматический стек без restart supervisor |
-| Binary + systemd | PostgreSQL/Redis управляются отдельно | Web setup wizard |
+| Apple `container` | Локальный macOS 26+ на Apple silicon | Автоматическая настройка; перезапуск процесса внутри контейнера, но не всего стека |
+| Исполняемый файл + systemd | PostgreSQL/Redis управляются отдельно | Веб-мастер первоначальной настройки |
 
 ## Основные файлы
 
 | Файл | Назначение |
 |---|---|
-| `docker-compose.yml` | Named volumes, включая persistent `/app` runtime |
-| `docker-compose.local.yml` | Локальные bind-mounted data directories |
-| `docker-compose.standalone.yml` | Только app для внешних PostgreSQL/Redis |
-| `docker-deploy.sh` | Подготовка local-directory deployment |
-| `.env.example` | Шаблон environment |
-| `DOCKER.md` | Container/GHCR guide |
-| `apple-container.sh`, `APPLE_CONTAINER.md` | Apple lifecycle/guide |
-| `install.sh`, `sub2api.service` | Binary/systemd |
-| `install-datamanagementd.sh` и service/docs | Необязательный host daemon управления данными |
-| `config.example.yaml` | Полный config reference |
-| `EDGE_SECURITY.md` | Reverse proxy/CDN/WAF/trusted proxy hardening |
+| `docker-compose.yml` | Именованные тома, включая постоянный том среды выполнения `/app` |
+| `docker-compose.local.yml` | Локальные каталоги данных, подключённые к контейнерам |
+| `docker-compose.standalone.yml` | Только приложение для внешних PostgreSQL/Redis |
+| `docker-deploy.sh` | Подготовка развёртывания с локальными каталогами |
+| `.env.example` | Шаблон переменных окружения |
+| `DOCKER.md` | Руководство по контейнерам и GHCR |
+| `apple-container.sh`, `APPLE_CONTAINER.md` | Управление жизненным циклом Apple `container` и руководство |
+| `install.sh`, `sub2api.service` | Установка исполняемого файла и служба systemd |
+| `install-datamanagementd.sh` и файлы службы/документации | Необязательная служба управления данными на хосте |
+| `config.example.yaml` | Полный справочник настроек |
+| `EDGE_SECURITY.md` | Защита обратного прокси, CDN, WAF и настройка доверенных прокси |
 
-Fork defaults используют immutable image `ghcr.io/yleon2007/sub2api:0.2.19-ru.1`. Новые releases требуют явной смены tag; не переводите production на чужой mutable `latest`.
+По умолчанию форк использует неизменяемый образ `ghcr.io/yleon2007/sub2api:0.2.19-ru.1`. Для нового релиза явно измените тег; не переводите рабочую установку на чужой изменяемый `latest`.
 
-## Docker: preparation script
+## Docker: скрипт подготовки
 
-Скачайте и проверьте script до запуска:
+Скачайте и проверьте скрипт до запуска:
 
 ```bash
 mkdir -p sub2api-deploy && cd sub2api-deploy
@@ -49,12 +49,12 @@ esac
 rm -rf "$tmpdir"
 ```
 
-Script:
+Скрипт:
 
 - скачивает `docker-compose.local.yml` **под именем `docker-compose.yml`**;
 - скачивает `.env.example`, создаёт `.env`;
 - генерирует `POSTGRES_PASSWORD`, `JWT_SECRET`, `TOTP_ENCRYPTION_KEY`;
-- задаёт `.env` mode `0600`;
+- задаёт `.env` права доступа `0600`;
 - создаёт `data/`, `postgres_data/`, `redis_data/`.
 
 Так как итоговый файл называется `docker-compose.yml`, `-f` не нужен:
@@ -66,15 +66,15 @@ docker compose ps
 docker compose logs -f sub2api
 ```
 
-Если `ADMIN_EMAIL` / `ADMIN_PASSWORD` не заданы, установщик заранее генерирует email администратора (логин), записывает его в `.env` и выводит при установке; пароль приложение генерирует при первом запуске и печатает в логах. Сохраните оба значения в защищённом месте:
+Если `ADMIN_EMAIL` / `ADMIN_PASSWORD` не заданы, установщик заранее генерирует адрес электронной почты администратора (логин), записывает его в `.env` и выводит при установке; пароль приложение генерирует при первом запуске и печатает в логах. Сохраните оба значения в защищённом месте:
 
 ```bash
 docker compose logs sub2api | grep "Generated admin"
 ```
 
-Явно заданный `ADMIN_PASSWORD` должен быть длиной 8–72 байта, а `ADMIN_EMAIL` — валидным email для входа; иначе автоматическая установка завершится ошибкой. На существующие установки это не влияет.
+Явно заданный `ADMIN_PASSWORD` должен быть длиной 8–72 байта, а `ADMIN_EMAIL` — корректным адресом электронной почты для входа; иначе автоматическая установка завершится ошибкой. На существующие установки это не влияет.
 
-## Docker: checkout репозитория
+## Docker: копия репозитория
 
 ```bash
 git clone https://github.com/YLeon2007/sub2api.git
@@ -83,7 +83,7 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Заменяйте строки secrets, не добавляйте duplicate values:
+Заменяйте значения секретов в существующих строках, не добавляйте дублирующие записи:
 
 ```bash
 POSTGRES_PASSWORD=$(openssl rand -hex 32)
@@ -95,7 +95,7 @@ sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$JWT_SECRET/" .env
 sed -i "s/^TOTP_ENCRYPTION_KEY=.*/TOTP_ENCRYPTION_KEY=$TOTP_ENCRYPTION_KEY/" .env
 ```
 
-Local bind-mounted variant:
+Вариант с подключением локальных каталогов данных:
 
 ```bash
 mkdir -p data postgres_data redis_data
@@ -103,41 +103,41 @@ docker compose -f docker-compose.local.yml config --quiet
 docker compose -f docker-compose.local.yml up -d
 ```
 
-Никогда не коммитьте `.env`, generated secrets, database data или OAuth credentials.
+Никогда не коммитьте `.env`, сгенерированные секреты, данные базы или учётные данные OAuth.
 
 ## Варианты хранения
 
 | Файл | Хранилище | Особенности |
 |---|---|---|
-| `docker-compose.local.yml` | `./data`, `./postgres_data`, `./redis_data` | Удобный transfer; для consistency остановите стек или используйте DB-aware backup |
-| `docker-compose.yml` | Named volumes | Содержит `/app` runtime volume для web-updated binary |
-| `docker-compose.standalone.yml` | App data/runtime | Нужны внешние `DATABASE_HOST`, `DATABASE_PASSWORD`, `REDIS_HOST` и связанные split variables |
+| `docker-compose.local.yml` | `./data`, `./postgres_data`, `./redis_data` | Удобен для переноса; для согласованности данных остановите стек или используйте резервное копирование с учётом работы БД |
+| `docker-compose.yml` | Именованные тома | Содержит том среды выполнения `/app` для исполняемого файла, обновлённого через веб-интерфейс |
+| `docker-compose.standalone.yml` | Данные и среда выполнения приложения | Нужны внешние `DATABASE_HOST`, `DATABASE_PASSWORD`, `REDIS_HOST` и связанные отдельные переменные |
 
-Image tag остаётся reproducible source of truth. После web UI update синхронизируйте Compose pin с соответствующим immutable RU release до recreate контейнера.
+Тег образа остаётся воспроизводимым источником версии. После обновления через веб-интерфейс закрепите в Compose соответствующий неизменяемый русский релиз до пересоздания контейнера.
 
-## Первый запуск и migrations
+## Первый запуск и миграции
 
-При `AUTO_SETUP=true` приложение подключается к PostgreSQL/Redis, применяет forward-only migrations, создаёт initial admin и записывает config в data directory.
+При `AUTO_SETUP=true` приложение подключается к PostgreSQL/Redis, применяет миграции только вперёд, создаёт первого администратора и записывает конфигурацию в каталог данных.
 
 ### Запуск и восстановление базы данных
 
-Во время запуска Sub2API применяет migrations базы данных. После перезапуска host-системы или Docker daemon PostgreSQL может некоторое время оставаться в режиме recovery/startup. Приложение повторяет временно неудачные подключения и ошибки запуска PostgreSQL с ограниченной экспоненциальной задержкой, а затем автоматически продолжает запуск, когда база данных становится доступна. Ошибки аутентификации, несовпадения checksum migrations, ошибки SQL и другие постоянные проблемы конфигурации или данных приводят к немедленному завершению.
+Во время запуска Sub2API применяет миграции базы данных. После перезапуска хоста или службы Docker PostgreSQL может некоторое время оставаться в режиме восстановления или запуска. Приложение повторяет временно неудачные подключения и ошибки запуска PostgreSQL с ограниченной экспоненциальной задержкой, а затем автоматически продолжает запуск, когда база данных становится доступна. Ошибки аутентификации, несовпадения контрольных сумм миграций, ошибки SQL и другие постоянные проблемы конфигурации или данных приводят к немедленному завершению.
 
-В Compose-примерах readiness PostgreSQL проверяется и через `pg_isready`, и простым SQL-запросом. `depends_on: condition: service_healthy` задаёт порядок зависимостей при новом запуске Compose, но не заменяет повторы на уровне приложения, когда Docker восстанавливает уже существующие контейнеры после перезапуска host-системы.
+В примерах Compose готовность PostgreSQL проверяется и через `pg_isready`, и простым SQL-запросом. `depends_on: condition: service_healthy` задаёт порядок зависимостей при новом запуске Compose, но не заменяет повторы на уровне приложения, когда Docker восстанавливает уже существующие контейнеры после перезапуска хоста.
 
-Для systemd сохраняйте `Restart=always` и `RestartSec` в `sub2api.service`: повторы приложения покрывают временный запуск базы данных, а systemd остаётся supervisor для постоянных завершений процесса. В Kubernetes используйте readiness probe PostgreSQL и сохраняйте механизм повторов запуска Sub2API; liveness probe приложения настраивайте отдельно, чтобы период восстановления базы данных не считался постоянным отказом процесса.
+Для systemd сохраняйте `Restart=always` и `RestartSec` в `sub2api.service`: повторы приложения покрывают временный запуск базы данных, а systemd продолжает контролировать и перезапускать завершающийся процесс. В Kubernetes проверяйте готовность PostgreSQL и сохраняйте механизм повторов запуска Sub2API; проверку жизнеспособности приложения настраивайте отдельно, чтобы период восстановления базы данных не считался постоянным отказом процесса.
 
-`schema_migrations` хранит filename/checksum. Автоматического down migration нет. До version change:
+`schema_migrations` хранит имена файлов и контрольные суммы. Автоматического отката миграций нет. Перед сменой версии:
 
-1. прочитайте release notes/migration delta;
-2. создайте и проверьте свежий PostgreSQL backup;
-3. сохраните предыдущие Compose/env и выполните `docker compose config`;
-4. заранее скачайте новый immutable image;
-5. подготовьте rollback/restore.
+1. прочитайте примечания к релизу и изменения миграций;
+2. создайте и проверьте свежую резервную копию PostgreSQL;
+3. сохраните предыдущие файлы Compose и переменных окружения, выполните `docker compose config`;
+4. заранее скачайте новый неизменяемый образ;
+5. подготовьте откат и восстановление.
 
-## Безопасное immutable-обновление
+## Безопасное обновление на неизменяемую версию
 
-Используйте только опубликованный tag из [Releases форка](https://github.com/YLeon2007/sub2api/releases).
+Используйте только опубликованный тег из [релизов форка](https://github.com/YLeon2007/sub2api/releases).
 
 1. Измените `image:`:
 
@@ -145,7 +145,7 @@ Image tag остаётся reproducible source of truth. После web UI updat
    image: ghcr.io/yleon2007/sub2api:<NEW_RU_VERSION>
    ```
 
-2. Проверьте и пересоздайте только app:
+2. Проверьте конфигурацию и пересоздайте только приложение:
 
    ```bash
    docker compose config --quiet
@@ -155,11 +155,11 @@ Image tag остаётся reproducible source of truth. После web UI updat
    docker compose logs --tail=200 sub2api
    ```
 
-Обычный `pull` не сделает immutable pin новее. Не пересоздавайте PostgreSQL/Redis при app-only upgrade, если release notes этого не требуют.
+Обычный `pull` не изменит закреплённую неизменяемую версию. Не пересоздавайте PostgreSQL/Redis при обновлении только приложения, если примечания к релизу этого не требуют.
 
-## Backup и перенос
+## Резервное копирование и перенос
 
-Stopped filesystem archive прост, но вызывает downtime. Для production/крупной БД используйте PostgreSQL-aware backup и проверенный restore.
+Архивирование файлов после остановки стека просто, но вызывает простой. Для рабочей установки или крупной БД используйте резервное копирование с учётом работы PostgreSQL и проверенное восстановление.
 
 ```bash
 umask 077
@@ -170,9 +170,9 @@ tar --exclude='.env' -czf sub2api-data.tar.gz deployment/
 chmod 600 sub2api-data.tar.gz
 ```
 
-Restrictive umask и явный mode защищают архив. `.env` передавайте отдельно по защищённому каналу с mode `0600`. Filesystem copy не заменяет проверенный `pg_dump`/restore, когда важна consistency.
+Ограничительная маска `umask` и явно заданные права защищают архив. `.env` передавайте отдельно по защищённому каналу с правами `0600`. Копирование файловой системы не заменяет проверенные `pg_dump` и восстановление, когда важна согласованность данных.
 
-`docker compose down -v` и удаление `postgres_data/` уничтожают данные и не являются routine maintenance.
+`docker compose down -v` и удаление `postgres_data/` уничтожают данные и не относятся к обычному обслуживанию.
 
 ## Обычные операции
 
@@ -193,7 +193,7 @@ docker compose exec redis redis-cli ping
 | `POSTGRES_PASSWORD` | Нужен встроенному PostgreSQL | Пароль базы данных |
 | `JWT_SECRET` | Обязателен для стабильных сессий | Подпись JWT |
 | `TOTP_ENCRYPTION_KEY` | Обязателен при 2FA | Шифрование TOTP |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Необязательные начальные данные администратора | Оба генерируются при отсутствии; заданный пароль — 8–72 байта |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Необязательные начальные данные администратора | При отсутствии адрес генерируется скриптом подготовки или приложением, пароль — приложением; заданный пароль — 8–72 байта |
 | `BIND_HOST` | Необязательно, по умолчанию `0.0.0.0` | Адрес прослушивания приложения |
 | `SERVER_PORT` | Необязательно, по умолчанию `8080` | Публикуемый на хосте порт; внутри контейнера приложение слушает `8080` |
 | `TZ` | Необязательно | Часовой пояс |
@@ -213,10 +213,10 @@ Apple silicon, macOS 26, `container` 1.1.0+:
 ./apple-container.sh logs app -f
 ```
 
-Named volumes сохраняют данные. Внутриконтейнерный process supervisor позволяет Web UI перезапустить активный binary после обновления, но не запускает остановленные контейнеры или весь стек после reboot; в этом случае снова выполните `up`. Это local path, для сервера рекомендуется Docker Compose. См. [APPLE_CONTAINER_RU.md](APPLE_CONTAINER_RU.md) ([English](APPLE_CONTAINER.md)).
-Apple helper принимает `SERVER_PORT` только в непривилегированном диапазоне `1025-65535`.
+Именованные тома сохраняют данные. Контролирующий процесс внутри контейнера позволяет веб-интерфейсу перезапустить активный исполняемый файл после обновления, но не запускает остановленные контейнеры или весь стек после перезагрузки; в этом случае снова выполните `up`. Это локальный вариант, для сервера рекомендуется Docker Compose. См. [APPLE_CONTAINER_RU.md](APPLE_CONTAINER_RU.md) ([English](APPLE_CONTAINER.md)).
+Скрипт Apple принимает `SERVER_PORT` только в непривилегированном диапазоне `1025-65535`.
 
-## Binary + systemd
+## Исполняемый файл + systemd
 
 ```bash
 umask 077
@@ -232,7 +232,7 @@ esac
 rm -rf "$tmpdir"
 ```
 
-Installer поддерживает `upgrade` и `uninstall`; releases берутся из [YLeon2007/sub2api](https://github.com/YLeon2007/sub2api/releases).
+Установщик поддерживает `upgrade` и `uninstall`; релизы берутся из [YLeon2007/sub2api](https://github.com/YLeon2007/sub2api/releases).
 
 ```bash
 sudo systemctl status sub2api
@@ -240,17 +240,17 @@ sudo journalctl -u sub2api -f
 sudo systemctl restart sub2api
 ```
 
-Setup wizard создаёт `/etc/sub2api/config.yaml`, binary/data находятся в `/opt/sub2api/`. PostgreSQL, Redis и systemd управляются отдельно.
+Мастер настройки создаёт `/etc/sub2api/config.yaml`, исполняемый файл и данные находятся в `/opt/sub2api/`. PostgreSQL, Redis и systemd управляются отдельно.
 
 ## Gemini OAuth
 
-Code Assist использует публичный built-in Gemini CLI client flow. AI Studio OAuth требует admin-supplied credentials через environment/systemd. Не коммитьте client secret и не выводите его в logs.
+Code Assist использует встроенную общедоступную процедуру авторизации клиента Gemini CLI. Для AI Studio OAuth администратор должен предоставить учётные данные через переменные окружения или systemd. Не коммитьте секрет клиента и не выводите его в логи.
 
-Правила Google consent/testing/verification меняются; следуйте текущей документации и callback из Admin UI. Access/refresh tokens могут истекать/отзываться даже в production consent mode.
+Правила Google для экрана согласия, тестирования и проверки приложения меняются; следуйте текущей документации и адресу обратного вызова из панели администратора. Токены доступа и обновления могут истекать или отзываться даже при рабочем режиме экрана согласия.
 
 ## datamanagementd
 
-Приложение проверяет `/tmp/sub2api-datamanagement.sock`. Docker должен смонтировать host socket по тому же пути. Следуйте `DATAMANAGEMENTD_CN.md` и проверьте privileges daemon.
+Приложение проверяет `/tmp/sub2api-datamanagement.sock`. Docker должен подключить сокет хоста по тому же пути. Следуйте `DATAMANAGEMENTD_CN.md` и проверьте привилегии службы.
 
 ## Диагностика
 
@@ -262,6 +262,6 @@ sudo systemctl status sub2api
 sudo journalctl -u sub2api -n 100
 ```
 
-Типичные причины: занятый port, missing/invalid `.env`, DB/Redis credentials, ownership volumes, недоступный image или migration error. Не обходите checksum failure правкой `schema_migrations`: восстановите точный migration file или используйте проверенный recovery plan.
+Типичные причины: занятый порт, отсутствующий или некорректный `.env`, неверные учётные данные БД/Redis, права владельца томов, недоступный образ или ошибка миграции. Не обходите ошибку контрольной суммы правкой `schema_migrations`: восстановите точный файл миграции или используйте проверенный план восстановления.
 
-Reverse proxy/TLS/trusted proxy/WAF — в `EDGE_SECURITY.md`. TLS fingerprint profiles — в `config.example.yaml`; перед включением проверьте текущую upstream policy.
+Обратный прокси, TLS, доверенные прокси и WAF описаны в `EDGE_SECURITY.md`. Профили отпечатков TLS — в `config.example.yaml`; перед включением проверьте текущую политику вышестоящего сервиса.

@@ -4,7 +4,7 @@
 
 # Sub2API
 
-[![Go](https://img.shields.io/badge/Go-1.27.2-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.27.3-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
@@ -32,6 +32,17 @@
 
 ## Партнёры
 
+<details open>
+<summary>Свернуть список</summary>
+
+<p align="center"><a href="https://wandapi.ai/r/sub2api"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/partners/banners/wandapi-en-dark.svg"><img src="assets/partners/banners/wandapi-en.svg" alt="WandAPI" width="100%"></picture></a></p>
+
+**[WandAPI](https://wandapi.ai/r/sub2api)** — по описанию партнёра в оригинальном проекте, стабильный API-шлюз моделей ИИ корпоративного уровня, созданный одним из основных участников проекта. Один API-ключ открывает доступ к Claude, GPT, Gemini и другим ведущим моделям с нативной совместимостью с протоколами OpenAI и Anthropic: для Claude Code, Codex и существующих SDK достаточно изменить базовый URL. Заявлены маршрутизация в реальном времени по задержке и состоянию вышестоящего сервиса, автоматическое переключение при сбое за миллисекунды и доступность 99,99%. Оплата по факту использования с детализацией токенов и стоимости каждого запроса.
+
+**Бесплатный пробный баланс**: по предложению партнёра, регистрация по [специальной ссылке](https://wandapi.ai/r/sub2api) даёт пробный баланс.
+
+---
+
 <table>
 <tr>
 <td width="180"><a href="https://codex-everywhere.com"><img src="assets/partners/logos/codex-everywhere.jpg" alt="CodexEverywhere" width="150"></a></td>
@@ -57,7 +68,29 @@
 <td width="180"><a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api"><img src="assets/partners/logos/cola-proxy.jpg" alt="ColaProxy" width="150"></a></td>
 <td>ColaProxy предоставляет residential proxies (резидентские прокси) для web scraping (сбора открытых веб-данных), автоматизации и управления несколькими аккаунтами. По данным спонсора, доступны пробный доступ, трафик без срока действия, цены от $0,3/GB, неограниченные concurrent connections (параллельные подключения) и автоматическая ротация IP. Промокод COLA10 даёт скидку 10% — <a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api">страница ColaProxy</a>.</td>
 </tr>
+
+<tr>
+<td width="180"><a href="https://x.com/chenju_ai"><img src="assets/partners/logos/chenju_ai.png" alt="Chenju" width="150"></a></td>
+<td>Спасибо <a href="https://x.com/chenju_ai">Chenju</a> за поддержку оригинального проекта! В описании спонсора отмечено: пожалуй, это единственное объявление в разделе, которое не предлагает нигде регистрироваться. Хорошие проекты с открытым кодом заслуживают оплаты, поэтому Chenju вносит свой вклад и поднимает бокал за автора. Найдите <a href="https://x.com/chenju_ai">Chenju</a> в X, чтобы поговорить об API-ретрансляторах, вышестоящих провайдерах или просто пообщаться.</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://t.me/AACC8888888"><img src="assets/partners/logos/ooko.ai.png" alt="ooko.ai" width="150"></a></td>
+<td>Предложение спонсора: 🔑 покупка аккаунтов ИИ по высоким ценам | Gemini · Claude · GPT | Основные и дополнительные аккаунты, любые каналы | Возможна оплата по использованию | Поиск прямых ресурсов крупных провайдеров: «KEY предоставлю».<br>WeChat: Liuyou-zawd | Telegram: <a href="https://t.me/AACC8888888">AACC8888888</a></td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://niuproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api"><img src="assets/partners/logos/NiuProxy.jpg" alt="NiuProxy" width="150"></a></td>
+<td>По описанию спонсора, <a href="https://niuproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api">NiuProxy</a> предлагает недорогие глобальные прокси для сбора веб-данных, ИИ-агентов, автоматизации и сбора информации. Заявлены резидентские прокси от $0,35/ГБ в более чем 190 странах и регионах, гибкие тарифы и поддержка HTTP(S)/SOCKS5.<br>🎁 Промокод PAY2 — скидка 10% на пополнение.</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://soleapi.com/r/sub2api"><img src="assets/partners/logos/soleapi.png" alt="SoleAPI" width="150"></a></td>
+<td>Спасибо <a href="https://soleapi.com/r/sub2api">SoleAPI</a> за поддержку оригинального проекта! По описанию спонсора, это шлюз моделей ИИ для разработчиков и предприятий: один API-ключ открывает доступ к более чем 30 ведущим моделям, включая Claude, GPT и Gemini. Нативная совместимость с протоколами OpenAI и Anthropic позволяет использовать Claude Code, Codex, Cursor и существующие SDK, изменив только базовый URL. Заявлены маршрутизация в реальном времени по задержке и состоянию вышестоящего сервиса, переключение на резервные каналы за миллисекунды, доступность 99,99% и круглосуточная техническая поддержка. Все вызовы учитываются в одном счёте с доступной для проверки детализацией токенов и стоимости каждого запроса. Регистрация по <a href="https://soleapi.com/r/sub2api">реферальной ссылке оригинального проекта</a> даёт пробный баланс; приглашение друзей, пополняющих счёт, — регулярный возврат части средств.</td>
+</tr>
 </table>
+
+</details>
 
 ## ⚠️ Важное уведомление
 
@@ -94,6 +127,7 @@ Sub2API — это AI API Gateway для распределения и упра�
 - **Rate limits** — ограничения количества запросов и токенов.
 - **Встроенная оплата** — EasyPay, Alipay, WeChat Pay, Stripe и Airwallex; см. [`docs/PAYMENT_RU.md`](docs/PAYMENT_RU.md).
 - **Панель администратора** — управление пользователями, аккаунтами, группами и мониторингом.
+- **Ограниченные административные API-ключи** — разрешения по операциям и ресурсам, сроки действия и ограничения IP; см. [`docs/admin-api-keys_RU.md`](docs/admin-api-keys_RU.md).
 - **Composite Groups** — маршрутизация запросов между несколькими провайдерами; см. [`docs/COMPOSITE_GROUPS_RU.md`](docs/COMPOSITE_GROUPS_RU.md).
 - **MiniMax, Kimi, Zhipu GLM, DeepSeek, Grok/xAI, Antigravity, Gemini, Claude и OpenAI-совместимые API**.
 - **Асинхронные задачи изображений** — см. [`docs/ASYNC_IMAGE_TASKS_RU.md`](docs/ASYNC_IMAGE_TASKS_RU.md).
