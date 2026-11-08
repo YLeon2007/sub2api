@@ -525,6 +525,7 @@ export default {
     // Quota snapshot rendering (MonitorQuotaView, shared by admin + user views)
     quota: {
       unavailable: 'Quota unavailable',
+      rawDiagnostic: 'Technical diagnostic',
       windows: {
         '5h': '5h',
         '7d': '7d',
@@ -542,6 +543,31 @@ export default {
         shared: 'Shared',
         pro: 'Pro',
         flash: 'Flash'
+      },
+      errors: {
+        authenticationFailed: 'Authentication failed',
+        authenticationFailedHttp: 'Authentication failed (HTTP {status})',
+        apiError: 'API error',
+        apiErrorHttp: 'API error (HTTP {status})',
+        linkedAccountNotFound: 'Linked account not found',
+        snapshotMissing: 'Quota snapshot missing',
+        quotaHigh: 'Quota high: {window} at {percent}%',
+        quotaHighUnknownWindow: 'Quota high: {percent}% (quota window is in the technical diagnostic)',
+        balanceDepleted: 'Balance depleted ({currency})',
+        balanceLow: 'Balance low ({currency})',
+        balanceLowAmount: 'Balance low: {amount} {currency}',
+        noBalanceEndpoint: 'Account provider has no balance endpoint',
+        codingPlanNoBalanceEndpoint: 'Coding Plan accounts use quota probe, not balance endpoint',
+        apiKeyEmpty: 'Account api_key is empty',
+        accountNotFound: 'Account not found',
+        invalidPlatform: 'Account is not a CN provider account',
+        notCodingPlan: 'Account is not a coding plan account',
+        serviceNotConfigured: 'Quota service is not configured',
+        requestBuildFailed: 'Failed to build quota request',
+        upstreamRequestFailed: 'Upstream request failed',
+        noData: 'Quota service returned no data',
+        probeFailed: 'Quota probe failed',
+        generic: 'Quota diagnostic unavailable'
       }
     },
     extraModelsHeader: 'Extra Models',
@@ -1011,6 +1037,7 @@ export default {
 
   // Pagination
   pagination: {
+    navigation: 'Pagination navigation',
     showing: 'Showing',
     to: 'to',
     of: 'of',

@@ -177,6 +177,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { passkeyAPI, type PasskeyCredentialSummary } from '@/api'
@@ -201,7 +202,7 @@ const credentials = ref<PasskeyCredentialSummary[]>([])
 // 透出后端消息（如密码错误），否则回退到通用文案。
 function extractErrorMessage(error: unknown, fallback: string): string {
   const message = (error as { message?: string }).message
-  return typeof message === 'string' && message.length > 0 ? message : fallback
+  return localizeApiErrorFallback(typeof message === 'string' ? message : '', fallback)
 }
 
 async function loadCredentials(): Promise<void> {

@@ -490,6 +490,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, reactive, computed, onMounted, onUnmounted, toRaw, watch } from 'vue'
 import { useIntervalFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -1912,7 +1914,7 @@ const handleBulkDelete = async () => {
     await reload()
   } catch (error) {
     console.error('Failed to bulk delete accounts:', error)
-    appStore.showError(String(error))
+    appStore.showError(localizeApiErrorFallback(String(error), t('common.error')))
   }
 }
 const handleBulkResetStatus = async () => {
@@ -1928,7 +1930,7 @@ const handleBulkResetStatus = async () => {
     reload()
   } catch (error) {
     console.error('Failed to bulk reset status:', error)
-    appStore.showError(String(error))
+    appStore.showError(localizeApiErrorFallback(String(error), t('common.error')))
   }
 }
 const handleBulkRefreshToken = async () => {
@@ -1947,7 +1949,7 @@ const handleBulkRefreshToken = async () => {
     reload()
   } catch (error) {
     console.error('Failed to bulk refresh token:', error)
-    appStore.showError(String(error))
+    appStore.showError(localizeApiErrorFallback(String(error), t('common.error')))
   }
 }
 const handleBulkProbeUpstreamBilling = async () => {
@@ -2341,7 +2343,7 @@ const handleExportData = async () => {
           : t('stepUp.notEnabled')
       )
     } else {
-      appStore.showError(error?.message || t('admin.accounts.dataExportFailed'))
+      appStore.showError(localizeApiErrorFallback(error?.message, t('admin.accounts.dataExportFailed')))
     }
   } finally {
     exportingData.value = false
@@ -2387,7 +2389,7 @@ const handleDuplicateAccount = async (a: Account) => {
     reload()
   } catch (error: any) {
     console.error('Failed to duplicate account:', error)
-    appStore.showError(error?.message || t('admin.accounts.duplicateFailed'))
+    appStore.showError(localizeApiErrorFallback(error?.message, t('admin.accounts.duplicateFailed')))
   } finally {
     duplicatingAccountIDs.delete(a.id)
   }
@@ -2410,7 +2412,7 @@ const handleRecoverState = async (a: Account) => {
     appStore.showSuccess(t('admin.accounts.recoverStateSuccess'))
   } catch (error: any) {
     console.error('Failed to recover account state:', error)
-    appStore.showError(error?.message || t('admin.accounts.recoverStateFailed'))
+    appStore.showError(localizeApiErrorFallback(error?.message, t('admin.accounts.recoverStateFailed')))
   }
 }
 const handleResetQuota = async (a: Account) => {
@@ -2458,7 +2460,7 @@ const handleSetPrivacy = async (a: Account) => {
     }
   } catch (error: any) {
     console.error('Failed to set privacy:', error)
-    appStore.showError(error?.response?.data?.message || t('admin.accounts.privacyFailed'))
+    appStore.showError(localizeApiErrorFallback(error?.response?.data?.message, t('admin.accounts.privacyFailed')))
   }
 }
 const onRevertFallback = async (a: Account) => {
@@ -2468,7 +2470,7 @@ const onRevertFallback = async (a: Account) => {
     reload()
   } catch (error: any) {
     console.error('Failed to revert proxy fallback:', error)
-    appStore.showError(error?.response?.data?.message || t('admin.accounts.revertProxyFailed'))
+    appStore.showError(localizeApiErrorFallback(error?.response?.data?.message, t('admin.accounts.revertProxyFailed')))
   }
 }
 const handleCreateSparkShadow = (a: Account) => {
@@ -2486,7 +2488,7 @@ const confirmCreateSparkShadow = async () => {
     reload()
   } catch (error: any) {
     console.error('Failed to create spark shadow:', error)
-    appStore.showError(error?.response?.data?.message || t('admin.accounts.createSparkShadowFailed'))
+    appStore.showError(localizeApiErrorFallback(error?.response?.data?.message, t('admin.accounts.createSparkShadowFailed')))
   }
 }
 const handleDelete = (a: Account) => { deletingAcc.value = a; showDeleteDialog.value = true }

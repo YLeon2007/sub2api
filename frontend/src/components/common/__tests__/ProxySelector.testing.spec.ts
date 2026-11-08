@@ -5,7 +5,8 @@ import type { Proxy } from '@/types'
 
 const testProxy = vi.hoisted(() => vi.fn())
 vi.mock('@/api/admin', () => ({ adminAPI: { proxies: { testProxy } } }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async () => ({
+  ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')), useI18n: () => ({ t: (key: string) => key }) }))
 enableAutoUnmount(afterEach)
 beforeEach(() => { vi.clearAllMocks() })
 

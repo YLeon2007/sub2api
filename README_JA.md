@@ -10,13 +10,15 @@
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fsub2api | Trendshift" width="250" height="55"/></a>
-
 **サブスクリプションクォータ配分のための AI API ゲートウェイプラットフォーム**
 
-[English](README.md) | [中文](README_CN.md) | 日本語
+[English](README.md) | [中文](README_CN.md) | 日本語 | [Русский](README_RU.md)
 
 </div>
+
+> [!NOTE]
+> このリポジトリは [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) のロシア語ローカライズ版として保守されているフォークです。
+> ロシア語ビルドと Web UI 更新には、このフォークの [Releases](https://github.com/YLeon2007/sub2api/releases) と [GHCR イメージ](https://github.com/YLeon2007/sub2api/pkgs/container/sub2api) を使用してください。
 
 ## ⚠️ 重要なお知らせ
 
@@ -252,7 +254,16 @@ GitHub Releases からビルド済みバイナリをダウンロードするワ�
 #### インストール手順
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash
+umask 077
+tmpdir="$(mktemp -d)"
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+less "$tmpdir/install.sh"
+read -r -p "Run the inspected installer? [y/N] " confirm
+case "$confirm" in
+  [yY]) sudo bash "$tmpdir/install.sh" ;;
+  *) echo "Cancelled"; rm -rf "$tmpdir"; exit 1 ;;
+esac
+rm -rf "$tmpdir"
 ```
 
 スクリプトは以下を実行します:
@@ -302,7 +313,16 @@ sudo journalctl -u sub2api -f
 sudo systemctl restart sub2api
 
 # アンインストール
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash -s -- uninstall -y
+umask 077
+tmpdir="$(mktemp -d)"
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+less "$tmpdir/install.sh"
+read -r -p "Run the inspected uninstaller? [y/N] " confirm
+case "$confirm" in
+  [yY]) sudo bash "$tmpdir/install.sh" uninstall -y ;;
+  *) echo "Cancelled"; rm -rf "$tmpdir"; exit 1 ;;
+esac
+rm -rf "$tmpdir"
 ```
 
 ---
@@ -324,8 +344,17 @@ PostgreSQL と Redis のコンテナを含む Docker Compose でデプロイし�
 # デプロイ用ディレクトリを作成
 mkdir -p sub2api-deploy && cd sub2api-deploy
 
-# デプロイ準備スクリプトをダウンロードして実行
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/docker-deploy.sh | bash
+# デプロイ準備スクリプトをダウンロード、確認して実行
+umask 077
+tmpdir="$(mktemp -d)"
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/docker-deploy.sh
+less "$tmpdir/docker-deploy.sh"
+read -r -p "Run the inspected deployment script? [y/N] " confirm
+case "$confirm" in
+  [yY]) chmod +x "$tmpdir/docker-deploy.sh"; "$tmpdir/docker-deploy.sh" ;;
+  *) echo "Cancelled"; rm -rf "$tmpdir"; exit 1 ;;
+esac
+rm -rf "$tmpdir"
 
 # サービスを起動
 docker compose up -d
@@ -347,7 +376,7 @@ docker compose logs -f sub2api
 
 ```bash
 # 1. リポジトリをクローン
-git clone https://github.com/Wei-Shaw/sub2api.git
+git clone https://github.com/YLeon2007/sub2api.git
 cd sub2api/deploy
 
 # 2. 環境設定ファイルをコピー
@@ -430,10 +459,18 @@ docker compose -f docker-compose.local.yml logs sub2api | grep "Generated admin"
 
 #### アップグレード
 
+イメージを取得する前に、[Fork Releases](https://github.com/YLeon2007/sub2api/releases) から公開済みの不変 RU バージョンを選び、マイグレーションの説明を読み、新しいデータベースバックアップを検証してください。**実際にデプロイした Compose ファイル**の `sub2api` サービスの `image:` を、その正確なタグ（先頭の `v` を除く）に変更します。以下はこのリリースの固定バージョン例です。変動する `latest` タグではなく、選択した公開済みバージョンに置き換えてください：
+
+```yaml
+image: ghcr.io/yleon2007/sub2api:0.2.20-ru.1
+```
+
+続いて[不変バージョンへの安全なアップグレード手順](deploy/README.md#safe-immutable-upgrade)に従い、すべてのコマンドで同じ Compose ファイルを選択してください。準備スクリプトはローカル版を `docker-compose.yml` として保存します。実際のファイル名が `docker-compose.local.yml` の場合にのみ、その名前を使用してください。`/app` に名前付きボリュームがある場合は、内容を確認したランタイム同期スクリプトが必要です。イメージの取得とコンテナの再作成だけでは古いバイナリが残ります。`/app` マウントがない構成ではアプリだけを再作成します。更新のためにランタイムボリュームを削除したり、PostgreSQL/Redis を再作成したりしないでください。
+
+どちらの手順でも、**実際にインストールされたバージョンとコミット**を選択した Release のメタデータと照合してください。イメージタグだけでは確認できません：
+
 ```bash
-# 最新イメージをプルしてコンテナを再作成
-docker compose -f docker-compose.local.yml pull
-docker compose -f docker-compose.local.yml up -d
+docker exec sub2api /app/sub2api --version
 ```
 
 #### 簡単な移行（ローカルディレクトリバージョン）
@@ -479,7 +516,7 @@ rm -rf data/ postgres_data/ redis_data/
 Apple シリコン搭載 Mac と macOS 26 では、Apple `container` 1.1.0 以降を使用して Sub2API、PostgreSQL、Redis の完全なスタックを実行できます:
 
 ```bash
-git clone https://github.com/Wei-Shaw/sub2api.git
+git clone https://github.com/YLeon2007/sub2api.git
 cd sub2api/deploy
 ./apple-container.sh init
 ./apple-container.sh up
@@ -496,8 +533,8 @@ cd sub2api/deploy
 
 #### 前提条件
 
-- Go 1.21+
-- Node.js 18+
+- Go 1.27.3+
+- Node.js 22+
 - PostgreSQL 15+
 - Redis 7+
 
@@ -505,7 +542,7 @@ cd sub2api/deploy
 
 ```bash
 # 1. リポジトリをクローン
-git clone https://github.com/Wei-Shaw/sub2api.git
+git clone https://github.com/YLeon2007/sub2api.git
 cd sub2api
 
 # 2. pnpm をインストール（未インストールの場合）
@@ -738,11 +775,11 @@ sub2api/
 
 ## スター履歴
 
-<a href="https://star-history.dera.page/#Wei-Shaw/sub2api&Date">
+<a href="https://star-history.dera.page/#YLeon2007/sub2api&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=Wei-Shaw/sub2api&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=Wei-Shaw/sub2api&type=Date" />
-   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=Wei-Shaw/sub2api&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=YLeon2007/sub2api&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=YLeon2007/sub2api&type=Date" />
+   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=YLeon2007/sub2api&type=Date" />
  </picture>
 </a>
 

@@ -2,11 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   addCustomModelAllowlistItem,
-  createModelAllowlistState,
-  type ModelAllowlistAddError,
-} from "../groupModelAllowlist";
-
-import {
   buildModelAllowlistConfig,
   createModelAllowlistState,
   hydrateModelAllowlistState,
@@ -15,6 +10,7 @@ import {
   selectAllModelAllowlistItems,
   setModelAllowlistCandidates,
   toggleModelAllowlistItem,
+  type ModelAllowlistAddError,
 } from "../groupModelAllowlist";
 
 describe("groupModelAllowlist", () => {
@@ -152,9 +148,10 @@ describe("addCustomModelAllowlistItem", () => {
   it("accepts wildcards at any position", () => {
     const s = state();
     expect(addCustomModelAllowlistItem(s, "gpt-*-5.4")).toBeNull();
+    expect(addCustomModelAllowlistItem(s, "gpt-*-codex")).toBeNull();
     expect(addCustomModelAllowlistItem(s, "*codex")).toBeNull();
     expect(addCustomModelAllowlistItem(s, "gpt-*-codex-*")).toBeNull();
-    expect(buildModelAllowlistConfig(s).models).toEqual(["gpt-*-5.4", "*codex", "gpt-*-codex-*"]);
+    expect(buildModelAllowlistConfig(s).models).toEqual(["gpt-*-5.4", "gpt-*-codex", "*codex", "gpt-*-codex-*"]);
   });
 
   it("rejects duplicates case-insensitively", () => {

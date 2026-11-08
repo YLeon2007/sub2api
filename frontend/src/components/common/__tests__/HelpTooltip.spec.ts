@@ -1,7 +1,9 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import HelpTooltip from '@/components/common/HelpTooltip.vue'
+
+vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key === 'common.close' ? 'Закрыть' : key }) }))
 
 function getTooltipElement(): HTMLDivElement {
   const tooltip = document.body.querySelector('[role="tooltip"]')
@@ -89,7 +91,7 @@ describe('HelpTooltip', () => {
     expect(tooltip.style.display).not.toBe('none')
     expect(tooltip.textContent).toContain('click details')
 
-    const closeButton = tooltip.querySelector('button[aria-label="Close"]')
+    const closeButton = tooltip.querySelector('button[aria-label="Закрыть"]')
     if (!(closeButton instanceof HTMLButtonElement)) {
       throw new Error('close button not found')
     }

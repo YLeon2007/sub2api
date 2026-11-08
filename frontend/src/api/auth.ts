@@ -430,6 +430,9 @@ export function resolveWeChatOAuthStart(
     if (openEnabled) {
       return { mode: null, openEnabled, mpEnabled, mobileEnabled, isWeChatBrowser, unavailableReason: 'external_browser_required' }
     }
+    if (mobileEnabled) {
+      return { mode: null, openEnabled, mpEnabled, mobileEnabled, isWeChatBrowser, unavailableReason: 'native_app_required' }
+    }
     return { mode: null, openEnabled, mpEnabled, mobileEnabled, isWeChatBrowser, unavailableReason: 'not_configured' }
   }
 
@@ -438,6 +441,9 @@ export function resolveWeChatOAuthStart(
   }
   if (mpEnabled) {
     return { mode: null, openEnabled, mpEnabled, mobileEnabled, isWeChatBrowser, unavailableReason: 'wechat_browser_required' }
+  }
+  if (mobileEnabled) {
+    return { mode: null, openEnabled, mpEnabled, mobileEnabled, isWeChatBrowser, unavailableReason: 'native_app_required' }
   }
   return { mode: null, openEnabled, mpEnabled, mobileEnabled, isWeChatBrowser, unavailableReason: 'not_configured' }
 }

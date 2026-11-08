@@ -81,6 +81,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { mcpAPI, type MCPGrant } from '@/api/mcp'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import { Icon } from '@/components/icons'
@@ -89,7 +90,7 @@ import { useClipboard } from '@/composables/useClipboard'
 import { useAppStore } from '@/stores/app'
 import { formatDate } from '@/utils/format'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 const { copyToClipboard } = useClipboard()
 const endpoint = ref('')
@@ -105,7 +106,7 @@ let unmounted = false
 
 function errorMessage(error: unknown, fallback: string): string {
   const message = (error as { message?: unknown } | null)?.message
-  return typeof message === 'string' && message ? message : fallback
+  return localizeApiErrorFallback(typeof message === 'string' && message ? message : fallback, fallback, locale.value)
 }
 
 async function loadConnection(): Promise<void> {

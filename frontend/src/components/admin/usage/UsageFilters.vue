@@ -20,7 +20,7 @@
             type="button"
             @click="clearUser"
             class="absolute right-2 top-9 text-gray-400"
-            aria-label="Clear user filter"
+            :aria-label="t('admin.usage.clearUserFilter')"
           >
             ✕
           </button>
@@ -57,7 +57,7 @@
             type="button"
             @click="onClearApiKey"
             class="absolute right-2 top-9 text-gray-400"
-            aria-label="Clear API key filter"
+            :aria-label="t('admin.usage.clearApiKeyFilter')"
           >
             ✕
           </button>
@@ -100,7 +100,7 @@
             type="button"
             @click="clearAccount"
             class="absolute right-2 top-9 text-gray-400"
-            aria-label="Clear account filter"
+            :aria-label="t('admin.usage.clearAccountFilter')"
           >
             ✕
           </button>

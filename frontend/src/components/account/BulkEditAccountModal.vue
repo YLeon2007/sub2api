@@ -1514,6 +1514,7 @@
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { adminAPI } from '@/api/admin'
 import type {
   Proxy as ProxyConfig,
@@ -1533,7 +1534,8 @@ import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.
 import Icon from '@/components/icons/Icon.vue'
 import {
   buildModelMappingObject as buildModelMappingPayload,
-  getPresetMappingsByPlatform
+  getPresetMappingsByPlatform,
+  getCommonErrorCodes
 } from '@/composables/useModelWhitelist'
 import HeaderOverrideEditor from '@/components/account/HeaderOverrideEditor.vue'
 import {
@@ -1583,7 +1585,7 @@ const emit = defineEmits<{
   updated: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 
 // Platform awareness
@@ -1672,7 +1674,7 @@ const filteredPresets = computed(() => {
 
   const dedupedPresets = new Map<string, ReturnType<typeof getPresetMappingsByPlatform>[number]>()
   for (const platform of targetSelectedPlatforms.value) {
-    for (const preset of getPresetMappingsByPlatform(platform)) {
+    for (const preset of getPresetMappingsByPlatform(platform, t)) {
       const key = `${preset.from}=>${preset.to}`
       if (!dedupedPresets.has(key)) {
         dedupedPresets.set(key, preset)
@@ -1776,15 +1778,7 @@ const umqModeOptions = computed(() => [
 ])
 
 // Common HTTP error codes
-const commonErrorCodes = [
-  { value: 401, label: 'Unauthorized' },
-  { value: 403, label: 'Forbidden' },
-  { value: 429, label: 'Rate Limit' },
-  { value: 500, label: 'Server Error' },
-  { value: 502, label: 'Bad Gateway' },
-  { value: 503, label: 'Unavailable' },
-  { value: 529, label: 'Overloaded' }
-]
+const commonErrorCodes = computed(() => getCommonErrorCodes(t))
 
 const statusOptions = computed(() => [
   { value: 'active', label: t('common.active') },
@@ -2237,11 +2231,13 @@ const preCheckMixedChannelRisk = async (built: Record<string, unknown>): Promise
     if (!result.has_risk) return true
 
     pendingUpdatesForConfirm.value = built
-    mixedChannelWarningMessage.value = result.message || t('admin.accounts.bulkEdit.failed')
+    mixedChannelWarningMessage.value = localizeApiErrorFallback(
+      result.message || t('admin.accounts.bulkEdit.failed'), t('admin.accounts.mixedChannelWarningGeneric'), locale.value
+    )
     showMixedChannelWarning.value = true
     return false
   } catch (error: any) {
-    appStore.showError(error.message || t('admin.accounts.bulkEdit.failed'))
+    appStore.showError(localizeApiErrorFallback(error.message, t('admin.accounts.bulkEdit.failed'), locale.value))
     return false
   }
 }
@@ -2369,7 +2365,10 @@ const submitBulkUpdate = async (baseUpdates: Record<string, unknown>) => {
     // 兜底：多平台混合场景下，预检查跳过，由后端 409 触发确认框
     if (error.status === 409 && error.error === 'mixed_channel_warning') {
       pendingUpdatesForConfirm.value = baseUpdates
-      mixedChannelWarningMessage.value = error.message
+      // Upstream deliberately has no EN/ZH fallback for this 409 message.
+      mixedChannelWarningMessage.value = locale.value.toLowerCase().split(/[-_]/)[0] === 'ru'
+        ? t('admin.accounts.mixedChannelWarningGeneric')
+        : error.message
       showMixedChannelWarning.value = true
     } else if (error.reason === 'UPSTREAM_BILLING_RATE_SYNC_BULK_CONFLICT') {
       appStore.showError(t('admin.accounts.bulkEdit.rateSyncConflict', {
@@ -2378,7 +2377,7 @@ const submitBulkUpdate = async (baseUpdates: Record<string, unknown>) => {
     } else if (error.reason === 'OPENAI_LONG_CONTEXT_PARENT_REQUIRED') {
       appStore.showError(t('admin.accounts.bulkEdit.longContextParentRequired'))
     } else {
-      appStore.showError(error.message || t('admin.accounts.bulkEdit.failed'))
+      appStore.showError(localizeApiErrorFallback(error.message, t('admin.accounts.bulkEdit.failed'), locale.value))
       console.error('Error bulk updating accounts:', error)
     }
   } finally {

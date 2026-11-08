@@ -5,7 +5,8 @@ import TotpSetupModal from '../TotpSetupModal.vue'
 const api = vi.hoisted(() => ({ getVerificationMethod: vi.fn(), initiateSetup: vi.fn(), enable: vi.fn() }))
 vi.mock('@/api', () => ({ totpAPI: api }))
 vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showError: vi.fn(), showSuccess: vi.fn() }) }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-i18n')>()), useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('qrcode', () => ({ default: { toDataURL: vi.fn() } }))
 enableAutoUnmount(afterEach)
 

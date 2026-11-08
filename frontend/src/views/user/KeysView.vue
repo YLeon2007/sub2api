@@ -1199,6 +1199,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 	import { ref, reactive, computed, watch, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue'
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
@@ -1891,7 +1893,7 @@ const handleSubmit = async () => {
     closeModals()
     loadApiKeys()
   } catch (error: any) {
-    const errorMsg = error.response?.data?.detail || t('keys.failedToSave')
+    const errorMsg = localizeApiErrorFallback(error.response?.data?.detail, t('keys.failedToSave'))
     appStore.showError(errorMsg)
     // Don't advance tour on error
   } finally {
@@ -1914,7 +1916,7 @@ const handleDelete = async () => {
     loadApiKeys()
   } catch (error: any) {
     // 优先使用后端返回的错误消息，提供更具体的错误信息给用户
-    const errorMsg = error?.message || t('keys.failedToDelete')
+    const errorMsg = localizeApiErrorFallback(error?.message, t('keys.failedToDelete'))
     appStore.showError(errorMsg)
   }
 }
@@ -1973,7 +1975,7 @@ const resetQuotaUsed = async () => {
       }
     }
   } catch (error: any) {
-    const errorMsg = error.response?.data?.detail || t('keys.failedToResetQuota')
+    const errorMsg = localizeApiErrorFallback(error.response?.data?.detail, t('keys.failedToResetQuota'))
     appStore.showError(errorMsg)
   }
 }
@@ -2004,7 +2006,7 @@ const resetRateLimitUsage = async () => {
       selectedKey.value = refreshedKey
     }
   } catch (error: any) {
-    const errorMsg = error.response?.data?.detail || t('keys.failedToResetRateLimit')
+    const errorMsg = localizeApiErrorFallback(error.response?.data?.detail, t('keys.failedToResetRateLimit'))
     appStore.showError(errorMsg)
   }
 }

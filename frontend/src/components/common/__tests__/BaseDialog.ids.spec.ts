@@ -1,7 +1,9 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import BaseDialog from '../BaseDialog.vue'
+
+vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key === 'common.close' ? 'Закрыть' : key }) }))
 
 enableAutoUnmount(afterEach)
 
@@ -18,6 +20,7 @@ describe('dialog accessible titles', () => {
     expect(dialogs).toHaveLength(2)
     const titles = dialogs.map(dialog => document.getElementById(dialog.getAttribute('aria-labelledby')!)?.textContent)
     expect(titles).toEqual(['Edit account', 'Confirm deletion'])
+    expect(dialogs.every(dialog => dialog.querySelector('button[aria-label="Закрыть"]'))).toBe(true)
   })
 
   it('keeps the title association stable when a dialog is reopened', async () => {

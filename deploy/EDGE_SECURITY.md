@@ -1,5 +1,7 @@
 # Edge and HTTP Ingress Security
 
+[Русский](EDGE_SECURITY_RU.md)
+
 Sub2API supports long-lived SSE and WebSocket requests. Protect request ingress
 and individual socket operations without imposing a fixed timeout on the entire
 response. Healthy generations can remain open while an upstream is thinking.

@@ -5,7 +5,7 @@
         <RouterLink to="/home" class="flex min-w-0 items-center gap-3">
           <template v-if="settings">
             <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-dark-800 dark:ring-dark-700">
-              <img :src="siteLogo || '/logo.svg'" alt="Logo" class="h-full w-full object-contain" />
+              <img :src="siteLogo || '/logo.svg'" :alt="t('runtimeUi.siteLogo')" class="h-full w-full object-contain" />
             </span>
             <span class="truncate text-base font-semibold text-gray-950 dark:text-white">
               {{ siteName }}
@@ -102,6 +102,7 @@ import { useAppStore } from '@/stores/app'
 import type { LoginAgreementDocument } from '@/types'
 import zhAdminCompliance from '../../../../docs/legal/admin-compliance.zh.md?raw'
 import enAdminCompliance from '../../../../docs/legal/admin-compliance.en.md?raw'
+import ruAdminCompliance from '../../../../docs/legal/admin-compliance.ru.md?raw'
 
 type LegalDocumentIcon = 'document' | 'shield' | 'globe' | 'cog'
 
@@ -131,13 +132,23 @@ const updatedAt = computed(() =>
 const documentTypeLabel = computed(() =>
   isAdminComplianceDocument.value ? t('legal.adminCompliance') : t('legal.loginAgreement')
 )
+const adminComplianceContent = computed(() => {
+  const locale = getLocale()
+  if (locale === 'zh') {
+    return zhAdminCompliance
+  }
+  if (locale === 'ru') {
+    return ruAdminCompliance
+  }
+  return enAdminCompliance
+})
 
 const currentDocument = computed<LoginAgreementDocument | null>(() => {
   if (isAdminComplianceDocument.value) {
     return {
       id: 'admin-compliance',
       title: t('adminCompliance.title'),
-      content_md: getLocale() === 'zh' ? zhAdminCompliance : enAdminCompliance
+      content_md: adminComplianceContent.value
     }
   }
   const id = documentId.value
@@ -159,14 +170,14 @@ const renderedHtml = computed(() => {
 })
 
 const documentIcon = computed<LegalDocumentIcon>(() => {
-  const title = currentDocument.value?.title || ''
-  if (title.includes('政策') || title.includes('隐私')) {
+  const id = (currentDocument.value?.id || '').toLowerCase()
+  if (id.includes('policy') || id.includes('privacy')) {
     return 'shield'
   }
-  if (title.includes('国家') || title.includes('地区')) {
+  if (id.includes('region') || id.includes('country')) {
     return 'globe'
   }
-  if (title.includes('特定')) {
+  if (id.includes('specific')) {
     return 'cog'
   }
   return 'document'

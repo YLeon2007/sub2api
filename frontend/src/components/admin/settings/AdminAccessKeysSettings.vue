@@ -53,7 +53,7 @@
         <label class="flex gap-2"><input v-model="rule.all_groups" type="checkbox" />{{ t('adminAccessKeys.allGroups') }}</label>
         <label class="block">{{ t('adminAccessKeys.groups') }}<select v-model="rule.group_ids" :data-test="`groups-${index}`" multiple class="input mt-1" :disabled="rule.all_groups"><option v-for="group in groups" :key="group.id" :value="group.id">{{ group.name }}</option></select></label>
         <label class="flex gap-2"><input v-model="rule.include_ungrouped" type="checkbox" />{{ t('adminAccessKeys.includeUngrouped') }}</label>
-        <div>{{ t('adminAccessKeys.accountTypes') }}<div class="flex flex-wrap gap-4"><label v-for="type in accountTypes" :key="type" class="flex gap-2"><input v-model="rule.account_types" type="checkbox" :value="type" />{{ type }}</label></div></div>
+        <div>{{ t('adminAccessKeys.accountTypes') }}<div class="flex flex-wrap gap-4"><label v-for="type in accountTypes" :key="type" class="flex gap-2"><input v-model="rule.account_types" type="checkbox" :value="type" />{{ adminAccessAccountTypeLabel(type, locale) }}</label></div></div>
         <label class="block">{{ t('adminAccessKeys.platforms') }}<select v-model="rule.platforms" multiple class="input mt-1"><option v-for="platform in CONCRETE_PLATFORM_OPTIONS" :key="platform.value" :value="platform.value">{{ platform.label }}</option></select></label>
         <div>{{ t('adminAccessKeys.accountOperations') }}<div class="grid gap-2 sm:grid-cols-2"><label v-for="permission in accountPermissions" :key="permission.id" class="flex gap-2"><input v-model="rule.permissions" type="checkbox" :value="permission.id" />{{ permissionLabel(permission) }} <span class="text-xs text-gray-500">{{ permission.id }}</span></label></div></div>
         <div v-if="groupPermissions.length" class="space-y-2 rounded border border-amber-300 p-3">
@@ -97,6 +97,8 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import TotpStepUpDialog from '@/components/auth/TotpStepUpDialog.vue'
 import { useAdminAccessKeyPermissions } from '@/composables/useAdminAccessKeyPermissions'
 import { isStepUpCancelled, useStepUp } from '@/composables/useStepUp'
+import { localizeApiErrorFallback } from '@/utils/apiError'
+import { adminAccessAccountTypeLabel } from '@/utils/adminAccessKeyLabels'
 
 const { t, locale } = useI18n()
 const { permissionLabel, permissionCategory } = useAdminAccessKeyPermissions()
@@ -149,12 +151,12 @@ function normalizeItem(item: AdminKey): AdminKey {
 function ruleSummary(rule: AccessRule): string {
   const selectedGroups = rule.all_groups ? t('adminAccessKeys.allGroupsSummary') : rule.group_ids.map(id => groups.value.find(group => group.id === id)?.name || t('adminAccessKeys.groupFallback', { id })).join(t('adminAccessKeys.listSeparator')) || t('adminAccessKeys.noGroups')
   const groupLabel = selectedGroups + (rule.include_ungrouped ? t('adminAccessKeys.ungroupedSummary') : '')
-  const types = rule.account_types.join(t('adminAccessKeys.listSeparator')) || t('adminAccessKeys.noAccountTypes')
+  const types = rule.account_types.map(type => adminAccessAccountTypeLabel(type, locale.value)).join(t('adminAccessKeys.listSeparator')) || t('adminAccessKeys.noAccountTypes')
   const platforms = rule.platforms.join(t('adminAccessKeys.listSeparator')) || t('adminAccessKeys.anyPlatform')
   return t('adminAccessKeys.ruleSummary', { groups: groupLabel, types, platforms, count: rule.permissions.length })
 }
 function emptyRule(): AccessRule { return { permissions: [], group_ids: [], all_groups: false, include_ungrouped: false, account_types: [], platforms: [] } }
-function report(e: unknown) { if (!isStepUpCancelled(e)) error.value = (e as { message?: string })?.message || t('adminAccessKeys.operationFailed') }
+function report(e: unknown) { if (!isStepUpCancelled(e)) error.value = localizeApiErrorFallback((e as { message?: string })?.message, t('adminAccessKeys.operationFailed'), locale.value) }
 async function load() {
   loading.value = true
   error.value = ''

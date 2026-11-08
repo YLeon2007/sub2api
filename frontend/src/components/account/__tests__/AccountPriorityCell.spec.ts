@@ -5,7 +5,10 @@ import type { Account } from '@/types'
 import { update } from '@/api/admin/accounts'
 
 vi.mock('@/api/admin/accounts', () => ({ update: vi.fn() }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', () => ({
+  createI18n: vi.fn(() => ({ global: { t: (key: string) => key, locale: { value: 'en' } } })),
+  useI18n: () => ({ t: (key: string) => key }),
+}))
 
 const account = (overrides: Partial<Account> = {}) => ({
   id: 7, name: 'Claude 1', platform: 'anthropic', type: 'oauth', priority: 3,

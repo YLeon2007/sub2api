@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({ getTempUnschedulableStatus: vi.fn(), recoverSt
 vi.mock('@/api/admin', () => ({ adminAPI: { accounts: mocks } }))
 vi.mock('@/stores/app', () => ({ useAppStore: () => mocks }))
 vi.mock('@/utils/format', () => ({ formatDateTime: () => 'date' }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...await importOriginal<typeof import('vue-i18n')>(), useI18n: () => ({ t: (key: string) => key }) }))
 enableAutoUnmount(afterEach)
 beforeEach(() => vi.clearAllMocks())
 function deferred() {

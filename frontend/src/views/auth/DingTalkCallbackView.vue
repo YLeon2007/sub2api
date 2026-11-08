@@ -235,6 +235,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -541,7 +543,7 @@ function switchToCreateAccountMode() {
 
 function getRequestErrorMessage(error: unknown, fallback: string): string {
   const err = error as { message?: string; response?: { data?: { detail?: string; message?: string } } }
-  return err.response?.data?.detail || err.response?.data?.message || err.message || fallback
+  return localizeApiErrorFallback(err.response?.data?.detail || err.response?.data?.message || err.message, fallback)
 }
 
 function isCreateAccountRecoveryError(error: unknown): boolean {
@@ -654,7 +656,7 @@ async function handleSubmitInvitation() {
   } catch (e: unknown) {
     const err = e as { message?: string; response?: { data?: { message?: string } } }
     invitationError.value =
-      err.response?.data?.message || err.message || t('auth.dingtalk.completeRegistrationFailed')
+      localizeApiErrorFallback(err.response?.data?.message || err.message, t('auth.dingtalk.completeRegistrationFailed'))
   } finally {
     isSubmitting.value = false
   }
@@ -779,7 +781,7 @@ onMounted(async () => {
 
     if (error) {
       const i18nKey = `auth.dingtalk.error.${error}`
-      errorMessage.value = te(i18nKey) ? t(i18nKey) : (errorDesc || error)
+      errorMessage.value = te(i18nKey) ? t(i18nKey) : localizeApiErrorFallback(errorDesc || error, t('auth.loginFailed'))
       isProcessing.value = false
       return
     }

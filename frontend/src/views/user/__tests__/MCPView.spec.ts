@@ -11,7 +11,8 @@ vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showSuccess }) }))
 vi.mock('@/composables/useClipboard', () => ({ useClipboard: () => ({ copyToClipboard }) }))
 vi.mock('@/utils/format', () => ({ formatDate: (value: string) => value }))
 vi.mock('@/components/layout/AppLayout.vue', () => ({ default: { template: '<main><slot /></main>' } }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...await importOriginal<typeof import('vue-i18n')>(), useI18n: () => ({ t: (key: string) => key, locale: { value: 'en' } }) }))
 
 const item: MCPGrant = {
   id: 'grant-1', client_id: 'client-1', client_name: 'Desktop assistant', scope: 'user', read_only: true,

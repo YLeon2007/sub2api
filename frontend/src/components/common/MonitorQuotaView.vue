@@ -33,7 +33,7 @@
       </span>
     </div>
 
-    <div v-if="!snapshot.success" class="truncate text-[10px] text-red-600 dark:text-red-400" :title="snapshot.error" data-testid="monitor-quota-error">
+    <div v-if="!snapshot.success" class="truncate text-[10px] text-red-600 dark:text-red-400" :title="localizedError" data-testid="monitor-quota-error">
       {{ truncatedError }}
     </div>
   </div>
@@ -43,6 +43,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MonitorQuotaSnapshot, MonitorQuotaTier } from '@/api/admin/channelMonitor'
+import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import UsageProgressBar from '@/components/account/UsageProgressBar.vue'
 
 /**
@@ -56,7 +58,7 @@ const props = defineProps<{
   snapshot?: MonitorQuotaSnapshot | null
 }>()
 
-const { t, te } = useI18n()
+const { t, te, locale } = useI18n()
 
 type TierColor = 'indigo' | 'emerald' | 'purple' | 'amber'
 
@@ -76,6 +78,7 @@ const windowI18nKeys: Record<string, string> = {
   '7d-fable': 'monitorCommon.quota.windows.7dFable',
   weekly: 'monitorCommon.quota.windows.weekly',
   daily: 'monitorCommon.quota.windows.daily',
+  monthly: 'monitorCommon.quota.windows.monthly',
   '30d': 'monitorCommon.quota.windows.30d',
   total: 'monitorCommon.quota.windows.total',
 }
@@ -89,6 +92,9 @@ const labelI18nKeys: Record<string, string> = {
 }
 
 function windowLabel(window: string): string {
+  // Upstream leaves monthly raw in EN/ZH. Close the RU display gap only,
+  // using the active composer (not the application's unrelated global locale).
+  if (window === 'monthly' && locale.value.toLowerCase().split(/[-_]/)[0] !== 'ru') return window
   const key = windowI18nKeys[window]
   return key && te(key) ? t(key) : window
 }
@@ -124,8 +130,14 @@ const balanceRows = computed(() => {
   return []
 })
 
+const localizedError = computed(() => localizeApiErrorFallback(
+  props.snapshot?.error,
+  localizeQuotaDiagnostic(props.snapshot?.error, t) || t('monitorCommon.quota.unavailable'),
+  locale.value,
+))
+
 const truncatedError = computed(() => {
-  const error = props.snapshot?.error || t('monitorCommon.quota.unavailable')
+  const error = localizedError.value
   return error.length > 48 ? `${error.slice(0, 48)}…` : error
 })
 </script>
