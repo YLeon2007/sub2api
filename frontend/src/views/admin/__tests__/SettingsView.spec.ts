@@ -82,7 +82,10 @@ const {
   showSuccess: vi.fn(),
 }));
 
-const localeRef = vi.hoisted(() => ({ value: "zh-CN" }));
+const localeRef = await vi.hoisted(async () => {
+  const { ref } = await import("vue");
+  return ref("zh-CN");
+});
 
 vi.mock("@/api", () => ({
   adminAPI: {
