@@ -260,9 +260,9 @@ describe('REG-074: actual plugin incompatible unknown diagnostics', () => {
     const display = consumer<(plugin: { compatibility: Record<string, unknown> }) => string>(path, 'localizedCompatibilityMessage', baseScope(),
       ['pluginBackendMessageKeys', 'localizedPluginBackendMessage'])
     for (const message of ['  custom ABI rejection; identifier=raw  ', '', undefined]) {
-      const plugin = { compatibility: { status: 'incompatible', compatible: false, message, current_sub2api_version: '0.2.20-ru.1', required_sub2api_version: '>=0.3.0' } }
+      const plugin = { compatibility: { status: 'incompatible', compatible: false, message, current_sub2api_version: '0.2.20-ru.2', required_sub2api_version: '>=0.3.0' } }
       const before = structuredClone(plugin)
-      const fallback = t('admin.plugins.messages.incompatibleVersion', { current: '0.2.20-ru.1', required: '>=0.3.0' })
+      const fallback = t('admin.plugins.messages.incompatibleVersion', { current: '0.2.20-ru.2', required: '>=0.3.0' })
       expect(display(plugin)).toBe(isRussian() ? fallback : message)
       expect(plugin).toEqual(before)
     }

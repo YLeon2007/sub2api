@@ -256,7 +256,7 @@ GitHub Releases からビルド済みバイナリをダウンロードするワ�
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in
@@ -315,7 +315,7 @@ sudo systemctl restart sub2api
 # アンインストール
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected uninstaller? [y/N] " confirm
 case "$confirm" in
@@ -347,7 +347,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 # デプロイ準備スクリプトをダウンロード、確認して実行
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/docker-deploy.sh
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -462,7 +462,7 @@ docker compose -f docker-compose.local.yml logs sub2api | grep "Generated admin"
 イメージを取得する前に、[Fork Releases](https://github.com/YLeon2007/sub2api/releases) から公開済みの不変 RU バージョンを選び、マイグレーションの説明を読み、新しいデータベースバックアップを検証してください。**実際にデプロイした Compose ファイル**の `sub2api` サービスの `image:` を、その正確なタグ（先頭の `v` を除く）に変更します。以下はこのリリースの固定バージョン例です。変動する `latest` タグではなく、選択した公開済みバージョンに置き換えてください：
 
 ```yaml
-image: ghcr.io/yleon2007/sub2api:0.2.20-ru.1
+image: ghcr.io/yleon2007/sub2api:0.2.20-ru.2
 ```
 
 続いて[不変バージョンへの安全なアップグレード手順](deploy/README.md#safe-immutable-upgrade)に従い、すべてのコマンドで同じ Compose ファイルを選択してください。準備スクリプトはローカル版を `docker-compose.yml` として保存します。実際のファイル名が `docker-compose.local.yml` の場合にのみ、その名前を使用してください。`/app` に名前付きボリュームがある場合は、内容を確認したランタイム同期スクリプトが必要です。イメージの取得とコンテナの再作成だけでは古いバイナリが残ります。`/app` マウントがない構成ではアプリだけを再作成します。更新のためにランタイムボリュームを削除したり、PostgreSQL/Redis を再作成したりしないでください。

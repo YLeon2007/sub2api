@@ -233,12 +233,12 @@ func TestUpdateServiceRollbackToVersionAcceptsVPrefix(t *testing.T) {
 }
 
 func TestSelectReleaseAssetsRequiresExactVersionedArchiveAndChecksum(t *testing.T) {
-	version := "0.2.20-ru.1"
-	exactArchive := "sub2api_0.2.20-ru.1_linux_amd64.tar.gz"
+	version := "0.2.20-ru.2"
+	exactArchive := "sub2api_0.2.20-ru.2_linux_amd64.tar.gz"
 	assets := []Asset{
-		{Name: exactArchive + ".evil", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.1/confusable"},
-		{Name: exactArchive, DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.1/" + exactArchive},
-		{Name: "checksums.txt", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.1/checksums.txt"},
+		{Name: exactArchive + ".evil", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.2/confusable"},
+		{Name: exactArchive, DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.2/" + exactArchive},
+		{Name: "checksums.txt", DownloadURL: "https://github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.2/checksums.txt"},
 	}
 
 	archive, checksum, err := selectReleaseAssets(version, "linux", "amd64", assets)
@@ -258,7 +258,7 @@ func TestSelectReleaseAssetsRequiresExactVersionedArchiveAndChecksum(t *testing.
 }
 
 func TestExpectedChecksumForFileRequiresOneExactBasename(t *testing.T) {
-	name := "sub2api_0.2.20-ru.1_linux_amd64.tar.gz"
+	name := "sub2api_0.2.20-ru.2_linux_amd64.tar.gz"
 	digest := strings.Repeat("a", 64)
 
 	got, err := expectedChecksumForFile([]byte(digest+"  "+name+"\n"), name)
@@ -720,7 +720,7 @@ func TestUpdateMutationsUseOperationLock(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		close(started)
-		_ = svc.applyReleaseAssets(context.Background(), "0.2.20-ru.1", nil)
+		_ = svc.applyReleaseAssets(context.Background(), "0.2.20-ru.2", nil)
 		close(done)
 	}()
 	<-started
@@ -739,7 +739,7 @@ func TestUpdateMutationsUseOperationLock(t *testing.T) {
 
 func TestValidateDownloadURLRejectsUserinfoAndArbitrarySubdomains(t *testing.T) {
 	allowed := []string{
-		"https://github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.1/sub2api_0.2.20-ru.1_linux_amd64.tar.gz",
+		"https://github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.2/sub2api_0.2.20-ru.2_linux_amd64.tar.gz",
 		"https://objects.githubusercontent.com/github-production-release-asset/test",
 		"https://release-assets.githubusercontent.com/github-production-release-asset/test",
 	}
@@ -750,8 +750,8 @@ func TestValidateDownloadURLRejectsUserinfoAndArbitrarySubdomains(t *testing.T) 
 	}
 
 	rejected := []string{
-		"https://user:pass@github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.1/x.tar.gz",
-		"https://evil.github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.1/x.tar.gz",
+		"https://user:pass@github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.2/x.tar.gz",
+		"https://evil.github.com/YLeon2007/sub2api/releases/download/v0.2.20-ru.2/x.tar.gz",
 		"https://foo.objects.githubusercontent.com/x",
 		"https://github.com.evil.example/x.tar.gz",
 		"http://github.com/x.tar.gz",

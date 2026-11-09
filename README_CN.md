@@ -286,7 +286,7 @@ fast_mode = true
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in
@@ -345,7 +345,7 @@ sudo systemctl restart sub2api
 # 卸载
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected uninstaller? [y/N] " confirm
 case "$confirm" in
@@ -377,7 +377,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 # 下载、检查并运行部署准备脚本
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/docker-deploy.sh
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -504,7 +504,7 @@ docker compose -f docker-compose.local.yml logs sub2api | grep "Generated admin"
 拉取镜像前，先从 [Fork Releases](https://github.com/YLeon2007/sub2api/releases) 选择已发布且不可变的 RU 版本，阅读迁移说明，并验证新的数据库备份。将**实际部署的 Compose 文件**中 `sub2api` 服务的 `image:` 改为该精确标签（不含开头的 `v`）。以下示例固定为本文对应的版本；请替换为所选的已发布版本，而非浮动的 `latest` 标签：
 
 ```yaml
-image: ghcr.io/yleon2007/sub2api:0.2.20-ru.1
+image: ghcr.io/yleon2007/sub2api:0.2.20-ru.2
 ```
 
 接着按照[安全的不可变版本升级流程](deploy/README.md#safe-immutable-upgrade)操作，所有命令均使用同一个 Compose 文件。准备脚本将本地目录版保存为 `docker-compose.yml`；仅当实际部署文件名确为 `docker-compose.local.yml` 时才使用该名称。若 `/app` 挂载了命名卷，必须先审查并运行运行时同步脚本；仅拉取和重建容器仍会保留旧二进制。没有 `/app` 挂载时，只重建应用容器。不要通过删除运行时卷或重建 PostgreSQL/Redis 来升级应用。

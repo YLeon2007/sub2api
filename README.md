@@ -260,7 +260,7 @@ One-click installation script that downloads pre-built binaries from GitHub Rele
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in
@@ -319,7 +319,7 @@ sudo systemctl restart sub2api
 # Uninstall
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected uninstaller? [y/N] " confirm
 case "$confirm" in
@@ -351,7 +351,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 # Download, inspect, and run the deployment preparation script
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/docker-deploy.sh
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -466,7 +466,7 @@ docker compose -f docker-compose.local.yml logs sub2api | grep "Generated admin"
 Before pulling, choose a published immutable RU version from [fork Releases](https://github.com/YLeon2007/sub2api/releases), read its migration notes, and verify a fresh database backup. Change the `sub2api` service's `image:` in the **actually deployed Compose file** to that exact tag (without the leading `v`). The pin below is this release's example; replace it with your selected published version, not a floating `latest` tag:
 
 ```yaml
-image: ghcr.io/yleon2007/sub2api:0.2.20-ru.1
+image: ghcr.io/yleon2007/sub2api:0.2.20-ru.2
 ```
 
 Then follow the [safe immutable upgrade procedure](deploy/README.md#safe-immutable-upgrade), keeping the selected Compose filename for every command. The preparation script saves the local variant as `docker-compose.yml`; use `docker-compose.local.yml` only if that is your deployed filename. A named volume at `/app` requires the inspected runtime-sync helper; pulling/recreating alone retains the old binary. A layout without an `/app` mount uses app-only recreation. Do not delete the runtime volume or recreate PostgreSQL/Redis as an app upgrade.

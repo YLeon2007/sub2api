@@ -28,7 +28,7 @@
 - [Сообщить о проблеме](https://github.com/YLeon2007/sub2api/issues)
 - [Оригинальный upstream](https://github.com/Wei-Shaw/sub2api)
 
-Текущий русифицированный релиз: `v0.2.20-ru.1`.
+Текущий русифицированный релиз: `v0.2.20-ru.2`.
 
 ## Партнёры
 
@@ -282,7 +282,7 @@ fast_mode = true
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in
@@ -315,7 +315,7 @@ sudo journalctl -u sub2api -f
 ```bash
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+curl -fsSLo "$tmpdir/install.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected uninstaller? [y/N] " confirm
 case "$confirm" in
@@ -339,7 +339,7 @@ mkdir -p sub2api-deploy
 cd sub2api-deploy
 umask 077
 tmpdir="$(mktemp -d)"
-curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/docker-deploy.sh
+curl -fsSLo "$tmpdir/docker-deploy.sh" https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -357,7 +357,7 @@ docker compose logs -f sub2api
 По умолчанию используется immutable образ:
 
 ```text
-ghcr.io/yleon2007/sub2api:0.2.20-ru.1
+ghcr.io/yleon2007/sub2api:0.2.20-ru.2
 ```
 
 #### Ручная установка
@@ -434,7 +434,7 @@ go build -tags embed -ldflags="-X main.Version=${VERSION}" -o sub2api ./cmd/serv
 1. Измените `image:`:
 
    ```yaml
-   image: ghcr.io/yleon2007/sub2api:0.2.20-ru.1
+   image: ghcr.io/yleon2007/sub2api:0.2.20-ru.2
    ```
 
 2. Из каталога установки выберите фактически используемый файл Compose, проверьте конфигурацию и посмотрите монтирование `/app` у **существующего** контейнера (скрипт подготовки сохраняет локальный вариант под именем `docker-compose.yml`):
@@ -456,7 +456,7 @@ go build -tags embed -ldflags="-X main.Version=${VERSION}" -o sub2api ./cmd/serv
    umask 077
    tmpdir="$(mktemp -d)"
    curl -fsSLo "$tmpdir/sync-runtime-from-image.sh" \
-     https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/sync-runtime-from-image.sh
+     https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/sync-runtime-from-image.sh
    less "$tmpdir/sync-runtime-from-image.sh"
    read -r -p "Запустить проверенный скрипт синхронизации? [y/N] " confirm
    case "$confirm" in

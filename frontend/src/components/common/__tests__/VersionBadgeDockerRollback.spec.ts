@@ -97,7 +97,7 @@ describe('actual rendered Docker rollback command', () => {
     expect(result.calls).not.toContain('compose up ')
   })
   it('refuses a Compose image different from the selected rollback image before pulling', () => {
-    const result = execute('', 'custom.yml', 'ghcr.io/yleon2007/sub2api:0.2.20-ru.1')
+    const result = execute('', 'custom.yml', 'ghcr.io/yleon2007/sub2api:0.2.20-ru.2')
     expect(result.status).not.toBe(0)
     expect(result.calls).toContain('compose config --format json')
     expect(result.calls).not.toContain('compose pull ')

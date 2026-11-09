@@ -28,7 +28,7 @@
 | `config.example.yaml` | Полный справочник настроек |
 | `EDGE_SECURITY.md` | Защита обратного прокси, CDN, WAF и настройка доверенных прокси |
 
-По умолчанию форк использует неизменяемый образ `ghcr.io/yleon2007/sub2api:0.2.20-ru.1`. Для нового релиза явно измените тег; не переводите рабочую установку на чужой изменяемый `latest`.
+По умолчанию форк использует неизменяемый образ `ghcr.io/yleon2007/sub2api:0.2.20-ru.2`. Для нового релиза явно измените тег; не переводите рабочую установку на чужой изменяемый `latest`.
 
 ## Docker: скрипт подготовки
 
@@ -39,7 +39,7 @@ mkdir -p sub2api-deploy && cd sub2api-deploy
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/docker-deploy.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/docker-deploy.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/docker-deploy.sh
 less "$tmpdir/docker-deploy.sh"
 read -r -p "Run the inspected deployment script? [y/N] " confirm
 case "$confirm" in
@@ -164,7 +164,7 @@ docker compose -f docker-compose.local.yml up -d
    umask 077
    tmpdir="$(mktemp -d)"
    curl -fsSLo "$tmpdir/sync-runtime-from-image.sh" \
-     https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/sync-runtime-from-image.sh
+     https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/sync-runtime-from-image.sh
    less "$tmpdir/sync-runtime-from-image.sh"
    read -r -p "Запустить проверенный скрипт синхронизации? [y/N] " confirm
    case "$confirm" in
@@ -259,7 +259,7 @@ Apple silicon, macOS 26, `container` 1.1.0+:
 umask 077
 tmpdir="$(mktemp -d)"
 curl -fsSLo "$tmpdir/install.sh" \
-  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.1/deploy/install.sh
+  https://raw.githubusercontent.com/YLeon2007/sub2api/v0.2.20-ru.2/deploy/install.sh
 less "$tmpdir/install.sh"
 read -r -p "Run the inspected installer? [y/N] " confirm
 case "$confirm" in
