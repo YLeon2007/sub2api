@@ -7065,7 +7065,7 @@
                         </span>
                         <div class="min-w-0">
                           <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ doc.title || localText("未命名文档", "Untitled document", 'Документ без названия') }}
+                            {{ localizeLoginAgreementDocumentTitle(doc, locale) || localText("未命名文档", "Untitled document", 'Документ без названия') }}
                           </p>
                           <p class="truncate text-xs text-gray-500 dark:text-gray-400">
                             {{ loginAgreementRoutePath(doc, index) }}
@@ -7090,11 +7090,13 @@
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
                           {{ localText("文档名称", "Document title", 'Название документа') }}
                         </label>
+                        <!-- Display localization must not become a saved rename without an input event. -->
                         <input
-                          v-model="doc.title"
+                          :value="localizeLoginAgreementDocumentTitle(doc, locale)"
                           type="text"
                           class="input text-sm"
                           :placeholder="localText('例如：服务条款', 'Example: Terms of Service', 'Например: Условия обслуживания')"
+                          @input="doc.title = ($event.target as HTMLInputElement).value"
                         />
                       </div>
                       <div>
@@ -9027,6 +9029,7 @@ import AdminAccessKeysSettings from "@/components/admin/settings/AdminAccessKeys
 import TotpStepUpDialog from "@/components/auth/TotpStepUpDialog.vue";
 import { affiliatesAPI, type AffiliateAdminEntry, type SimpleUser as AffiliateSimpleUser } from "@/api/admin/affiliates";
 import { extractApiErrorMessage, extractI18nErrorMessage, localizeApiSuccessMessage } from "@/utils/apiError";
+import { localizeLoginAgreementDocumentTitle } from "@/utils/loginAgreement";
 import { useAppStore } from "@/stores";
 import { useAdminSettingsStore } from "@/stores/adminSettings";
 import { normalizeVisibleMethod } from "@/components/payment/paymentFlow";
