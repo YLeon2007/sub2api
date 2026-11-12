@@ -52,7 +52,7 @@
     <div
       v-if="error"
       class="truncate text-[10px] leading-4 text-red-600 dark:text-red-400"
-      :title="error"
+      :title="localizedError"
     >
       {{ truncatedError }}
     </div>
@@ -60,11 +60,14 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import type { CNProviderQuotaProbeResult } from '@/api/admin/cnProviders'
 import type { Account } from '@/types'
+import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
 import { cnQuotaCellVisible } from './credentialsBuilder'
 import UsageProgressBar from './UsageProgressBar.vue'
 
@@ -146,18 +149,18 @@ const extractErrorMessage = (e: unknown): string => {
     reason?: string
     response?: { data?: { message?: string; error?: string } }
   }
-  return (
-    err?.message ||
-    err?.reason ||
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    t('common.error')
+  return localizeApiErrorFallback(
+    err?.message || err?.reason || err?.response?.data?.message || err?.response?.data?.error,
+    t('common.error'),
   )
 }
 
+const localizedError = computed(() => localizeApiErrorFallback(error.value, localizeQuotaDiagnostic(error.value, t)))
+
 const truncatedError = computed(() => {
-  if (!error.value) return ''
-  return error.value.length > 80 ? `${error.value.slice(0, 80)}...` : error.value
+  const message = localizedError.value
+  if (!message) return ''
+  return message.length > 80 ? `${message.slice(0, 80)}...` : message
 })
 
 const windowLabel = (window: string) => {
@@ -176,7 +179,7 @@ const handleProbe = async () => {
     if (result.success) {
       data.value = result
     } else {
-      error.value = result.error || t('common.error')
+      error.value = localizeApiErrorFallback(result.error, t('common.error'))
     }
   } catch (e) {
     error.value = extractErrorMessage(e)

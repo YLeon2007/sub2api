@@ -139,9 +139,11 @@ function formatGuardReturn(event: PromptAuditEvent): string {
   }, null, 2)
 }
 function issueTitle(issue: PromptIssueSummary): string {
+  if (issue.scanner_id === 'unknown_unsafe') return t('runtimeUi.unknownUnsafeTitle')
   return translateCategory(issue.category || issue.scanner_id) || issue.title
 }
 function issueDescription(issue: PromptIssueSummary): string {
+  if (issue.scanner_id === 'unknown_unsafe') return t('runtimeUi.unknownUnsafeDescription')
   const category = issue.category || issue.scanner_id
   const key = `admin.promptAudit.scannerDescriptions.${category}`
   const label = t(key)

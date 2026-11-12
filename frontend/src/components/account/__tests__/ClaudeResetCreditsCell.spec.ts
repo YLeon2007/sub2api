@@ -6,7 +6,9 @@ const getCredits = vi.hoisted(() => vi.fn())
 const redeem = vi.hoisted(() => vi.fn())
 vi.mock('@/api/admin/claudeResetCredits', () => ({ getClaudeResetCredits: getCredits, redeemClaudeResetCredit: redeem }))
 const t = vi.hoisted(() => vi.fn((key: string, _params?: Record<string, unknown>) => key))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t }) }))
+const locale = vi.hoisted(() => ({ value: 'en' }))
+vi.mock('@/i18n', () => ({ getLocale: () => locale.value }))
+vi.mock('vue-i18n', () => ({ useI18n: () => ({ t, locale }) }))
 // Minimal stand-in exposing the dialog's show state and confirm/cancel events.
 vi.mock('@/components/common/ConfirmDialog.vue', () => ({
   default: {
@@ -40,7 +42,33 @@ async function confirmReset(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('Claude reset credit status', () => {
-  beforeEach(() => { getCredits.mockReset(); redeem.mockReset() })
+  beforeEach(() => { getCredits.mockReset(); redeem.mockReset(); locale.value = 'en' })
+
+  it.each([
+    new Error('English transport failure'),
+    { status: 500, reason: 'NEW_ERROR', message: 'Backend English failure' },
+    { response: { data: { detail: 'Backend detail' } } },
+  ])('uses the localized Russian primary message for unknown errors: %j', async (error) => {
+    locale.value = 'ru'
+    const wrapper = await queried()
+    redeem.mockRejectedValueOnce(error)
+    await confirmReset(wrapper)
+    expect(wrapper.get('[data-testid="claude-reset-feedback"]').text()).toBe('admin.accounts.claudeResetCredits.outcome.failed')
+    wrapper.unmount()
+  })
+
+  it('keeps redemption disabled after an unknown result refresh reports no available credits', async () => {
+    const wrapper = await queried()
+    redeem.mockResolvedValueOnce({ outcome: 'unknown', replayed: false })
+    getCredits.mockResolvedValueOnce({ ...snapshot, available_count: 0, credits: [{ ...credit, redeemable: false }] })
+    await confirmReset(wrapper)
+    expect(wrapper.get('[data-testid="claude-reset-feedback"]').text()).toBe('admin.accounts.claudeResetCredits.outcome.unknown')
+    expect(redeemButton(wrapper).attributes('disabled')).toBeDefined()
+    await redeemButton(wrapper).trigger('click')
+    expect(wrapper.find('[data-testid="confirm-dialog"]').exists()).toBe(false)
+    expect(redeem).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
 
   it('queries only on explicit request and shows count and expiry', async () => {
     getCredits.mockResolvedValue(snapshot)

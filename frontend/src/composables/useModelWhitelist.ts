@@ -508,6 +508,20 @@ export const commonErrorCodes = [
   { value: 529, label: 'Overloaded' }
 ]
 
+// Display labels only; keep numeric codes and the exported source inventory unchanged.
+export function getCommonErrorCodes(t: (key: string) => string) {
+  const labelKeys: Record<number, string> = {
+    401: 'errors.unauthorized',
+    403: 'errors.forbidden',
+    429: 'admin.accounts.rateLimited',
+    500: 'errors.serverError',
+    502: 'runtimeUi.badGateway',
+    503: 'runtimeUi.serviceUnavailable',
+    529: 'admin.accounts.status.overloaded',
+  }
+  return commonErrorCodes.map(code => ({ ...code, label: t(labelKeys[code.value] || 'common.unknown') }))
+}
+
 // =====================
 // 辅助函数
 // =====================
@@ -558,11 +572,22 @@ export function getModelsByPlatform(platform: string): string[] {
 }
 
 // 按平台获取预设映射
-export function getPresetMappingsByPlatform(platform: string) {
+export function getPresetMappingsByPlatform(
+  platform: string,
+  t?: (key: string, params?: Record<string, unknown>) => string,
+) {
   if (platform === 'openai') return openaiPresetMappings
   if (platform === 'gemini') return geminiPresetMappings
   if (platform === 'grok' || platform === 'xai') return grokPresetMappings
-  if (platform === 'antigravity') return antigravityPresetMappings
+  if (platform === 'antigravity') {
+    if (!t) return antigravityPresetMappings
+    return antigravityPresetMappings.map(preset => ({
+      ...preset,
+      label: preset.label.endsWith('透传')
+        ? t('runtimeUi.presetPassthrough', { model: preset.label.slice(0, -2) })
+        : preset.label,
+    }))
+  }
   if (platform === 'bedrock') return bedrockPresetMappings
   return anthropicPresetMappings
 }

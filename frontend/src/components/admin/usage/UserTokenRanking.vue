@@ -63,7 +63,7 @@
               <span v-else class="inline-block w-6 text-center text-sm tabular-nums text-gray-400">{{ index + 1 }}</span>
             </td>
             <td class="max-w-[260px] truncate px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200" :title="item.email">
-              {{ item.email || `User #${item.user_id}` }}
+              {{ item.email || t('runtimeUi.userIdFallback', { id: item.user_id }) }}
               <span class="ml-1 font-normal text-gray-400 dark:text-gray-500">#{{ item.user_id }}</span>
             </td>
             <td class="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">{{ item.requests.toLocaleString() }}</td>
@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getUserBreakdown, type UserBreakdownParams } from '@/api/admin/dashboard'
 import { formatCompactNumber, formatCostFixed } from '@/utils/format'
@@ -109,12 +109,12 @@ const sortableColumns: { key: SortKey; label: string }[] = [
   { key: 'actual_cost', label: 'admin.usage.tokenRanking.columns.cost' },
 ]
 
-const limitOptions = [
-  { value: 20, label: 'Top 20' },
-  { value: 50, label: 'Top 50' },
-  { value: 100, label: 'Top 100' },
-  { value: 200, label: 'Top 200' },
-]
+const limitOptions = computed(() => [
+  { value: 20, label: t('runtimeUi.topCount', { count: 20 }) },
+  { value: 50, label: t('runtimeUi.topCount', { count: 50 }) },
+  { value: 100, label: t('runtimeUi.topCount', { count: 100 }) },
+  { value: 200, label: t('runtimeUi.topCount', { count: 200 }) },
+])
 
 // 前三名金/银/铜徽章
 const RANK_BADGE_CLASSES = [

@@ -17,6 +17,7 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
+      locale: { value: 'en' },
       t: (key: string, params?: Record<string, unknown>) =>
         params?.time ? `${key}:${params.time}` : params?.count ? `${key}:${params.count}` : key,
     }),

@@ -237,6 +237,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -289,7 +291,7 @@ const loadAttributes = async () => {
   try {
     attributes.value = await adminAPI.userAttributes.listDefinitions()
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.users.attributes.failedToLoad'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.users.attributes.failedToLoad')))
   } finally {
     loading.value = false
   }
@@ -374,7 +376,7 @@ const handleSave = async () => {
     const msg = editingAttribute.value
       ? t('admin.users.attributes.failedToUpdate')
       : t('admin.users.attributes.failedToCreate')
-    appStore.showError(error.response?.data?.detail || msg)
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, msg))
   } finally {
     saving.value = false
   }
@@ -395,7 +397,7 @@ const handleDelete = async () => {
     deletingAttribute.value = null
     loadAttributes()
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.users.attributes.failedToDelete'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.users.attributes.failedToDelete')))
   }
 }
 

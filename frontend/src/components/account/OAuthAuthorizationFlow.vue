@@ -12,7 +12,7 @@
         <!-- Auth Method Selection -->
         <div v-if="showMethodSelection" class="mb-4">
           <label class="mb-2 block text-sm font-medium text-blue-800 dark:text-blue-300">
-            {{ methodLabel }}
+            {{ methodLabel || t('admin.accounts.oauth.authMethod') }}
           </label>
           <div class="flex flex-wrap gap-4">
             <label v-if="showManualOption" class="flex cursor-pointer items-center gap-2">
@@ -741,7 +741,7 @@
                     <button
                       type="button"
                       class="btn btn-secondary p-2"
-                      title="Copy URL"
+                      :title="t('admin.accounts.oauth.copyUrl')"
                       @click="handleCopyUrl"
                     >
                       <svg
@@ -942,7 +942,7 @@ const props = withDefaults(defineProps<Props>(), {
   showHelp: true,
   showProxyWarning: true,
   allowMultiple: false,
-  methodLabel: 'Authorization Method',
+  methodLabel: '',
   showCookieOption: true,
   showRefreshTokenOption: false,
   showMobileRefreshTokenOption: false,

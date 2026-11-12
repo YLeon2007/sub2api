@@ -6,7 +6,7 @@ import OpenAIReferralCell from '../OpenAIReferralCell.vue'
 import type { Account } from '@/types'
 
 vi.mock('@/i18n', () => ({ getLocale: () => 'en' }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', () => ({ useI18n: () => ({ locale: { value: 'en' }, t: (key: string) => key }) }))
 
 // Exercise the actual accounts API and shared Axios interceptor together.
 const originalAdapter = apiClient.defaults.adapter

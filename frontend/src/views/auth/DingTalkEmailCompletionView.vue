@@ -23,6 +23,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -61,7 +63,7 @@ function sanitizeRedirectPath(path: string | null | undefined): string {
 
 function getRequestErrorMessage(error: unknown, fallback: string): string {
   const err = error as { message?: string; response?: { data?: { detail?: string; message?: string } } }
-  return err.response?.data?.detail || err.response?.data?.message || err.message || fallback
+  return localizeApiErrorFallback(err.response?.data?.detail || err.response?.data?.message || err.message, fallback)
 }
 
 async function handleCreateAccount(payload: PendingOAuthCreateAccountPayload) {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -57,10 +59,10 @@ const viewModeOptions = computed(() => [
 ])
 
 const topNOptions = computed(() => [
-  { value: 10, label: 'Top 10' },
-  { value: 20, label: 'Top 20' },
-  { value: 50, label: 'Top 50' },
-  { value: 100, label: 'Top 100' }
+  { value: 10, label: t('runtimeUi.topCount', { count: 10 }) },
+  { value: 20, label: t('runtimeUi.topCount', { count: 20 }) },
+  { value: 50, label: t('runtimeUi.topCount', { count: 50 }) },
+  { value: 100, label: t('runtimeUi.topCount', { count: 100 }) }
 ])
 
 const pageSizeOptions = computed(() => [
@@ -109,7 +111,7 @@ async function loadData() {
   } catch (err: any) {
     console.error('[OpsOpenAITokenStatsCard] Failed to load data', err)
     response.value = null
-    errorMessage.value = err?.message || t('admin.ops.openaiTokenStats.failedToLoad')
+    errorMessage.value = localizeApiErrorFallback(err?.message, t('admin.ops.openaiTokenStats.failedToLoad'))
   } finally {
     loading.value = false
   }

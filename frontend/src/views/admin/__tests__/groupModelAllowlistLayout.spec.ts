@@ -17,6 +17,12 @@ describe("groups model allowlist layout", () => {
     expect(groupsViewSource).not.toContain("sticky top-0");
   });
 
+  it("marks wildcard entries in both create and edit forms, regardless of star position", () => {
+    expect(groupsViewSource.match(/v-if="item\.id\.includes\('\*'\)"/g)).toHaveLength(2);
+    expect(groupsViewSource).not.toContain("item.id.endsWith('*')");
+    expect(groupsViewSource.match(/:placeholder="t\('admin\.groups\.modelAllowlist\.customPlaceholder'\)"/g)).toHaveLength(2);
+  });
+
   it("uses a wide dialog and keeps model pricing controls responsive", () => {
     expect(groupsViewSource).toContain('width="wide"');
     expect(groupsViewSource).toContain(

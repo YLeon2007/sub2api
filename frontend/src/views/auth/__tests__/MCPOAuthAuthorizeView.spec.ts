@@ -12,7 +12,8 @@ const { auth, previewAuthorization, authorize, routeState, assign } = vi.hoisted
 vi.mock('vue-router', () => ({ useRoute: () => routeState.current }))
 vi.mock('@/api/mcp', () => ({ mcpAPI: { previewAuthorization, authorize } }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => auth }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...await importOriginal<typeof import('vue-i18n')>(), useI18n: () => ({ t: (key: string) => key, locale: { value: 'en' } }) }))
 vi.mock('@/components/auth/TotpStepUpDialog.vue', () => ({
   default: {
     props: ['controller'],

@@ -26,7 +26,7 @@
               rel="noopener noreferrer"
               class="font-medium text-primary-600 underline-offset-4 transition hover:text-primary-700 hover:underline dark:text-primary-300 dark:hover:text-primary-200"
             >
-              {{ doc.title }}
+              {{ localizeLoginAgreementDocumentTitle(doc, locale) }}
             </RouterLink>
             <span v-if="index < documents.length - 1">{{ t('legal.loginAgreementPrompt.documentSeparator') }}</span>
           </template>
@@ -109,7 +109,7 @@
                   <Icon :name="documentIcon(index, doc.title)" size="sm" />
                 </span>
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">{{ doc.title }}</span>
+                  <span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">{{ localizeLoginAgreementDocumentTitle(doc, locale) }}</span>
                 </span>
                 <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-gray-400 transition group-hover:bg-primary-50 group-hover:text-primary-600 dark:group-hover:bg-primary-500/10 dark:group-hover:text-primary-300">
                   <Icon name="externalLink" size="sm" />
@@ -147,8 +147,9 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import type { LoginAgreementDocument } from '@/types'
+import { localizeLoginAgreementDocumentTitle } from '@/utils/loginAgreement'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = withDefaults(defineProps<{
   accepted: boolean

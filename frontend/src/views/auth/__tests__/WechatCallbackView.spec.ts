@@ -63,12 +63,8 @@ vi.mock('vue-router', () => ({
   }),
 }))
 
-vi.mock('vue-i18n', () => ({
-  createI18n: () => ({
-    global: {
-      t: (key: string) => key,
-    },
-  }),
+vi.mock('vue-i18n', async () => ({
+  ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')),
   useI18n: () => ({
     t: (key: string, params?: Record<string, string>) => {
       if (key === 'auth.oauthFlow.totpHint') {

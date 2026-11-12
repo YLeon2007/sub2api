@@ -49,7 +49,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const adminSettingsStore = useAdminSettingsStore()
 
 const realtimeWindow = ref<RealtimeWindow>('1min')
@@ -644,6 +644,21 @@ function formatTimeShort(ts?: string | null): string {
   return d.toLocaleTimeString()
 }
 
+function formatLastUpdatedTime(value: Date): string {
+  return value.toLocaleString(locale.value || undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).replace(/\//g, '-')
+}
+
+const lastUpdatedLabel = computed(() => (
+  props.lastUpdated ? formatLastUpdatedTime(props.lastUpdated) : t('common.unknown')
+))
+
 const cpuPercentValue = computed<number | null>(() => {
   const v = systemMetrics.value?.cpu_usage_percent
   return typeof v === 'number' && Number.isFinite(v) ? v : null
@@ -884,7 +899,7 @@ function handleToolbarRefresh() {
           </span>
 
           <span>·</span>
-          <span>{{ t('common.refresh') }}: {{ props.lastUpdated ? props.lastUpdated.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\//g, '-') : t('common.unknown') }}</span>
+          <span>{{ t('common.refresh') }}: {{ lastUpdatedLabel }}</span>
 
           <template v-if="props.autoRefreshEnabled && props.autoRefreshCountdown !== undefined">
             <span>·</span>
@@ -1314,12 +1329,12 @@ function handleToolbarRefresh() {
               <span class="text-gray-400">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">Avg:</span>
+              <span class="text-gray-500">{{ t('admin.ops.avgLabel') }}</span>
               <span class="font-bold text-gray-900 dark:text-white">{{ durationAvgMs ?? '-' }}</span>
               <span class="text-gray-400">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">Max:</span>
+              <span class="text-gray-500">{{ t('admin.ops.maxLabel') }}</span>
               <span class="font-bold text-gray-900 dark:text-white">{{ durationMaxMs ?? '-' }}</span>
               <span class="text-gray-400">ms</span>
             </div>
@@ -1365,12 +1380,12 @@ function handleToolbarRefresh() {
               <span class="text-gray-400">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">Avg:</span>
+              <span class="text-gray-500">{{ t('admin.ops.avgLabel') }}</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftAvgMs))">{{ ttftAvgMs ?? '-' }}</span>
               <span class="text-gray-400">ms</span>
             </div>
             <div class="flex items-baseline gap-1 whitespace-nowrap">
-              <span class="text-gray-500">Max:</span>
+              <span class="text-gray-500">{{ t('admin.ops.maxLabel') }}</span>
               <span class="font-bold" :class="getThresholdColorClass(getTTFTThresholdLevel(ttftMaxMs))">{{ ttftMaxMs ?? '-' }}</span>
               <span class="text-gray-400">ms</span>
             </div>

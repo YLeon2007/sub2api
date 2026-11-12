@@ -64,6 +64,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -184,7 +186,7 @@ async function handlePay() {
       redirect: 'if_required',
     })
     if (stripeError) {
-      error.value = stripeError.message || t('payment.result.failed')
+      error.value = localizeApiErrorFallback(stripeError.message, t('payment.result.failed'))
     } else {
       success.value = true
       emit('success')

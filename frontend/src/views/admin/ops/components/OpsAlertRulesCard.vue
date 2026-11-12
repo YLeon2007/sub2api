@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, onMounted, ref } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -11,6 +13,7 @@ import { opsAPI } from '@/api/admin/ops'
 import type { AlertRule, MetricType, Operator } from '../types'
 import type { OpsSeverity } from '@/api/admin/ops'
 import { formatDateTime } from '../utils/opsFormatters'
+import { localizeSeededOpsAlertRule } from '../utils/opsAlertLocalization'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -27,7 +30,7 @@ async function load() {
     rules.value = await opsAPI.listAlertRules()
   } catch (err: any) {
     console.error('[OpsAlertRulesCard] Failed to load rules', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertRules.loadFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.alertRules.loadFailed')))
     rules.value = []
   } finally {
     loading.value = false
@@ -47,6 +50,49 @@ const showEditor = ref(false)
 const saving = ref(false)
 const editingId = ref<number | null>(null)
 const draft = ref<AlertRule | null>(null)
+const draftSourceText = ref<Pick<AlertRule, 'name' | 'description'> | null>(null)
+const draftNameDirty = ref(false)
+const draftDescriptionDirty = ref(false)
+
+function localizedRuleText(rule: Pick<AlertRule, 'name' | 'description'>) {
+  return localizeSeededOpsAlertRule(
+    rule.name,
+    rule.description,
+    (key, params) => params ? t(key, params) : t(key)
+  )
+}
+
+function localizedDraftSourceText() {
+  return draftSourceText.value
+    ? localizedRuleText(draftSourceText.value)
+    : { name: draft.value?.name || '', description: draft.value?.description }
+}
+
+const draftName = computed<string>({
+  get() {
+    if (!draft.value) return ''
+    return draftNameDirty.value ? draft.value.name : localizedDraftSourceText().name
+  },
+  set(value) {
+    if (!draft.value) return
+    draftNameDirty.value = true
+    draft.value.name = value
+  }
+})
+
+const draftDescription = computed<string>({
+  get() {
+    if (!draft.value) return ''
+    return draftDescriptionDirty.value
+      ? draft.value.description || ''
+      : localizedDraftSourceText().description || ''
+  },
+  set(value) {
+    if (!draft.value) return
+    draftDescriptionDirty.value = true
+    draft.value.description = value
+  }
+})
 
 type MetricGroup = 'system' | 'group' | 'account'
 
@@ -302,12 +348,18 @@ function newRuleDraft(): AlertRule {
 
 function openCreate() {
   editingId.value = null
+  draftSourceText.value = null
+  draftNameDirty.value = false
+  draftDescriptionDirty.value = false
   draft.value = newRuleDraft()
   showEditor.value = true
 }
 
 function openEdit(rule: AlertRule) {
   editingId.value = rule.id ?? null
+  draftSourceText.value = { name: rule.name, description: rule.description }
+  draftNameDirty.value = false
+  draftDescriptionDirty.value = false
   draft.value = JSON.parse(JSON.stringify(rule))
   showEditor.value = true
 }
@@ -356,7 +408,7 @@ async function save() {
     appStore.showSuccess(t('admin.ops.alertRules.saveSuccess'))
   } catch (err: any) {
     console.error('[OpsAlertRulesCard] Failed to save rule', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertRules.saveFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.alertRules.saveFailed')))
   } finally {
     saving.value = false
   }
@@ -380,7 +432,7 @@ async function confirmDelete() {
     appStore.showSuccess(t('admin.ops.alertRules.deleteSuccess'))
   } catch (err: any) {
     console.error('[OpsAlertRulesCard] Failed to delete rule', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.alertRules.deleteFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.alertRules.deleteFailed')))
   }
 }
 
@@ -429,9 +481,9 @@ function cancelDelete() {
           <div v-for="row in sortedRules" :key="row.id" class="space-y-2 p-4">
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0">
-                <div class="text-xs font-bold text-gray-900 dark:text-white">{{ row.name }}</div>
-                <div v-if="row.description" class="mt-0.5 line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
-                  {{ row.description }}
+                <div class="text-xs font-bold text-gray-900 dark:text-white">{{ localizedRuleText(row).name }}</div>
+                <div v-if="localizedRuleText(row).description" class="mt-0.5 line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
+                  {{ localizedRuleText(row).description }}
                 </div>
               </div>
               <span class="shrink-0 text-xs font-bold text-gray-700 dark:text-gray-200">{{ row.severity }}</span>
@@ -478,9 +530,9 @@ function cancelDelete() {
           <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-800">
             <tr v-for="row in sortedRules" :key="row.id" class="hover:bg-gray-50 dark:hover:bg-dark-700/50">
               <td class="px-4 py-3">
-                <div class="text-xs font-bold text-gray-900 dark:text-white">{{ row.name }}</div>
-                <div v-if="row.description" class="mt-0.5 line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
-                  {{ row.description }}
+                <div class="text-xs font-bold text-gray-900 dark:text-white">{{ localizedRuleText(row).name }}</div>
+                <div v-if="localizedRuleText(row).description" class="mt-0.5 line-clamp-2 text-[11px] text-gray-500 dark:text-gray-400">
+                  {{ localizedRuleText(row).description }}
                 </div>
                 <div v-if="row.updated_at" class="mt-1 text-[10px] text-gray-400">
                   {{ formatDateTime(row.updated_at) }}
@@ -524,12 +576,12 @@ function cancelDelete() {
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div class="md:col-span-2">
             <label class="input-label">{{ t('admin.ops.alertRules.form.name') }}</label>
-            <input v-model="draft!.name" class="input" type="text" />
+            <input v-model="draftName" class="input" type="text" />
           </div>
 
           <div class="md:col-span-2">
             <label class="input-label">{{ t('admin.ops.alertRules.form.description') }}</label>
-            <input v-model="draft!.description" class="input" type="text" />
+            <input v-model="draftDescription" class="input" type="text" />
           </div>
 
           <div>
