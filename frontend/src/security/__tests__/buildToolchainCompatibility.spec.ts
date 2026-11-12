@@ -7,6 +7,15 @@ const read = (path: string) => readFileSync(resolve(root, path), 'utf8')
 const packageJson = JSON.parse(read('frontend/package.json'))
 
 describe('build toolchain compatibility', () => {
+  it('uses a Go release with the GO-2026-6859 net/http fix', () => {
+    const version = /^go (\d+)\.(\d+)\.(\d+)$/m.exec(read('backend/go.mod'))
+    expect(version).not.toBeNull()
+    const [major, minor, patch] = version!.slice(1).map(Number)
+    expect(major).toBe(1)
+    expect(minor).toBeGreaterThanOrEqual(27)
+    if (minor === 27) expect(patch).toBeGreaterThanOrEqual(4)
+  })
+
   it('declares the Node 22 minimum required by the patched Vue I18n release', () => {
     expect(packageJson.dependencies['vue-i18n']).toBe('^11.4.16')
     expect(packageJson.devDependencies['@intlify/message-compiler']).toBe('11.4.16')
