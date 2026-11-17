@@ -499,6 +499,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { testDatabase, testRedis, install, type InstallRequest } from '@/api/setup'
@@ -595,7 +596,7 @@ async function testDatabaseConnection() {
   } catch (error: unknown) {
     const err = error as { response?: { data?: { detail?: string; message?: string } }; message?: string }
     errorMessage.value =
-      err.response?.data?.detail || err.response?.data?.message || err.message || 'Connection failed'
+      localizeApiErrorFallback(err.response?.data?.detail || err.response?.data?.message || err.message || 'Connection failed', t('common.error'))
   } finally {
     testingDb.value = false
   }
@@ -612,7 +613,7 @@ async function testRedisConnection() {
   } catch (error: unknown) {
     const err = error as { response?: { data?: { detail?: string; message?: string } }; message?: string }
     errorMessage.value =
-      err.response?.data?.detail || err.response?.data?.message || err.message || 'Connection failed'
+      localizeApiErrorFallback(err.response?.data?.detail || err.response?.data?.message || err.message || 'Connection failed', t('common.error'))
   } finally {
     testingRedis.value = false
   }
@@ -637,7 +638,7 @@ async function performInstall() {
   } catch (error: unknown) {
     const err = error as { response?: { data?: { detail?: string; message?: string } }; message?: string }
     errorMessage.value =
-      err.response?.data?.detail || err.response?.data?.message || err.message || 'Installation failed'
+      localizeApiErrorFallback(err.response?.data?.detail || err.response?.data?.message || err.message || 'Installation failed', t('common.error'))
   } finally {
     installing.value = false
   }

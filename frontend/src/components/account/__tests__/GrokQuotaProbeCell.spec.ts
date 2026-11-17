@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import GrokQuotaProbeCell from '../GrokQuotaProbeCell.vue'
 import type { Account } from '@/types'
 
-const { queryQuota } = vi.hoisted(() => ({
-  queryQuota: vi.fn()
+const { queryQuota, mockLocale } = vi.hoisted(() => ({
+  queryQuota: vi.fn(),
+  mockLocale: { value: 'en' }
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -13,8 +14,10 @@ vi.mock('@/api/admin', () => ({
   }
 }))
 
+vi.mock('@/i18n', () => ({ getLocale: () => 'en' }))
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
+    locale: mockLocale,
     t: (key: string, params?: Record<string, unknown>) =>
       params?.percent == null ? key : `${key}:${params.percent}`
   })
@@ -29,6 +32,7 @@ const account = {
 describe('GrokQuotaProbeCell', () => {
   beforeEach(() => {
     queryQuota.mockReset()
+    mockLocale.value = 'en'
   })
 
   it('keeps billing data while exposing a failed Free quota fallback', async () => {
@@ -50,5 +54,15 @@ describe('GrokQuotaProbeCell', () => {
       billing: { period_type: 'weekly', usage_percent: null },
       probe_error: 'upstream returned 402 for probe model "grok-4.5"'
     })
+  })
+
+  it('does not show raw quota diagnostics as primary Russian text', async () => {
+    mockLocale.value = 'ru'
+    queryQuota.mockResolvedValue({ probe_error: 'upstream returned 402 for probe model "grok-4.5"' })
+    const wrapper = mount(GrokQuotaProbeCell, { props: { account } })
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('monitorCommon.quota.errors.generic')
+    expect(wrapper.text()).not.toContain('upstream returned 402')
   })
 })

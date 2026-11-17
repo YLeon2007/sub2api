@@ -57,12 +57,16 @@
           <p class="mt-2 text-sm text-gray-600 dark:text-dark-300">
             {{ runtime.last_processed_at ? formatDate(runtime.last_processed_at) : t('admin.promptAudit.common.never') }}
           </p>
-          <p v-if="runtime.last_error_code" class="mt-1 break-words text-sm text-red-600 dark:text-red-300">
-            {{ runtime.last_error_code }}<span v-if="runtime.last_error_message"> · {{ runtime.last_error_message }}</span>
+          <p v-if="runtime.last_error_code" data-test="runtime-last-error" class="mt-1 break-words text-sm text-red-600 dark:text-red-300">
+            {{ promptErrorLabel(runtime.last_error_code, t) }}
           </p>
+          <details v-if="runtime.last_error_code || runtime.last_error_message" class="mt-1.5 text-xs text-gray-500 dark:text-dark-400">
+            <summary class="cursor-pointer">{{ t('admin.promptAudit.events.tabs.technical') }}</summary>
+            <pre class="mt-1 whitespace-pre-wrap break-words font-mono">{{ promptDiagnosticDetails({ error_code: runtime.last_error_code, message: runtime.last_error_message }) }}</pre>
+          </details>
           <div v-if="Object.keys(runtime.endpoints).length" class="mt-3 flex flex-wrap gap-2">
-            <span v-for="(probe, id) in runtime.endpoints" :key="id" class="rounded-md px-2 py-1 text-xs" :class="probe.ok ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'">
-              {{ id }} · {{ probe.status }} · {{ probe.latency_ms }} ms
+            <span v-for="(probe, id) in runtime.endpoints" :key="id" data-test="runtime-endpoint-status" class="rounded-md px-2 py-1 text-xs" :class="probe.ok ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'">
+              {{ id }} · {{ promptStatusLabel(probe.status, t) }} · {{ probe.latency_ms }} {{ t('runtimeUi.milliseconds') }}
             </span>
           </div>
         </div>
@@ -75,6 +79,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { PromptAuditRuntime } from '../types'
+import { promptDiagnosticDetails, promptErrorLabel, promptModeLabel, promptStatusLabel } from '../display'
 
 const props = defineProps<{ runtime: PromptAuditRuntime | null; loading: boolean; error: string }>()
 defineEmits<{ (event: 'refresh'): void }>()
@@ -84,12 +89,12 @@ const statusItems = computed(() => {
   const runtime = props.runtime
   if (!runtime) return []
   return [
-    { label: t('admin.promptAudit.runtime.process'), value: t(`admin.promptAudit.status.${runtime.process_status}`), dot: statusDot(runtime.process_status) },
-    { label: t('admin.promptAudit.runtime.mode'), value: t(`admin.promptAudit.mode.${runtime.effective_mode}`) },
+    { label: t('admin.promptAudit.runtime.process'), value: promptStatusLabel(runtime.process_status, t), dot: statusDot(runtime.process_status) },
+    { label: t('admin.promptAudit.runtime.mode'), value: promptModeLabel(runtime.effective_mode, t) },
     { label: t('admin.promptAudit.runtime.version'), value: `${runtime.active_config_version} / ${runtime.expected_config_version}` },
     { label: t('admin.promptAudit.runtime.workers'), value: `${runtime.worker_active} / ${runtime.worker_total}` },
     { label: t('admin.promptAudit.runtime.queue'), value: `${runtime.queue.active} / ${runtime.queue_capacity}` },
-    { label: t('admin.promptAudit.runtime.dependencies'), value: `DB ${runtime.database_status} · Redis ${runtime.redis_status}` },
+    { label: t('admin.promptAudit.runtime.dependencies'), value: `DB ${promptStatusLabel(runtime.database_status, t)} · Redis ${promptStatusLabel(runtime.redis_status, t)}` },
   ]
 })
 
@@ -104,7 +109,7 @@ const guardMetricItems = computed(() => {
     { label: t('admin.promptAudit.metrics.unavailable'), value: metrics.unavailable },
     { label: t('admin.promptAudit.metrics.timeouts'), value: metrics.timeouts },
     { label: t('admin.promptAudit.metrics.failovers'), value: metrics.failovers },
-    { label: 'P95', value: metrics.latency_p95_ms != null ? `${metrics.latency_p95_ms} ms` : '—' },
+    { label: 'P95', value: metrics.latency_p95_ms != null ? `${metrics.latency_p95_ms} ${t('runtimeUi.milliseconds')}` : '—' },
   ]
 })
 

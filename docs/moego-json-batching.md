@@ -1,5 +1,7 @@
 # OpenAI 请求的 JSON 批量编辑
 
+[Русский](moego-json-batching_RU.md)
+
 `openAIRequestView.ApplyPatches` 使用 `github.com/MoeForge/moego/ojson` 的
 `Doc` 合并同一请求上的多次字段修改，最后只生成一次完整结果。依赖固定为
 `v0.1.0-alpha.1`（`d016502783037edc58e422331be2b6775d578c13`）。

@@ -52,7 +52,10 @@ const { t, locale } = useI18n()
 const providerName = computed(() => t('auth.wechatProviderName'))
 
 function localizeWeChatHint(zh: string, en: string): string {
-  return locale.value.startsWith('zh') ? zh : en
+  const normalizedLocale = locale.value.toLowerCase()
+  if (normalizedLocale.startsWith('zh')) return zh
+  if (normalizedLocale.startsWith('ru')) return t('auth.oauthFlow.wechatNativeAppOnly')
+  return en
 }
 
 const resolvedStart = computed(() => resolveWeChatOAuthStart(appStore.cachedPublicSettings))

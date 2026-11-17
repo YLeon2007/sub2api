@@ -83,7 +83,7 @@
           <template v-if="setupData">
             <div class="flex justify-center">
               <div class="rounded-lg border border-gray-200 p-4 bg-white dark:border-dark-600 dark:bg-white">
-                <img :src="qrCodeDataUrl" alt="QR Code" class="h-48 w-48" />
+                <img :src="qrCodeDataUrl" :alt="t('runtimeUi.totpQrCode')" class="h-48 w-48" />
               </div>
             </div>
 

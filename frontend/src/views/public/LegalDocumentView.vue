@@ -5,7 +5,7 @@
         <RouterLink to="/home" class="flex min-w-0 items-center gap-3">
           <template v-if="settings">
             <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-dark-800 dark:ring-dark-700">
-              <img :src="siteLogo || '/logo.svg'" alt="Logo" class="h-full w-full object-contain" />
+              <img :src="siteLogo || '/logo.svg'" :alt="t('runtimeUi.siteLogo')" class="h-full w-full object-contain" />
             </span>
             <span class="truncate text-base font-semibold text-gray-950 dark:text-white">
               {{ siteName }}
@@ -64,7 +64,7 @@
             <div class="min-w-0">
               <p class="text-sm font-medium text-primary-700 dark:text-primary-300">{{ documentTypeLabel }}</p>
               <h1 class="mt-2 break-words text-2xl font-bold tracking-normal text-gray-950 dark:text-white sm:text-3xl">
-                {{ currentDocument.title }}
+                {{ localizeLoginAgreementDocumentTitle(currentDocument, locale) }}
               </h1>
               <p v-if="updatedAt" class="mt-3 text-sm text-gray-500 dark:text-dark-400">
                 {{ t('legal.updatedAt', { date: updatedAt }) }}
@@ -98,15 +98,17 @@ import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { getLocale } from '@/i18n'
 import { sanitizeUrl } from '@/utils/url'
+import { localizeLoginAgreementDocumentTitle } from '@/utils/loginAgreement'
 import { useAppStore } from '@/stores/app'
 import type { LoginAgreementDocument } from '@/types'
 import zhAdminCompliance from '../../../../docs/legal/admin-compliance.zh.md?raw'
 import enAdminCompliance from '../../../../docs/legal/admin-compliance.en.md?raw'
+import ruAdminCompliance from '../../../../docs/legal/admin-compliance.ru.md?raw'
 
 type LegalDocumentIcon = 'document' | 'shield' | 'globe' | 'cog'
 
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
 const settings = computed(() => appStore.cachedPublicSettings)
 const loading = ref(!settings.value)
@@ -131,13 +133,23 @@ const updatedAt = computed(() =>
 const documentTypeLabel = computed(() =>
   isAdminComplianceDocument.value ? t('legal.adminCompliance') : t('legal.loginAgreement')
 )
+const adminComplianceContent = computed(() => {
+  const locale = getLocale()
+  if (locale === 'zh') {
+    return zhAdminCompliance
+  }
+  if (locale === 'ru') {
+    return ruAdminCompliance
+  }
+  return enAdminCompliance
+})
 
 const currentDocument = computed<LoginAgreementDocument | null>(() => {
   if (isAdminComplianceDocument.value) {
     return {
       id: 'admin-compliance',
       title: t('adminCompliance.title'),
-      content_md: getLocale() === 'zh' ? zhAdminCompliance : enAdminCompliance
+      content_md: adminComplianceContent.value
     }
   }
   const id = documentId.value
@@ -159,14 +171,14 @@ const renderedHtml = computed(() => {
 })
 
 const documentIcon = computed<LegalDocumentIcon>(() => {
-  const title = currentDocument.value?.title || ''
-  if (title.includes('政策') || title.includes('隐私')) {
+  const id = (currentDocument.value?.id || '').toLowerCase()
+  if (id.includes('policy') || id.includes('privacy')) {
     return 'shield'
   }
-  if (title.includes('国家') || title.includes('地区')) {
+  if (id.includes('region') || id.includes('country')) {
     return 'globe'
   }
-  if (title.includes('特定')) {
+  if (id.includes('specific')) {
     return 'cog'
   }
   return 'document'

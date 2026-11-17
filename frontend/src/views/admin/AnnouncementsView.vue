@@ -257,6 +257,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -379,7 +381,7 @@ async function loadAnnouncements() {
       return
     }
     console.error('Error loading announcements:', error)
-    appStore.showError(error.response?.data?.detail || t('admin.announcements.failedToLoad'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.announcements.failedToLoad')))
   } finally {
     if (currentController === requestController) {
       loading.value = false
@@ -569,7 +571,7 @@ async function handleSave() {
     await loadAnnouncements()
   } catch (error: any) {
     console.error('Failed to save announcement:', error)
-    appStore.showError(error.response?.data?.detail || (editingAnnouncement.value ? t('admin.announcements.failedToUpdate') : t('admin.announcements.failedToCreate')))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, (editingAnnouncement.value ? t('admin.announcements.failedToUpdate') : t('admin.announcements.failedToCreate'))))
   } finally {
     saving.value = false
   }
@@ -595,7 +597,7 @@ async function confirmDelete() {
     await loadAnnouncements()
   } catch (error: any) {
     console.error('Failed to delete announcement:', error)
-    appStore.showError(error.response?.data?.detail || t('admin.announcements.failedToDelete'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.announcements.failedToDelete')))
   }
 }
 

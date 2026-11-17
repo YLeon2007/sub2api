@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -35,7 +37,7 @@ async function loadConfig() {
     config.value = data
   } catch (err: any) {
     console.error('[OpsEmailNotificationCard] Failed to load config', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.email.loadFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.email.loadFailed')))
   } finally {
     loading.value = false
   }
@@ -54,7 +56,7 @@ async function saveConfig() {
     appStore.showSuccess(t('admin.ops.email.saveSuccess'))
   } catch (err: any) {
     console.error('[OpsEmailNotificationCard] Failed to save config', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.email.saveFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.email.saveFailed')))
   } finally {
     saving.value = false
   }
