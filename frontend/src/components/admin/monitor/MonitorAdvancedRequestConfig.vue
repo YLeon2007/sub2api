@@ -104,6 +104,7 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { APIMode, BodyOverrideMode, Provider } from '@/api/admin/channelMonitor'
@@ -237,9 +238,10 @@ function commitBody() {
     bodyError.value = ''
   } catch (e) {
     bodyError.value =
-      t('admin.channelMonitor.advanced.bodyJsonError') +
-      ': ' +
-      (e instanceof Error ? e.message : String(e))
+      localizeApiErrorFallback(
+        t('admin.channelMonitor.advanced.bodyJsonError') + ': ' + (e instanceof Error ? e.message : String(e)),
+        t('admin.channelMonitor.advanced.bodyJsonError')
+      )
   }
 }
 
@@ -256,9 +258,10 @@ function formatBody() {
     }
   } catch (e) {
     bodyError.value =
-      t('admin.channelMonitor.advanced.bodyJsonError') +
-      ': ' +
-      (e instanceof Error ? e.message : String(e))
+      localizeApiErrorFallback(
+        t('admin.channelMonitor.advanced.bodyJsonError') + ': ' + (e instanceof Error ? e.message : String(e)),
+        t('admin.channelMonitor.advanced.bodyJsonError')
+      )
   }
 }
 

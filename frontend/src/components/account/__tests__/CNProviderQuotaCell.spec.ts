@@ -35,8 +35,10 @@ const account = {
   extra: {
     zhipu_5h_used_percent: 0,
     zhipu_weekly_used_percent: 27,
+    zhipu_monthly_used_percent: 41,
     zhipu_5h_reset_at: '2026-08-18T12:30:00+08:00',
     zhipu_weekly_reset_at: '2026-08-22T00:00:00+08:00',
+    zhipu_monthly_reset_at: '2026-09-15T00:00:00+08:00',
     zhipu_usage_updated_at: new Date().toISOString()
   }
 } as Account
@@ -51,7 +53,8 @@ describe('CNProviderQuotaCell', () => {
       success: true,
       tiers: [
         { window: '5h', used_percent: 0, reset_at: '2026-08-18T12:30:00+08:00' },
-        { window: 'weekly', used_percent: 27, reset_at: '2026-08-22T00:00:00+08:00' }
+        { window: 'weekly', used_percent: 27, reset_at: '2026-08-22T00:00:00+08:00' },
+        { window: 'monthly', used_percent: 41, reset_at: '2026-09-15T00:00:00+08:00' }
       ]
     })
     const wrapper = mount(CNProviderQuotaCell, { props: { account } })
@@ -72,9 +75,9 @@ describe('CNProviderQuotaCell', () => {
     expect(queryQuota).toHaveBeenCalledWith(account.id)
 
     // tier 行由 UsageProgressBar 渲染：数量、label/color/utilization/reset 逐行对齐
-    expect(root.findAll('[data-test="cn-provider-quota-tier"]')).toHaveLength(2)
+    expect(root.findAll('[data-test="cn-provider-quota-tier"]')).toHaveLength(3)
     const bars = root.findAllComponents(UsageProgressBar)
-    expect(bars).toHaveLength(2)
+    expect(bars).toHaveLength(3)
     expect(bars[0].props('label')).toBe('admin.accounts.cnProviders.window5h')
     expect(bars[0].props('utilization')).toBe(0)
     expect(bars[0].props('color')).toBe('indigo')
@@ -83,6 +86,10 @@ describe('CNProviderQuotaCell', () => {
     expect(bars[1].props('utilization')).toBe(27)
     expect(bars[1].props('color')).toBe('emerald')
     expect(bars[1].props('resetsAt')).toBe('2026-08-22T00:00:00+08:00')
+    expect(bars[2].props('label')).toBe('admin.accounts.cnProviders.windowMonthly')
+    expect(bars[2].props('utilization')).toBe(41)
+    expect(bars[2].props('color')).toBe('indigo')
+    expect(bars[2].props('resetsAt')).toBe('2026-09-15T00:00:00+08:00')
   })
 
   it('labels the refresh control with an explicit action verb, not a data caption', async () => {
@@ -136,7 +143,7 @@ describe('CNProviderQuotaCell', () => {
     const wrapper = mount(CNProviderQuotaCell, { props: { account } })
     await wrapper.setProps({ account: {
       ...account,
-      extra: { ...account.extra, zhipu_5h_used_percent: null, zhipu_weekly_used_percent: null }
+      extra: { ...account.extra, zhipu_5h_used_percent: null, zhipu_weekly_used_percent: null, zhipu_monthly_used_percent: null }
     } })
     expect(wrapper.findAllComponents(UsageProgressBar)).toHaveLength(0)
     expect(queryQuota).not.toHaveBeenCalled()
@@ -154,7 +161,7 @@ describe('CNProviderQuotaCell', () => {
     await wrapper.setProps({ account: {
       ...account, extra: { ...account.extra, zhipu_5h_used_percent: 66 }
     } })
-    expect(wrapper.findAllComponents(UsageProgressBar).map(bar => bar.props('utilization'))).toEqual([66, 27])
+    expect(wrapper.findAllComponents(UsageProgressBar).map(bar => bar.props('utilization'))).toEqual([66, 27, 41])
     expect(queryQuota).toHaveBeenCalledTimes(1)
   })
 
@@ -167,7 +174,7 @@ describe('CNProviderQuotaCell', () => {
       ...account,
       extra: { ...account.extra, zhipu_usage_updated_at: new Date(Date.now() + 1000).toISOString() }
     } })
-    expect(wrapper.findAllComponents(UsageProgressBar).map(bar => bar.props('utilization'))).toEqual([0, 27])
+    expect(wrapper.findAllComponents(UsageProgressBar).map(bar => bar.props('utilization'))).toEqual([0, 27, 41])
   })
 
   it('keeps the new account snapshot when the previous account probe finishes late', async () => {

@@ -84,7 +84,8 @@ export default {
     tableOfContents: 'Contents',
     copyCode: 'Copy',
     copiedCode: 'Copied',
-    copyCodeFailed: 'Failed'
+    copyCodeFailed: 'Failed',
+    loadFailed: 'Failed to load page'
   },
 
   // Announcements Page
@@ -297,6 +298,8 @@ export default {
       amountLabel: 'Bonus',
       amountLabelWithPercent: 'Bonus (+{percent}%)',
       discountLabelWithPercent: 'Discount ({percent}% OFF)',
+      discountBadge: '{percent}% OFF',
+      discountPercentSuffix: '% OFF',
     },
     quickAmounts: 'Quick Amounts',
     customAmount: 'Custom Amount',

@@ -22,6 +22,8 @@ type githubReleaseClient struct {
 	updateGitHubToken  string
 }
 
+const maxChecksumFileSize int64 = 1 << 20
+
 type githubReleaseClientError struct {
 	err error
 }
@@ -61,6 +63,7 @@ func NewGitHubReleaseClient(proxyURL string, allowDirectOnProxyError bool) servi
 		downloadClient = &http.Client{Timeout: 10 * time.Minute}
 	}
 	downloadClient = cloneHTTPClient(downloadClient)
+	downloadClient.CheckRedirect = githubDownloadCheckRedirect(downloadClient.CheckRedirect)
 
 	return &githubReleaseClient{
 		httpClient:         apiClient,
@@ -77,6 +80,49 @@ func cloneHTTPClient(client *http.Client) *http.Client {
 func isGitHubAPIURL(url *url.URL) bool {
 	return url != nil && strings.EqualFold(url.Scheme, "https") && url.User == nil &&
 		strings.EqualFold(url.Host, "api.github.com")
+}
+
+func isGitHubReleaseDownloadURL(candidate *url.URL) bool {
+	if candidate == nil || !strings.EqualFold(candidate.Scheme, "https") || candidate.User != nil {
+		return false
+	}
+	for _, authority := range []string{
+		"github.com",
+		"release-assets.githubusercontent.com",
+		"objects.githubusercontent.com",
+	} {
+		if strings.EqualFold(candidate.Host, authority) {
+			return true
+		}
+	}
+	return false
+}
+
+func githubDownloadCheckRedirect(previous func(*http.Request, []*http.Request) error) func(*http.Request, []*http.Request) error {
+	return func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 10 {
+			return fmt.Errorf("stopped after 10 release download redirects")
+		}
+		if !isGitHubReleaseDownloadURL(req.URL) {
+			return fmt.Errorf("refusing release download redirect to untrusted URL %q", req.URL.Redacted())
+		}
+		if previous != nil {
+			return previous(req, via)
+		}
+		return nil
+	}
+}
+
+func newGitHubReleaseDownloadRequest(ctx context.Context, rawURL string) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !isGitHubReleaseDownloadURL(req.URL) {
+		return nil, fmt.Errorf("refusing release download from untrusted URL %q", req.URL.Redacted())
+	}
+	req.Header.Set("User-Agent", "Sub2API-Updater")
+	return req, nil
 }
 
 func githubAPICheckRedirect(previous func(*http.Request, []*http.Request) error) func(*http.Request, []*http.Request) error {
@@ -179,7 +225,7 @@ func (c *githubReleaseClient) FetchRecentReleases(ctx context.Context, repo stri
 }
 
 func (c *githubReleaseClient) DownloadFile(ctx context.Context, url, dest string, maxSize int64) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := newGitHubReleaseDownloadRequest(ctx, url)
 	if err != nil {
 		return err
 	}
@@ -227,12 +273,12 @@ func (c *githubReleaseClient) DownloadFile(ctx context.Context, url, dest string
 }
 
 func (c *githubReleaseClient) FetchChecksumFile(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := newGitHubReleaseDownloadRequest(ctx, url)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.downloadHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -241,6 +287,16 @@ func (c *githubReleaseClient) FetchChecksumFile(ctx context.Context, url string)
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
+	if resp.ContentLength > maxChecksumFileSize {
+		return nil, fmt.Errorf("checksum file exceeds maximum size of %d bytes", maxChecksumFileSize)
+	}
 
-	return io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxChecksumFileSize+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(body)) > maxChecksumFileSize {
+		return nil, fmt.Errorf("checksum file exceeds maximum size of %d bytes", maxChecksumFileSize)
+	}
+	return body, nil
 }

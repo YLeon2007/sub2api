@@ -6,7 +6,8 @@ import type { OpenAIReferralEligibility, OpenAIReferralRefreshResult } from '@/t
 import { refreshOpenAIReferrals, sendOpenAIReferralInvite } from '@/api/admin/accounts'
 
 vi.mock('@/api/admin/accounts', () => ({ refreshOpenAIReferrals: vi.fn(), sendOpenAIReferralInvite: vi.fn() }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string, params?: Record<string, unknown>) => params ? `${key}:${Object.values(params).join(',')}` : key }) }))
+vi.mock('@/i18n', () => ({ getLocale: () => 'en' }))
+vi.mock('vue-i18n', () => ({ useI18n: () => ({ locale: { value: 'en' }, t: (key: string, params?: Record<string, unknown>) => params ? `${key}:${Object.values(params).join(',')}` : key }) }))
 
 const eligibility: OpenAIReferralEligibility = {
   should_show: true, remaining_send_capacity: 3, remaining_reward_capacity: 2,

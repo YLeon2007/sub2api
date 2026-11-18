@@ -1,5 +1,7 @@
 # Seedance 原生 API
 
+[English](seedance-api_RU.md) | 中文
+
 支持火山方舟 Ark 的异步视频任务协议，无需把 `content[]` 转换成 OpenAI `messages` 或 Grok `prompt`。
 
 ## 配置

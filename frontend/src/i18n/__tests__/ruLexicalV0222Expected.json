@@ -1,0 +1,22 @@
+{
+  "usage.cyber": "Кибер",
+  "admin.backup.s3.bucket": "Бакет",
+  "admin.backup.imageStorage.bucket": "Бакет",
+  "admin.dataManagement.agent.version": "Версия",
+  "admin.dataManagement.form.s3.bucket": "Бакет",
+  "admin.accounts.columns.proxy": "Прокси",
+  "admin.accounts.proxy": "Прокси",
+  "admin.accounts.schedulerScore.stickyShort": "Привязка",
+  "admin.accounts.aiCreditsBalance": "Кредиты ИИ",
+  "admin.accounts.bedrockDesc": "SigV4 / API-ключ",
+  "admin.accounts.gemini.quotaPolicy.rows.cli.limitsFree": "RPD ~1000; RPM ~60 (нежёсткий лимит)",
+  "admin.accounts.gemini.quotaPolicy.rows.gcloud.limits": "RPD ~1000; RPM ~60 (предварительная версия)",
+  "admin.accounts.gemini.quotaPolicy.rows.aiStudio.channel": "AI Studio: API-ключ / OAuth",
+  "admin.usage.billingModeToken": "По токенам",
+  "admin.settings.turnstile.cloudflareDashboard": "Панель Cloudflare",
+  "admin.settings.aliyunCaptcha.prefix": "Префикс",
+  "admin.settings.oidc.clientIdPlaceholder": "ID клиента OIDC",
+  "admin.settings.webSearchEmulation.proxy": "Прокси",
+  "admin.promptAudit.scanners.jailbreak": "Обход ограничений (Jailbreak)",
+  "payment.methods.alipay_direct": "Alipay (напрямую)"
+}
