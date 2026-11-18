@@ -84,6 +84,14 @@ describe('agreement document default title display', () => {
     expect(wrapper.get('article > div h1').text()).toBe(documents[4].title)
     expect(publicState.settings.login_agreement_documents).toEqual(documents)
     wrapper.unmount()
+
+    publicState.settings = { ...publicState.settings, login_agreement_documents: [{ ...documents[0], title: englishTitles[0] }] }
+    await router.push('/legal/terms')
+    const custom = mount(LegalDocumentView, { global: { plugins: [i18n, router] } })
+    await flushPromises()
+    expect(custom.get('article > div h1').text()).toBe(englishTitles[0])
+    expect(custom.get('.legal-document-content h1').text()).toBe('Original legal Markdown')
+    custom.unmount()
   })
 
   it.each(locales)('uses default and custom labels in real login checkbox links and modal cards without changing routes or consent events (%s)', async locale => {
@@ -101,6 +109,11 @@ describe('agreement document default title display', () => {
     await wrapper.get('input[type=checkbox]').setValue(true)
     expect(wrapper.emitted('accept')).toEqual([[]])
     expect(defaults.map(doc => doc.title)).toEqual(['服务条款', '使用政策', '支持的国家和地区', '服务特定条款'])
+    await wrapper.setProps({ documents: [{ ...defaults[0], title: englishTitles[0] }] })
+    expect(wrapper.findAllComponents(RouterLinkStub).map(link => link.text())).toEqual([englishTitles[0], englishTitles[0]])
+    expect(wrapper.findAllComponents(RouterLinkStub).map(link => link.props('to'))).toEqual(
+      Array.from({ length: 2 }, () => ({ name: 'LegalDocument', params: { documentId: defaults[0].id } })),
+    )
     wrapper.unmount()
   })
 
@@ -113,6 +126,14 @@ describe('agreement document default title display', () => {
       expect(wrapper.get('input').element.value).toBe(locale.startsWith('ru') ? russianTitles[index] : document.title)
       expect(scope.doc).toEqual(document)
       wrapper.unmount()
+
+      const custom = { ...document, title: englishTitles[index] }
+      const customScope = settingsScope(reactive({ ...custom }), locale)
+      const customWrapper = renderActual(nodes, customScope)
+      expect(customWrapper.get('p').text()).toBe(custom.title)
+      expect(customWrapper.get('input').element.value).toBe(custom.title)
+      expect(customScope.doc).toEqual(custom)
+      customWrapper.unmount()
     })
   })
 
@@ -161,7 +182,7 @@ describe('agreement document default title display', () => {
     defaults.forEach((doc, index) => {
       for (const title of [doc.title, englishTitles[index]]) {
         const input = Object.freeze({ ...doc, title })
-        expect(localizeLoginAgreementDocumentTitle(input, locale)).toBe(russian ? russianTitles[index] : title)
+        expect(localizeLoginAgreementDocumentTitle(input, locale)).toBe(russian && title === doc.title ? russianTitles[index] : title)
       }
       for (const custom of [
         { ...doc, title: `${doc.title} · operator` },
