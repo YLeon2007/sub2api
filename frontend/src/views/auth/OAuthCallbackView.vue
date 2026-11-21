@@ -146,6 +146,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -310,10 +312,10 @@ async function resumePendingEmailOAuth() {
       return
     }
 
-    appStore.showError(completion.error || t('auth.loginFailed'))
+    appStore.showError(localizeApiErrorFallback(completion.error, t('auth.loginFailed')))
   } catch (e: unknown) {
     const err = e as { message?: string; response?: { data?: { message?: string } } }
-    const message = err.response?.data?.message || err.message || t('auth.loginFailed')
+    const message = localizeApiErrorFallback(err.response?.data?.message || err.message, t('auth.loginFailed'))
     appStore.showError(message)
     invalidCallback.value = true
   } finally {
@@ -357,7 +359,7 @@ async function handleSubmitRegistration() {
   } catch (e: unknown) {
     const err = e as { message?: string; response?: { data?: { message?: string } } }
     registrationError.value =
-      err.response?.data?.message || err.message || t('auth.oidc.completeRegistrationFailed')
+      localizeApiErrorFallback(err.response?.data?.message || err.message, t('auth.oidc.completeRegistrationFailed'))
   } finally {
     isSubmitting.value = false
   }
@@ -371,7 +373,7 @@ onMounted(async () => {
     params.get('error_description') || params.get('error_message') || ''
 
   if (fragmentError) {
-    appStore.showError(fragmentErrorDescription || fragmentError)
+    appStore.showError(localizeApiErrorFallback(fragmentErrorDescription || fragmentError, t('auth.loginFailed')))
     return
   }
   if (!tokenResponse) {
@@ -390,7 +392,7 @@ onMounted(async () => {
   try {
     await finalizeTokenResponse(tokenResponse, params.get('redirect') || '/dashboard')
   } catch (error: unknown) {
-    const message = (error as { message?: string })?.message || t('auth.loginFailed')
+    const message = localizeApiErrorFallback((error as { message?: string })?.message, t('auth.loginFailed'))
     appStore.showError(message)
     isProcessing.value = false
   }
@@ -400,7 +402,7 @@ watch(
   error,
   (message) => {
     if (message) {
-      appStore.showError(message)
+      appStore.showError(localizeApiErrorFallback(message, t('auth.loginFailed')))
     }
   },
   { immediate: true }

@@ -89,7 +89,11 @@ export default {
           cacheWrite1hPrice: '1h 缓存写入价格',
           cacheWrite12hPrice: '12h 缓存写入价格',
           cacheReadPrice: '缓存读取价格',
-          perRequestPrice: '单次价格'
+          perRequestPrice: '单次价格',
+          inputMultiplier: '输入倍率',
+          outputMultiplier: '输出倍率',
+          cacheWriteMultiplier: '缓存写倍率',
+          cacheReadMultiplier: '缓存读倍率'
         }
       },
       timePricingValidation: {
@@ -159,7 +163,7 @@ export default {
         reasoningEffortMultiplierPositive: '{effort} 思考等级倍率必须为大于 0 的有限数字',
         reasoningEffortLevelInvalid: '不支持的思考等级：{effort}',
         multiplierPlaceholder: '未配置',
-        multiplierPositive: 'Fast/Flex 倍率必须为大于 0 的有限数字',
+        multiplierPositive: 'Fast、Flex 和 Ultra Fast 的倍率必须为大于 0 的有限数字',
         inputMultiplier: '输入倍率',
         outputMultiplier: '输出倍率',
         cacheWriteMultiplier: '缓存写倍率',

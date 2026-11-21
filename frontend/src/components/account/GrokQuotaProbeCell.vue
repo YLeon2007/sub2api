@@ -43,6 +43,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
+import { localizeApiErrorFallback } from '@/utils/apiError'
+import { localizeQuotaDiagnostic } from '@/utils/quotaDiagnostics'
 import type { GrokQuotaProbeResult } from '@/api/admin/grok'
 import type { Account } from '@/types'
 
@@ -57,27 +59,12 @@ const props = withDefaults(
 
 const emit = defineEmits<{ probed: [result: GrokQuotaProbeResult] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const visible = computed(() => props.account.platform === 'grok' && props.account.type === 'oauth')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const data = ref<GrokQuotaProbeResult | null>(null)
-
-const extractErrorMessage = (e: unknown): string => {
-  const err = e as {
-    message?: string
-    reason?: string
-    response?: { data?: { message?: string; error?: string } }
-  }
-  return (
-    err?.message ||
-    err?.reason ||
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    t('common.error')
-  )
-}
 
 const summary = computed(() => {
   if (props.compact || !data.value) return ''
@@ -96,13 +83,28 @@ const truncatedError = computed(() => {
   return error.value.length > 80 ? `${error.value.slice(0, 80)}...` : error.value
 })
 
+const extractErrorMessage = (e: unknown): string => {
+  const err = e as {
+    message?: string
+    reason?: string
+    response?: { data?: { message?: string; error?: string } }
+  }
+  return localizeApiErrorFallback(
+    err?.message || err?.reason || err?.response?.data?.message || err?.response?.data?.error,
+    t('common.error'),
+    locale.value,
+  )
+}
+
 const handleProbe = async () => {
   if (loading.value) return
   loading.value = true
   error.value = null
   try {
     data.value = await adminAPI.grok.queryQuota(props.account.id)
-    error.value = data.value.probe_error || null
+    error.value = data.value.probe_error
+      ? (locale.value.toLowerCase().split(/[-_]/)[0] === 'ru' ? localizeQuotaDiagnostic(data.value.probe_error, t) : data.value.probe_error)
+      : null
     emit('probed', data.value)
   } catch (e) {
     error.value = extractErrorMessage(e)

@@ -43,7 +43,7 @@
         <!-- 5h Window -->
         <UsageProgressBar
           v-if="usageInfo.five_hour"
-          label="5h"
+          :label="t('admin.accounts.usageWindow.fiveHourLabel')"
           :utilization="usageInfo.five_hour.utilization"
           :resets-at="usageInfo.five_hour.resets_at"
           :window-stats="usageInfo.five_hour.window_stats"
@@ -54,7 +54,7 @@
         <!-- 7d Window (OAuth or Setup Token with passive samples) -->
         <UsageProgressBar
           v-if="usageInfo.seven_day"
-          label="7d"
+          :label="t('admin.accounts.usageWindow.sevenDayLabel')"
           :utilization="usageInfo.seven_day.utilization"
           :resets-at="usageInfo.seven_day.resets_at"
           :window-stats="usageInfo.seven_day.window_stats"

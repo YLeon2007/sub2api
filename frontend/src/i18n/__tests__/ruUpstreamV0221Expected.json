@@ -1,0 +1,14 @@
+{
+  "availableChannels.pricing.cacheWrite12hPrice": "Запись в кэш (12 ч)",
+  "admin.availableChannels.pricing.cacheWrite30mPrice": "Запись в кэш (30 мин)",
+  "admin.availableChannels.pricing.cacheWrite12hHint": "Оставьте пустым, чтобы использовать общую цену записи в кэш. Применяется только к записям OpenAI со сроком хранения 12 ч, о которых сообщил провайдер.",
+  "admin.availableChannels.pricing.cacheWrite12hPrice": "Запись в кэш (12 ч)",
+  "admin.channels.intervalValidation.price.cacheWrite12hPrice": "цена записи в кэш на 12 ч",
+  "admin.channels.form.cacheWrite30mPrice": "Запись в кэш (30 мин)",
+  "admin.channels.form.cacheWrite12hHint": "Оставьте пустым, чтобы использовать общую цену записи в кэш. Применяется только к записям OpenAI со сроком хранения 12 ч, о которых сообщил провайдер.",
+  "admin.channels.form.cacheWrite12hPrice": "Запись в кэш (12 ч)",
+  "admin.channels.form.cacheWrite12hPriceShort": "Запись 12 ч",
+  "admin.settings.payment.field_refundSuccessCode": "Код успешного возврата",
+  "admin.settings.payment.field_refundSuccessCodeHint": "Укажите код успеха из документации API возвратов этого платёжного шлюза. По умолчанию — 1 (например, ZPAY). Выбирайте 0 только для шлюзов, в документации которых указан этот код. Создание платежей и запросы заказов по-прежнему требуют 1.",
+  "admin.settings.payment.balanceRechargeMultiplierHint": "Сколько USD баланса получает пользователь за каждый оплаченный 1 CNY (до 6 знаков после запятой, например для текущего валютного курса)"
+}

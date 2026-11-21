@@ -70,6 +70,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -186,7 +188,7 @@ async function load() {
       return
     }
     console.error('Failed to load read status:', error)
-    appStore.showError(error.response?.data?.detail || t('admin.announcements.failedToLoadReadStatus'))
+    appStore.showError(localizeApiErrorFallback(error.response?.data?.detail, t('admin.announcements.failedToLoadReadStatus')))
   } finally {
     if (currentController === requestController) {
       loading.value = false

@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
 
 import DateRangePicker from '../DateRangePicker.vue'
+
+const localeRef = vi.hoisted(() => ({ value: 'en' }))
 
 const messages: Record<string, string> = {
   'dates.today': 'Today',
@@ -22,7 +23,7 @@ const messages: Record<string, string> = {
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => messages[key] ?? key,
-    locale: ref('en')
+    locale: localeRef
   })
 }))
 
@@ -92,5 +93,27 @@ describe('DateRangePicker', () => {
         preset: 'last24Hours'
       }
     ])
+  })
+
+  it('formats custom ranges with the Russian Intl locale', async () => {
+    localeRef.value = 'ru'
+    const start = '2026-01-02'
+    const end = '2026-01-04'
+    const expectedStart = new Date(`${start}T00:00`).toLocaleDateString('ru-RU', {
+      month: 'short',
+      day: 'numeric'
+    })
+    const expectedEnd = new Date(`${end}T00:00`).toLocaleDateString('ru-RU', {
+      month: 'short',
+      day: 'numeric'
+    })
+
+    const wrapper = mount(DateRangePicker, {
+      props: { startDate: '', endDate: '' },
+      global: { stubs: { Icon: true } }
+    })
+    await wrapper.setProps({ startDate: start, endDate: end })
+
+    expect(wrapper.get('.date-picker-trigger').text()).toContain(`${expectedStart} - ${expectedEnd}`)
   })
 })

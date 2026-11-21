@@ -104,7 +104,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: number | null]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const customText = ref('')
 
@@ -135,15 +135,17 @@ function quoteFor(amt: number) {
 // 价签文案：赠金「+20%」，折扣「20% OFF」
 function badgeText(amt: number): string {
   const percent = formatRechargeBonusNumber(quoteFor(amt).percent)
-  return props.bonusMode === 'discount' ? `${percent}% OFF` : `+${percent}%`
+  return props.bonusMode === 'discount'
+    ? t('payment.rechargeBonus.discountBadge', { percent })
+    : `+${percent}%`
 }
 
 function secondLine(amt: number): string {
   const quote = quoteFor(amt)
   if (props.bonusMode === 'discount') {
-    return t('payment.rechargeBonus.payShort', { amount: formatPaymentAmount(quote.payBase, props.currency) })
+    return t('payment.rechargeBonus.payShort', { amount: formatPaymentAmount(quote.payBase, props.currency, locale.value) })
   }
-  return t('payment.rechargeBonus.creditedShort', { amount: '$' + quote.credited.toFixed(2) })
+  return t('payment.rechargeBonus.creditedShort', { amount: formatPaymentAmount(quote.credited, 'USD', locale.value) })
 }
 
 const placeholderText = computed(() => {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -134,7 +136,7 @@ async function loadSettings() {
     alertSettings.value = await opsAPI.getAlertRuntimeSettings()
   } catch (err: any) {
     console.error('[OpsRuntimeSettingsCard] Failed to load runtime settings', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.runtime.loadFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.runtime.loadFailed')))
   } finally {
     loading.value = false
   }
@@ -225,7 +227,7 @@ async function saveAlertSettings() {
     appStore.showSuccess(t('admin.ops.runtime.saveSuccess'))
   } catch (err: any) {
     console.error('[OpsRuntimeSettingsCard] Failed to save alert runtime settings', err)
-    appStore.showError(err?.response?.data?.detail || t('admin.ops.runtime.saveFailed'))
+    appStore.showError(localizeApiErrorFallback(err?.response?.data?.detail, t('admin.ops.runtime.saveFailed')))
   } finally {
     saving.value = false
   }

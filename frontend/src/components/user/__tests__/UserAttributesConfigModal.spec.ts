@@ -5,7 +5,8 @@ import UserAttributesConfigModal from '../UserAttributesConfigModal.vue'
 const mocks = vi.hoisted(() => ({ listDefinitions: vi.fn(), updateDefinition: vi.fn(), createDefinition: vi.fn() }))
 vi.mock('@/api/admin', () => ({ adminAPI: { userAttributes: mocks } }))
 vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showSuccess: vi.fn(), showError: vi.fn() }) }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async () => ({
+  ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')), useI18n: () => ({ t: (key: string) => key }) }))
 enableAutoUnmount(afterEach)
 beforeEach(() => {
   vi.clearAllMocks()

@@ -1,0 +1,11 @@
+{
+  "admin.groups.openaiFast.forceUltrafast": "Принудительный Ultra Fast (ultrafast)",
+  "admin.accounts.openai.passthroughModelFilter": "Отбирать аккаунты сквозной передачи по модели",
+  "admin.accounts.openai.passthroughModelFilterDesc": "Для выбора аккаунта используются белый список моделей и исходные имена из правил сопоставления. Целевые имена сопоставлений не изменяют модель в запросах сквозной передачи. Пустой список разрешает все модели. По умолчанию выключено.",
+  "admin.accounts.modelWildcardNotSupported": "Белый список моделей не поддерживает подстановочные символы. Введите точное имя модели.",
+  "admin.accounts.usageWindow.quotaRefreshFailedCached": "Не удалось обновить квоту. Показаны предыдущие данные; остаток квоты не подтверждён.",
+  "admin.accounts.usageWindow.quotaRefreshFailedUnknown": "Не удалось обновить квоту. Текущая квота неизвестна.",
+  "admin.accounts.usageWindow.quotaObservedAt": "Время получения данных о квоте: ",
+  "admin.accounts.usageWindow.quotaObservationUnknown": "Неизвестно (данные из кэша)",
+  "admin.accounts.openai.modelRestrictionDisabledByPassthrough": "Сквозная передача по умолчанию игнорирует ограничения моделей. Включите «Отбирать аккаунты сквозной передачи по модели», чтобы использовать ограничения только при выборе аккаунта."
+}

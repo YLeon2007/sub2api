@@ -56,11 +56,11 @@ describe('UseKeyModal', () => {
       }
     })
 
-    const clientTabs = () => wrapper.find('nav[aria-label="Client"]').text()
+    const clientTabs = () => wrapper.find('nav[aria-label="runtimeUi.clientNavigation"]').text()
     expect(clientTabs()).toContain('keys.useKeyModal.cliTabs.codexCli')
     expect(clientTabs()).toContain('keys.useKeyModal.cliTabs.opencode')
 
-    const codexTab = wrapper.find('nav[aria-label="Client"]').findAll('button').find(
+    const codexTab = wrapper.find('nav[aria-label="runtimeUi.clientNavigation"]').findAll('button').find(
       (button) => button.text().includes('keys.useKeyModal.cliTabs.codexCli')
     )
     await codexTab!.trigger('click')
@@ -269,8 +269,8 @@ describe('UseKeyModal', () => {
     expect(parsedSettings.env).not.toHaveProperty('CLAUDE_CODE_ATTRIBUTION_HEADER')
     expect(wrapper.text()).toContain('keys.useKeyModal.claudeSettingsHint')
     expect(wrapper.text()).toContain('keys.useKeyModal.grok.claudeNote')
-    expect(wrapper.find('nav[aria-label="Client"]').classes()).toContain('min-w-max')
-    expect(wrapper.find('nav[aria-label="Client"]').element.parentElement?.classList.contains('overflow-x-auto')).toBe(true)
+    expect(wrapper.find('nav[aria-label="runtimeUi.clientNavigation"]').classes()).toContain('min-w-max')
+    expect(wrapper.find('nav[aria-label="runtimeUi.clientNavigation"]').element.parentElement?.classList.contains('overflow-x-auto')).toBe(true)
 
     const cmdTab = wrapper.findAll('button').find(
       (button) => button.text().trim() === 'Windows CMD'
@@ -419,8 +419,7 @@ describe('UseKeyModal', () => {
     expect(configToml).not.toContain('image_generation')
     expect(configToml).not.toContain('supports_websockets')
     expect(configToml).not.toContain('responses_websockets_v2')
-    const features = configToml?.split('[features]\n')[1]?.split('\n[')[0]
-    expect(features).toContain('goals = true')
+    expect(configToml).toContain('[features]\napi_key_model_discovery = true\ngoals = true')
     expect(configToml).not.toContain('model_reasoning_effort = "xhigh"')
     expect(codeBlocks).toContain('{\n  "OPENAI_API_KEY": "sk-test"\n}')
     expect(wrapper.text()).toContain('auth.json')
@@ -565,9 +564,7 @@ describe('UseKeyModal', () => {
     expect(configToml).not.toContain('env_key')
     expect(configToml).not.toContain('image_generation')
     expect(configToml).toContain('supports_websockets = true')
-    const features = configToml?.split('[features]\n')[1]?.split('\n[')[0]
-    expect(features).toContain('responses_websockets_v2 = true')
-    expect(features).toContain('goals = true')
+    expect(configToml).toContain('[features]\napi_key_model_discovery = true\nresponses_websockets_v2 = true\ngoals = true')
     expect(codeBlocks).toContain('{\n  "OPENAI_API_KEY": "sk-test"\n}')
     expect(wrapper.text()).toContain('auth.json')
   })
@@ -616,9 +613,7 @@ describe('UseKeyModal', () => {
     expect(configToml).not.toContain('env_key')
     expect(configToml?.split('[features]\n')[1]).toContain('image_generation = true')
     expect(configToml).toContain('supports_websockets = true')
-    const features = configToml?.split('[features]\n')[1]?.split('\n[')[0]
-    expect(features).toContain('responses_websockets_v2 = true')
-    expect(features).toContain('goals = true')
+    expect(configToml).toContain('[features]\napi_key_model_discovery = true\nimage_generation = true\nresponses_websockets_v2 = true\ngoals = true')
     expect(codeBlocks).not.toContain('{\n  "OPENAI_API_KEY": "sk-test"\n}')
     expect(wrapper.text()).not.toContain('auth.json')
   })

@@ -6,7 +6,8 @@ import BulkSubscriptionActionDialog from '../BulkSubscriptionActionDialog.vue'
 
 const bulkAction = vi.hoisted(() => vi.fn())
 vi.mock('@/api/admin', () => ({ adminAPI: { subscriptions: { bulkAction } } }))
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async () => ({
+  ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')),
   useI18n: () => ({
     t: (key: string, params?: Record<string, unknown>) => params ? `${key} ${JSON.stringify(params)}` : key
   })

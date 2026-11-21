@@ -71,13 +71,14 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { localizeApiErrorFallback } from '@/utils/apiError'
 import { mcpAPI, type MCPAccessScope, type MCPAuthorization, type MCPConsent } from '@/api/mcp'
 import TotpStepUpDialog from '@/components/auth/TotpStepUpDialog.vue'
 import { Icon } from '@/components/icons'
 import { isStepUpBlocked, isStepUpCancelled, stepUpBlockReason, useStepUp } from '@/composables/useStepUp'
 import { useAuthStore } from '@/stores/auth'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const authStore = useAuthStore()
 const stepUp = useStepUp()
@@ -94,7 +95,7 @@ const redirectOrigin = computed(() => consent.value ? new URL(consent.value.redi
 
 function errorMessage(error: unknown, fallback: string): string {
   const message = (error as { message?: unknown } | null)?.message
-  return typeof message === 'string' && message ? message : fallback
+  return localizeApiErrorFallback(typeof message === 'string' && message ? message : fallback, fallback, locale.value)
 }
 
 function parseAuthorization(): MCPAuthorization {

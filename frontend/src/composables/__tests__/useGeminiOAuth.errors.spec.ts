@@ -4,7 +4,13 @@ import { useGeminiOAuth } from '../useGeminiOAuth'
 const mocks = vi.hoisted(() => ({ generateAuthUrl: vi.fn(), showError: vi.fn() }))
 vi.mock('@/api/admin', () => ({ adminAPI: { gemini: { generateAuthUrl: mocks.generateAuthUrl } } }))
 vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showError: mocks.showError }) }))
-vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue-i18n')>()
+  return {
+    ...actual,
+    useI18n: () => ({ t: (key: string) => key, locale: { value: 'en' } })
+  }
+})
 beforeEach(() => vi.resetAllMocks())
 
 describe('Gemini authorization URL errors', () => {

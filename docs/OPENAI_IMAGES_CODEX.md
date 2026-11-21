@@ -1,5 +1,7 @@
 # Native Codex Images HTTP status and proxy timeouts
 
+English | [Русский](OPENAI_IMAGES_CODEX_RU.md)
+
 Non-streaming `/v1/images/generations` and `/v1/images/edits` requests carrying
 `X-Codex-Image-Turn-Id` wait for the final response without whitespace heartbeats.
 This preserves the actual HTTP error status. Otherwise an early heartbeat commits

@@ -151,6 +151,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -245,7 +247,7 @@ const loadStatus = async () => {
     if (version === requestVersion) status.value = result
   } catch (error: any) {
     if (version !== requestVersion) return
-    appStore.showError(error?.message || t('admin.accounts.tempUnschedulable.failedToLoad'))
+    appStore.showError(localizeApiErrorFallback(error?.message, t('admin.accounts.tempUnschedulable.failedToLoad')))
     status.value = null
   } finally {
     if (version === requestVersion) loading.value = false
@@ -265,7 +267,7 @@ const handleReset = async () => {
     emit('reset', updated)
     handleClose()
   } catch (error: any) {
-    appStore.showError(error?.message || t('admin.accounts.recoverStateFailed'))
+    appStore.showError(localizeApiErrorFallback(error?.message, t('admin.accounts.recoverStateFailed')))
   } finally {
     resetting.value = false
   }
