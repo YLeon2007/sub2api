@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -62,6 +63,13 @@ func TestAdminComplianceGuardBlocksAdminRouteWhenMissing(t *testing.T) {
 
 	require.Equal(t, http.StatusLocked, w.Code)
 	require.Contains(t, w.Body.String(), "ADMIN_COMPLIANCE_ACK_REQUIRED")
+	var payload struct {
+		Metadata map[string]any `json:"metadata"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &payload))
+	require.Equal(t, service.AdminComplianceDocumentPathRU, payload.Metadata["document_path_ru"])
+	require.Equal(t, service.AdminComplianceDocumentURLRU, payload.Metadata["document_url_ru"])
+	require.Equal(t, service.AdminComplianceAckPhraseRU, payload.Metadata["ack_phrase_ru"])
 }
 
 func TestAdminComplianceGuardBypassesComplianceEndpoint(t *testing.T) {

@@ -3,12 +3,13 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia } from 'pinia'
 import { defineComponent, h, ref } from 'vue'
+import ru from '@/i18n/locales/ru'
 import HeaderOverrideEditor from '../HeaderOverrideEditor.vue'
 import type { HeaderOverrideRow } from '../credentialsBuilder'
 
 const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false, fallbackWarn: false, messages: { en: {} } })
 
-function mountEditor(initial: HeaderOverrideRow[], allowVariables = true) {
+function mountEditor(initial: HeaderOverrideRow[], allowVariables = true, plugin: typeof i18n | ReturnType<typeof russianComposer> = i18n) {
   const rows = ref<HeaderOverrideRow[]>(initial)
   const Host = defineComponent({
     setup: () => () =>
@@ -20,11 +21,34 @@ function mountEditor(initial: HeaderOverrideRow[], allowVariables = true) {
         }
       })
   })
-  const wrapper = mount(Host, { attachTo: document.body, global: { plugins: [i18n, createPinia()] } })
+  const wrapper = mount(Host, { attachTo: document.body, global: { plugins: [plugin, createPinia()] } })
   return { wrapper, rows }
 }
 
+function russianComposer() {
+  return createI18n({ legacy: false, locale: 'ru', messages: { ru } })
+}
+
 describe('HeaderOverrideEditor', () => {
+  it('renders translated identity copy without substituting the literal template tokens', async () => {
+    const { wrapper, rows } = mountEditor([], true, russianComposer())
+    try {
+      const tokens = ['user_id', 'api_key_id', 'group_id', 'request_id']
+      expect(wrapper.get('[data-testid="header-override-variables"]').text()).toContain('Переменные идентификации')
+      for (const token of tokens) {
+        const variable = wrapper.get(`[data-testid="header-override-variable-${token}"]`)
+        expect(variable.get('code').text()).toBe(`{{${token}}}`)
+      }
+      const apiKeyId = wrapper.get('[data-testid="header-override-variable-api_key_id"]')
+      expect(apiKeyId.text()).toContain('не секретный ключ')
+      await apiKeyId.trigger('click')
+      expect(rows.value[0].value).toBe('{{api_key_id}}')
+      expect(wrapper.get('[data-testid="header-override-row-preview"]').text()).toContain('Пример отправки:')
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
   it('adds a suggested row when no value input is being edited', async () => {
     const { wrapper, rows } = mountEditor([])
     await wrapper.get('[data-testid="header-override-variable-user_id"]').trigger('click')

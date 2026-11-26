@@ -1,4 +1,4 @@
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Channel, CreateChannelRequest, UpdateChannelRequest } from '@/api/admin/channels'
@@ -22,7 +22,7 @@ vi.mock('@/api/admin/channels', () => ({
 vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showSuccess: vi.fn(), showError }) }))
 vi.mock('vue-i18n', async () => ({
   ...await vi.importActual<typeof import('vue-i18n')>('vue-i18n'),
-  useI18n: () => ({ t: (key: string) => key })
+  useI18n: () => ({ t: (key: string) => key, locale: ref('en') })
 }))
 
 function mountView() {

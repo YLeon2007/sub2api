@@ -1,3 +1,5 @@
+import { getLocale } from '@/i18n'
+
 interface APIErrorLike {
   message?: string
   response?: {
@@ -20,6 +22,7 @@ export function buildAuthErrorMessage(
   }
 ): string {
   const { fallback } = options
+  if (getLocale() === 'ru') return fallback
   const message = extractErrorMessage(error)
   return message || fallback
 }

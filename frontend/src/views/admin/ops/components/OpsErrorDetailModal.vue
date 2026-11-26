@@ -268,6 +268,8 @@
 </template>
 
 <script setup lang="ts">
+import { localizeApiErrorFallback } from '@/utils/apiError'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
@@ -449,7 +451,7 @@ async function fetchDetail(id: number) {
     detail.value = d
   } catch (err: any) {
     detail.value = null
-    appStore.showError(err?.message || t('admin.ops.failedToLoadErrorDetail'))
+    appStore.showError(localizeApiErrorFallback(err?.message, t('admin.ops.failedToLoadErrorDetail')))
   } finally {
     loading.value = false
   }

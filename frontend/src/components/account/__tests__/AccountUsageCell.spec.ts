@@ -17,10 +17,16 @@ vi.mock('@/api/admin', () => ({
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
+  const { default: accounts } = await import('@/i18n/locales/en/admin/accounts')
+  const { fiveHourLabel, sevenDayLabel } = accounts.accounts.usageWindow
+  const windowLabels: Record<string, string> = {
+    'admin.accounts.usageWindow.fiveHourLabel': fiveHourLabel,
+    'admin.accounts.usageWindow.sevenDayLabel': sevenDayLabel,
+  }
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => key
+      t: (key: string) => windowLabels[key] ?? key
     })
   }
 })

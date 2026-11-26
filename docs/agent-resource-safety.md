@@ -1,5 +1,7 @@
 # Agent rules for concurrency and resource safety
 
+[Русский](agent-resource-safety_RU.md)
+
 These rules apply when changing request ingestion, HTTP/SSE transport, protocol conversion, asynchronous usage/billing work, notifications, or in-memory caches. They supplement the repository protocol translation and billing rules.
 
 - Never capture `*gin.Context`, a response writer, or a pooled/mutable request object in work that can outlive the handler. Compute immutable billing, routing, model, and logging snapshots before enqueueing. `c.Copy()` is not a substitute for explicit ownership of referenced data.

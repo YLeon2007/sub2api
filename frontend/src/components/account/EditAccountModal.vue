@@ -1137,7 +1137,7 @@
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div v-if="isVertexAPIKeyMode">
-            <label class="input-label">Project ID</label>
+            <label class="input-label">{{ t('admin.accounts.vertexProjectIdLabel') }}</label>
             <input
               v-model="editVertexProjectId"
               type="text"
@@ -1148,7 +1148,7 @@
             <p class="input-hint">{{ t('admin.accounts.vertexApiKeyProjectIdHint') }}</p>
           </div>
           <div v-else>
-            <label class="input-label">Project ID</label>
+            <label class="input-label">{{ t('admin.accounts.vertexProjectIdLabel') }}</label>
             <input
               v-model="editVertexProjectId"
               type="text"
@@ -1159,7 +1159,7 @@
             <p class="input-hint">{{ t('admin.accounts.vertexSaJsonEditHint') }}</p>
           </div>
           <div v-if="!isVertexAPIKeyMode || editVertexProjectId.trim()">
-            <label class="input-label">Location</label>
+            <label class="input-label">{{ t('admin.accounts.vertexLocationLabel') }}</label>
             <select
               v-model="editVertexLocation"
               required
@@ -3514,7 +3514,7 @@ import {
   getBrowserTimeZone,
   parseDateTimeLocalInput
 } from '@/utils/format'
-import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
+import { extractApiErrorMessage, extractI18nErrorMessage, localizeApiErrorFallback } from '@/utils/apiError'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 import { supportsAccountQuota } from '@/utils/accountQuota'
 import { getAccountExpiryTimestamp } from '@/components/account/accountExpiry'
@@ -3532,7 +3532,7 @@ import {
 } from '@/utils/openaiWsMode'
 import {
   getPresetMappingsByPlatform,
-  commonErrorCodes,
+  getCommonErrorCodes,
   buildModelMappingObject,
   splitModelMappingObject,
   isValidWildcardPattern
@@ -3551,7 +3551,8 @@ const emit = defineEmits<{
   updated: [account: Account]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const commonErrorCodes = computed(() => getCommonErrorCodes(t))
 const appStore = useAppStore()
 const browserTimeZone = getBrowserTimeZone()
 
@@ -3617,7 +3618,7 @@ const loadOpenCodeGoUsage = async () => {
   try {
     applyOpenCodeGoState(await adminAPI.accounts.getOpenCodeGoUsage(props.account!.id))
   } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.opencodeGo.loadFailed')))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.opencodeGo.loadFailed'), undefined, locale.value))
   } finally {
     opencodeGoLoading.value = false
   }
@@ -3628,7 +3629,7 @@ const setOpenCodeGoAutoRefresh = async (enabled: boolean) => {
   try {
     applyOpenCodeGoState(await adminAPI.accounts.setOpenCodeGoUsageAutoRefresh(props.account!.id, enabled))
   } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.opencodeGo.autoRefreshFailed')))
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.opencodeGo.autoRefreshFailed'), undefined, locale.value))
   } finally {
     opencodeGoSaving.value = false
   }
@@ -3669,8 +3670,8 @@ const baseUrlHint = computed(() => {
   return t('admin.accounts.baseUrlHint')
 })
 
-const antigravityPresetMappings = computed(() => getPresetMappingsByPlatform('antigravity'))
-const bedrockPresets = computed(() => getPresetMappingsByPlatform('bedrock'))
+const antigravityPresetMappings = computed(() => getPresetMappingsByPlatform('antigravity', t))
+const bedrockPresets = computed(() => getPresetMappingsByPlatform('bedrock', t))
 
 // Model mapping type
 interface ModelMapping {
@@ -4108,9 +4109,9 @@ const loadGrokMediaEligibility = async (accountID: number): Promise<GrokMediaEli
     grokMediaEligibilityMode.value = state.mode
     grokMediaEligibilityInitialMode.value = state.mode
     return state
-  } catch (error: any) {
+  } catch (error) {
     if (requestVersion !== grokMediaEligibilityRequestVersion) return null
-    grokMediaEligibilityError.value = error?.message || t('admin.accounts.grokMediaEligibility.loadFailed')
+    grokMediaEligibilityError.value = localizeApiErrorFallback((error as { message?: string })?.message, t('admin.accounts.grokMediaEligibility.loadFailed'), locale.value)
     return null
   } finally {
     if (requestVersion === grokMediaEligibilityRequestVersion) {
@@ -4472,7 +4473,7 @@ const openAICompactStatusKey = computed(() => {
 })
 
 // Computed: current preset mappings based on platform
-const presetMappings = computed(() => getPresetMappingsByPlatform(props.account?.platform || 'anthropic'))
+const presetMappings = computed(() => getPresetMappingsByPlatform(props.account?.platform || 'anthropic', t))
 const tempUnschedScopeOptions = computed<Array<{ value: TempUnschedulableScope; label: string; description: string }>>(() => [
   {
     value: 'model',
@@ -5212,7 +5213,7 @@ const syncAntigravityUpstreamModels = async () => {
       appStore.showWarning(t('admin.accounts.syncUpstreamModelsMetadataPartial'))
     }
   } catch (error) {
-    const message = extractApiErrorMessage(error, t('admin.accounts.syncUpstreamModelsFailed'))
+    const message = extractApiErrorMessage(error, t('admin.accounts.syncUpstreamModelsFailed'), undefined, locale.value)
     appStore.showError(t('admin.accounts.syncUpstreamModelsError', { message }))
   } finally {
     isSyncingAntigravityUpstream.value = false
@@ -5562,9 +5563,9 @@ const buildMixedChannelDetails = (resp?: CheckMixedChannelResponse) => {
     return null
   }
   return {
-    groupName: details.group_name || 'Unknown',
-    currentPlatform: details.current_platform || 'Unknown',
-    otherPlatform: details.other_platform || 'Unknown'
+    groupName: details.group_name || t('common.unknown'),
+    currentPlatform: details.current_platform || t('common.unknown'),
+    otherPlatform: details.other_platform || t('common.unknown')
   }
 }
 
@@ -5581,8 +5582,10 @@ const openMixedChannelDialog = (opts: {
   onConfirm: () => Promise<void>
 }) => {
   mixedChannelWarningDetails.value = buildMixedChannelDetails(opts.response)
-  mixedChannelWarningRawMessage.value =
-    opts.message || opts.response?.message || t('admin.accounts.failedToUpdate')
+  mixedChannelWarningRawMessage.value = localizeApiErrorFallback(
+    opts.message || opts.response?.message || t('admin.accounts.failedToUpdate'),
+    t('admin.accounts.mixedChannelWarningGeneric'), locale.value
+  )
   mixedChannelWarningAction.value = opts.onConfirm
   showMixedChannelWarning.value = true
 }
@@ -5628,7 +5631,7 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
     })
     return false
   } catch (error: any) {
-    appStore.showError(error.message || t('admin.accounts.failedToUpdate'))
+    appStore.showError(localizeApiErrorFallback(error.message, t('admin.accounts.failedToUpdate'), locale.value))
     return false
   }
 }
@@ -5691,6 +5694,7 @@ const submitUpdateAccount = async (accountID: number, updatePayload: Record<stri
   } catch (error: any) {
     if (error.status === 409 && error.error === 'mixed_channel_warning' && needsMixedChannelCheck()) {
       openMixedChannelDialog({
+        // The dialog owns RU primary localization; forward the original selector.
         message: error.message,
         onConfirm: async () => {
           antigravityMixedChannelConfirmed.value = true
@@ -5699,7 +5703,7 @@ const submitUpdateAccount = async (accountID: number, updatePayload: Record<stri
       })
       return
     }
-    appStore.showError(error.message || t('admin.accounts.failedToUpdate'))
+    appStore.showError(localizeApiErrorFallback(error.message, t('admin.accounts.failedToUpdate'), locale.value))
   } finally {
     submitting.value = false
   }
@@ -6494,7 +6498,7 @@ const handleSubmit = async () => {
 
     await submitUpdateAccount(accountID, updatePayload)
   } catch (error: any) {
-    appStore.showError(error.message || t('admin.accounts.failedToUpdate'))
+    appStore.showError(localizeApiErrorFallback(error.message, t('admin.accounts.failedToUpdate'), locale.value))
   }
 }
 

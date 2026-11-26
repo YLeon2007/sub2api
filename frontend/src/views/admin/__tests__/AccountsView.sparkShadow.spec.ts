@@ -341,7 +341,11 @@ describe('admin AccountsView — 账号行展示', () => {
     const tooltip = wrapper.findComponent(HelpTooltip)
     expect(tooltip.props('content')).toBe('https://relay.example.com')
     expect(tooltip.props('widthClass')).toBe('w-max max-w-sm break-all')
-    expect(tooltip.classes()).toEqual(expect.arrayContaining(['self-start']))
+    // The upstream group-sync button now shares a horizontal row with the tooltip.
+    const nameRow = tooltip.element.parentElement!
+    expect(Array.from(nameRow.classList)).toEqual(expect.arrayContaining(['flex', 'items-center']))
+    const groupSync = wrapper.get('button[aria-label="admin.accounts.upstreamBilling.saveGroup"]')
+    expect(tooltip.element.nextElementSibling).toBe(groupSync.element)
     expect(wrapper.text()).toContain('oauth-account')
     expect(wrapper.text()).toContain('invalid-url')
 

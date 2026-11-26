@@ -26,7 +26,8 @@ vi.mock('vue-router', () => ({
   }),
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async () => ({
+  ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')),
   useI18n: () => ({
     t: (key: string) => {
       if (key === 'auth.wechatPayment.callbackTitle') return '正在恢复微信支付'

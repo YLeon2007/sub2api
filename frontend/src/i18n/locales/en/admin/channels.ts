@@ -89,7 +89,11 @@ export default {
           cacheWrite1hPrice: '1h cache write price',
           cacheWrite12hPrice: '12h cache write price',
           cacheReadPrice: 'cache read price',
-          perRequestPrice: 'per-request price'
+          perRequestPrice: 'per-request price',
+          inputMultiplier: 'input multiplier',
+          outputMultiplier: 'output multiplier',
+          cacheWriteMultiplier: 'cache write multiplier',
+          cacheReadMultiplier: 'cache read multiplier'
         }
       },
       timePricingValidation: {
@@ -159,7 +163,7 @@ export default {
         reasoningEffortMultiplierPositive: 'The {effort} reasoning effort multiplier must be a finite number greater than 0',
         reasoningEffortLevelInvalid: 'Unsupported reasoning effort: {effort}',
         multiplierPlaceholder: 'Not set',
-        multiplierPositive: 'Fast/Flex multipliers must be finite numbers greater than 0',
+        multiplierPositive: 'Fast, Flex and Ultra Fast multipliers must be finite numbers greater than 0',
         inputMultiplier: 'Input Mult.',
         outputMultiplier: 'Output Mult.',
         cacheWriteMultiplier: 'Cache Write Mult.',
